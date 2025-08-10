@@ -1,0 +1,42 @@
+name: Run tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  XCODE_VERSION: 16.4.0 # Keep aligned with other workflows
+
+jobs:
+  run-tests:
+    name: Run tests
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history and tags
+
+      - name: Select Xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: Delete build artifacts
+        run: swift package clean
+
+      - name: Run package tests
+        run: swift test
