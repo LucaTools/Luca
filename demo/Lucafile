@@ -1,0 +1,11 @@
+---
+tools:
+  - name: PackageGenerator
+    binaryPath: PackageGenerator
+    version: 3.3.0
+    zipUrl: https://github.com/justeattakeaway/PackageGenerator/releases/download/3.3.0/PackageGenerator-macOS.zip
+  - name: Sourcery
+    binaryPath: bin/sourcery
+    version: 2.2.5
+    zipUrl: https://github.com/krzysztofzablocki/Sourcery/releases/download/2.2.5/sourcery-2.2.5.zip
+version: 0.0.1
