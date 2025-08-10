@@ -6,4 +6,6 @@ import Foundation
 public struct Spec: Decodable {
     /// The ordered list of tools to ensure are installed.
     let tools: [Tool]
+    /// Version of the spec file format.
+    let version: String
 }
