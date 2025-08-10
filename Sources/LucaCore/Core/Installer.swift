@@ -46,15 +46,13 @@ final public class Installer {
     /// Root folder for all installed versions.
     var toolsFolder: URL {
         homeDirectory
-            .appending(components: Constants.toolFolder)
-            .appending(components: Constants.toolsFolder)
+            .appending(components: Constants.toolFolder, Constants.toolsFolder)
     }
 
     /// Folder containing symlinks to currently active binaries (per working directory).
     var activeFolder: URL {
         currentWorkingDirectory
-            .appending(components: Constants.toolFolder)
-            .appending(components: Constants.activeFolder)
+            .appending(components: Constants.toolFolder, Constants.activeFolder)
     }
 
     /// Ensure each tool in the spec is installed and symlinked (idempotent; re‑running is safe).
@@ -97,8 +95,7 @@ final public class Installer {
     private func unzip(_ tool: Tool, zipFilePath: URL) throws {
         print("Unzipping...")
         let destinationFolder = toolsFolder
-            .appending(component: tool.name)
-            .appending(component: tool.version)
+            .appending(components: tool.name, tool.version)
 
         try fileManager.createDirectory(at: destinationFolder, withIntermediateDirectories: true)
 
@@ -129,8 +126,7 @@ final public class Installer {
 
         // Support nested binaryPath components.
         let destinationFile = toolsFolder
-            .appending(component: tool.name)
-            .appending(component: tool.version)
+            .appending(components: tool.name, tool.version)
             .appending(path: tool.binaryPath)
 
         if !fileManager.fileExists(atPath: destinationFile.path) {
@@ -149,8 +145,7 @@ final public class Installer {
     /// Returns true if the versioned binary already exists locally.
     private func isToolInstalled(_ tool: Tool) -> Bool {
         let expectedBinaryLocation = toolsFolder
-            .appending(component: tool.name)
-            .appending(component: tool.version)
+            .appending(components: tool.name, tool.version)
             .appending(path: tool.binaryPath)
         return fileManager.fileExists(atPath: expectedBinaryLocation.path)
     }

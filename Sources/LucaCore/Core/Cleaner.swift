@@ -25,8 +25,7 @@ final public class Cleaner {
     /// Delete the entire tools installation folder if present.
     private func cleanInstalledTools() throws {
         let toolsFolder = homeDirectory
-            .appending(components: Constants.toolFolder)
-            .appending(components: Constants.toolsFolder)
+            .appending(components: Constants.toolFolder, Constants.toolsFolder)
 
         if fileManager.fileExists(atPath: toolsFolder.path) {
             print("Removing all installed tools...")
@@ -40,8 +39,7 @@ final public class Cleaner {
     /// Delete the folder containing active symlinks if present.
     private func cleanSymLinks() throws {
         let activeFolder = currentWorkingDirectory
-            .appending(components: Constants.toolFolder)
-            .appending(components: Constants.activeFolder)
+            .appending(components: Constants.toolFolder, Constants.activeFolder)
         if fileManager.fileExists(atPath: activeFolder.path) {
             print("Removing all symlinks...")
             try fileManager.removeItem(atPath: activeFolder.path)
