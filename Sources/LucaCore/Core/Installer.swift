@@ -30,14 +30,14 @@ final public class Installer {
     }
 
     // Dependencies / environment.
-    private let fileManager: FileManager
+    private let fileManager: FileManaging
     private let homeDirectory: URL                 // Home directory (where versioned installs live under .luca/tools).
     private let currentWorkingDirectory: URL       // Directory whose .luca/active holds symlinks.
 
     /// Session used for remote downloads (injected for testing if desired).
     var session: URLSession { URLSession.shared }
 
-    public init(fileManager: FileManager) {
+    public init(fileManager: FileManaging) {
         self.fileManager = fileManager
         self.homeDirectory = fileManager.homeDirectoryForCurrentUser
         self.currentWorkingDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
@@ -136,7 +136,7 @@ final public class Installer {
             try fileManager.removeItem(at: symLinkFile)
         }
         print("Creating symlink to", destinationFile.path, "\n")
-        try fileManager.createDirectory(atPath: activeFolder.path, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: activeFolder, withIntermediateDirectories: true)
         try fileManager.createSymbolicLink(at: symLinkFile, withDestinationURL: destinationFile)
     }
 

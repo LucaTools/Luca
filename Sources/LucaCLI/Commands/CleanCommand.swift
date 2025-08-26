@@ -11,7 +11,7 @@ struct CleanCommand: AsyncParsableCommand {
         abstract: "Clean the folders containing the installed tools and the symlinks."
     )
 
-    var fileManager: FileManager { FileManager.default }
+    var fileManager: FileManaging { FileManagerWrapper(fileManager: .default) }
 
     func run() async throws {
         let cleaner = Cleaner(fileManager: fileManager)
