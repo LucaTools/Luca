@@ -15,7 +15,7 @@ struct InstallCommand: AsyncParsableCommand {
     @Option(name: .long, help: "The location of the spec file.")
     var spec: String?
 
-    var fileManager: FileManager { FileManager.default }
+    var fileManager: FileManaging { FileManagerWrapper(fileManager: .default) }
 
     func run() async throws {
         let spec = try loadSpec(at: specPath)

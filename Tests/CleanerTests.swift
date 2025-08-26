@@ -6,7 +6,7 @@ import XCTest
 class CleanerTests: XCTestCase {
 
     func test_clean() throws {
-        let fileManager = MyFileManager()
+        let fileManager = MockFileManagerWrapper()
 
         let toolsFolder = fileManager.homeDirectoryForCurrentUser
             .appending(components: Constants.toolFolder, Constants.toolsFolder)

@@ -5,7 +5,7 @@ import XCTest
 
 class InstallerTests: XCTestCase {
 
-    private let fileManager = MyFileManager()
+    private let fileManager = MockFileManagerWrapper()
     private lazy var cleaner = Cleaner(fileManager: fileManager)
     private var toolsFolder: URL!
     private var activeFolder: URL!

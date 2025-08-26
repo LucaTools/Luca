@@ -6,11 +6,11 @@ import Foundation
 final public class Cleaner {
 
     // Dependencies / environment roots.
-    private let fileManager: FileManager
+    private let fileManager: FileManaging
     private let homeDirectory: URL   // Typically the user home directory.
     private let currentWorkingDirectory: URL // Directory where symlinks live.
 
-    public init(fileManager: FileManager) {
+    public init(fileManager: FileManaging) {
         self.fileManager = fileManager
         self.homeDirectory = fileManager.homeDirectoryForCurrentUser
         self.currentWorkingDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
