@@ -39,17 +39,6 @@ runs:
         echo "Version of Xcode should be defined as input to the action, in .xcode-version or set as XCODE_VERSION env var." >&2
         exit 1
 
-    - name: Verify Xcode presence
-      shell: bash
-      if: ${{ env.XCODE_VERSION != '' }}
-      run: |
-        DEVELOPER_DIR="/Applications/Xcode-${XCODE_VERSION}.app/Contents/Developer"
-        if [ ! -d "$DEVELOPER_DIR" ]; then
-          echo "Xcode $XCODE_VERSION not found at $DEVELOPER_DIR" >&2
-          ls -1 /Applications | grep Xcode || true
-          exit 1
-        fi
-
     - name: Select Xcode
       shell: bash
       if: ${{ env.XCODE_VERSION != '' }}
