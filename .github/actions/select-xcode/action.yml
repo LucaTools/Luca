@@ -43,5 +43,5 @@ runs:
       shell: bash
       if: ${{ env.XCODE_VERSION != '' }}
       run: |
-        sudo xcode-select -s "/Applications/Xcode-${XCODE_VERSION}.app/Contents/Developer"
+        sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
         xcodebuild -version
