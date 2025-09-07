@@ -27,6 +27,15 @@ jobs:
         shell: bash
         run: swift package clean
 
+      - name: Update version in Version.swift
+        run: |
+          if [ -f "Sources/LucaCLI/Version.swift" ]; then
+            sed -i '' 's/let version = "[^"]*"/let version = "${{ github.ref_name }}"/' Sources/LucaCLI/Version.swift
+          else
+            echo "No Sources/LucaCLI/Version.swift file found."
+            exit 1
+          fi
+
       - name: Build binary (arm64)
         shell: bash
         run: swift build -c release --arch arm64
