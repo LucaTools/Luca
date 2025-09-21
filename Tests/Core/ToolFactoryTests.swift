@@ -24,7 +24,7 @@ struct ToolFactoryTests {
         let spec = Spec(tools: [
             Tool(name: "ToggleGen", version: "1.0.0", url: toggleGenUrl, binaryPath: nil),
             Tool(name: "Sourcery", version: "2.2.7", url: sourceryUrl, binaryPath: "bin/sourcery")
-        ], version: "0.0.1")
+        ])
         
         let specString = try YAMLEncoder().encode(spec)
         let specPath = fileManager.temporaryDirectory.appending(component: UUID().uuidString).appending(component: filename)
