@@ -1,0 +1,13 @@
+---
+tools:
+  - name: PackageGenerator
+    version: 3.3.0
+    url: https://github.com/justeattakeaway/PackageGenerator/releases/download/3.3.0/PackageGenerator-macOS.zip
+  - name: Sourcery
+    version: 2.2.7
+    url: https://github.com/krzysztofzablocki/Sourcery/releases/download/2.2.7/sourcery-2.2.7.zip
+  - name: ToggleGen
+    version: 1.0.0
+    url: https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-macOS-universal-binary.zip
+  
+version: 0.0.1

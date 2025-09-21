@@ -1,0 +1,8 @@
+---
+tools:
+  - name: SwiftLint
+    binaryPath: swiftlint
+    version: 0.53.0
+    url: https://github.com/realm/SwiftLint/releases/download/0.53.0/portable_swiftlint.zip
+  
+version: 0.0.1
