@@ -17,10 +17,18 @@ Luca is a lightweight tool manager for macOS that helps developers install, mana
 
 ## Installation
 
-### Latest version
+### Stable version
+
+Install the latest version with
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/LucaTools/Lucainstall/HEAD/install.sh)"
+```
+
+Optionally define per-project `.luca-version` files containing the desired version before running the above command
+
+```bash
+echo "1.0.0" > .luca-version
 ```
 
 ### From Source
@@ -32,7 +40,9 @@ swift build -c release
 cp -f .build/release/luca /usr/local/bin/luca
 ```
 
-## Quick Start
+## Usage
+
+### Using a Lucafile
 
 1. Create a `Lucafile` in your project directory:
 
@@ -42,11 +52,11 @@ tools:
   - name: PackageGenerator
     binaryPath: PackageGenerator
     version: 3.3.0
-    zipUrl: https://github.com/justeattakeaway/PackageGenerator/releases/download/3.3.0/PackageGenerator-macOS.zip
+    url: https://github.com/justeattakeaway/PackageGenerator/releases/download/3.3.0/PackageGenerator-macOS.zip
   - name: Sourcery
     binaryPath: bin/sourcery
     version: 2.2.5
-    zipUrl: https://github.com/krzysztofzablocki/Sourcery/releases/download/2.2.5/sourcery-2.2.5.zip
+    url: https://github.com/krzysztofzablocki/Sourcery/releases/download/2.2.7/sourcery-2.2.7.zip
 version: 0.0.1
 ```
 
@@ -56,27 +66,27 @@ version: 0.0.1
 luca install
 ```
 
+### Installing Directly from GitHub
+
+You can also install tools directly from GitHub releases by specifying the organization, repository, and version:
+
+```bash
+luca install TogglesPlatform/ToggleGen@1.0.0
+```
+
+Specify the name of the release asset if the naming is not clear enough for Luca to work it out:
+
+```bash
+luca install krzysztofzablocki/sourcery@2.2.5 --asset sourcery-2.2.5.zip
+```
+
+Symlinks will be created in the current directory at `.luca/active`.
+
 3. Use your tools:
 
 ```bash
 PackageGenerator --help
 sourcery --help
-```
-
-## Usage
-
-### Install tools
-
-Installs all tools defined in the Lucafile in the current directory:
-
-```bash
-luca install
-```
-
-Specify a custom Lucafile location:
-
-```bash
-luca install --spec /path/to/custom/Lucafile
 ```
 
 ### Clean installed tools
@@ -97,8 +107,6 @@ Luca performs the following steps:
 4. Creates symlinks in `.luca/active/` in your current directory
 5. Tools can then be accessed via `.luca/active/{binary-name}`
 
-You can add `.luca/active` to your project-specific PATH or invoke the tools directly.
-
 ## Lucafile Format
 
 The Lucafile is a YAML file with the following structure:
@@ -109,7 +117,7 @@ tools:
   - name: ToolName              # Logical name for the tool
     binaryPath: path/to/binary  # Path to the binary within the zip file
     version: 1.2.3              # Version to install
-    zipUrl: https://example.com/tool-1.2.3.zip  # URL to download the zip archive
+    url: https://example.com/tool-1.2.3.zip  # URL to download the zip archive
 version: 0.0.1                  # Lucafile schema version
 ```
 
