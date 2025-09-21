@@ -43,7 +43,7 @@ struct Unarchiver: Unarchiving {
             let errData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
             let errStr = String(data: errData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Unknown error"
             let error = NSError(
-                domain: "io.github.luca.installer.unzip",
+                domain: "io.github.luca.unarchiver",
                 code: Int(process.terminationStatus),
                 userInfo: [NSLocalizedDescriptionKey: "Failed to unzip archive: \(errStr)"]
             )
