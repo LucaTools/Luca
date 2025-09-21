@@ -10,7 +10,7 @@ struct Downloader: Downloading {
         var errorDescription: String? {
             switch self {
             case .unsupportedFileType(let url):
-                return "File at \(url.absoluteString) has unsupported file type. Supported file types are: \(SupportedFileTypes.allCases.map { $0.rawValue } )."
+                return "File at \(url.absoluteString) has unsupported file type. Supported file types are: \(SupportedFileTypes.allCases.map { $0.rawValue })."
             }
         }
     }

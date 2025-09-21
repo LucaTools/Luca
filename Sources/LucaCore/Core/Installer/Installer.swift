@@ -28,7 +28,10 @@ public struct Installer {
         let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
         let specLoader = SpecLoader(fileManager: .default)
         let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
+        print(noora.format("\(.raw("🧠 Detecting tools to install..."))"))
         let tools = try await toolFactory.toolsForInstallationType(installationType)
+        print(noora.format("\(.raw("🏃‍♂️ Installing tools for the current project."))"))
+        print()
         try await installTools(tools)
     }
     
@@ -44,7 +47,7 @@ public struct Installer {
             print()
         }
         
-        print(noora.format("\(.success("🚀 All tools have been installed for the current project."))"))
+        print(noora.format("\(.success("🚀 Tools have been installed for the current project."))"))
     }
     
     // MARK: - Private
