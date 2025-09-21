@@ -4,7 +4,7 @@ import Foundation
 
 struct ReleaseInfoProvider: ReleaseInfoProviding {
     
-    private let macOSKeywords = ["darwin", "macos", "mac", "osx", "x86_64", "amd64", "arm64", "universal"]
+    private let macOSKeywords = ["darwin", "macos", "mac", "osx", "x86_64", "amd64", "arm64", "universal", "artifactbundle"]
     
     enum ReleaseInfoProviderError: Error, LocalizedError, Equatable {
         case apiError(String)
