@@ -5,13 +5,16 @@ import Yams
 
 struct SpecLoader: SpecLoading {
     
-    enum ReleaseInfoProviderError: Error, LocalizedError, Equatable {
+    enum SpecLoaderError: Error, LocalizedError {
         case missingSpec(String)
+        case invalidSpec(String, Error)
         
         var errorDescription: String? {
             switch self {
             case .missingSpec(let path):
                 return "Missing spec at path: \(path)"
+            case .invalidSpec(let path, let error):
+                return "Invalid spec at path: \(path). \(error)"
             }
         }
     }
@@ -24,8 +27,17 @@ struct SpecLoader: SpecLoading {
     
     func loadSpec(at path: URL) throws -> Spec {
         guard let data = fileManager.contents(atPath: path.path) else {
-            throw ReleaseInfoProviderError.missingSpec(path.path)
+            throw SpecLoaderError.missingSpec(path.path)
         }
-        return try YAMLDecoder().decode(Spec.self, from: data)
+        do {
+            return try YAMLDecoder().decode(Spec.self, from: data)
+        } catch {
+            let nsError = NSError(
+                domain: "io.github.luca.specLoader",
+                code: 1,
+                userInfo: [NSUnderlyingErrorKey: error]
+            )
+            throw SpecLoaderError.invalidSpec(path.path, nsError)
+        }
     }
 }
