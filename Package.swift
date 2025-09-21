@@ -11,21 +11,25 @@ let package = Package(
         .library(name: "LucaCore", targets: ["LucaCore"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.1.2"),
-        .package(url: "https://github.com/jpsim/Yams.git", from: "5.0.6")
+        .package(url: "https://github.com/apple/swift-argument-parser", exact: "1.6.1"),
+        .package(url: "https://github.com/tuist/Noora", exact: "0.49.1"),
+        .package(url: "https://github.com/jpsim/Yams.git", exact: "6.1.0")
     ],
     targets: [
         .executableTarget(
             name: "LucaCLI",
             dependencies: [
                 .target(name: "LucaCore"),
-                .product(name: "ArgumentParser", package: "swift-argument-parser")
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "Noora", package: "Noora"),
+                .product(name: "Yams", package: "Yams")
             ],
             path: "Sources/LucaCLI"
         ),
         .target(
             name: "LucaCore",
             dependencies: [
+                .product(name: "Noora", package: "Noora"),
                 .product(name: "Yams", package: "Yams")
             ],
             path: "Sources/LucaCore"
@@ -35,7 +39,10 @@ let package = Package(
             dependencies: [
                 .target(name: "LucaCore"),
             ],
-            path: "Tests"
+            path: "Tests",
+            resources: [
+                .process("Fixtures")
+            ]
         )
     ]
 )
