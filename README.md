@@ -57,7 +57,6 @@ tools:
     binaryPath: bin/sourcery
     version: 2.2.5
     url: https://github.com/krzysztofzablocki/Sourcery/releases/download/2.2.7/sourcery-2.2.7.zip
-version: 0.0.1
 ```
 
 2. Install the tools:
@@ -118,7 +117,6 @@ tools:
     binaryPath: path/to/binary  # Path to the binary within the zip file
     version: 1.2.3              # Version to install
     url: https://example.com/tool-1.2.3.zip  # URL to download the zip archive
-version: 0.0.1                  # Lucafile schema version
 ```
 
 ## Requirements
