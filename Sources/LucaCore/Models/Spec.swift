@@ -2,10 +2,7 @@
 
 import Foundation
 
-/// Root object decoded from the YAML spec file listing all desired tools.
-public struct Spec: Decodable {
-    /// The ordered list of tools to ensure are installed.
+struct Spec: Codable {
     let tools: [Tool]
-    /// Version of the spec file format.
     let version: String
 }
