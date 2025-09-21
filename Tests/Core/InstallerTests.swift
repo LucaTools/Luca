@@ -89,6 +89,19 @@ struct InstallerTests {
     }
     
     @Test
+    func test_installInvalid() async throws {
+        let installer = Installer(fileManager: fileManager)
+        
+        let fixture = Fixture(filename: "Lucafile_invalid", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        
+        await #expect(throws: (any Error).self) {
+            try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+        }
+    }
+    
+    @Test
     func test_reinstallSpec() async throws {
         let installer = Installer(fileManager: fileManager)
         
