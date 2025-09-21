@@ -16,9 +16,9 @@ struct ReleaseInfoProvider: ReleaseInfoProviding {
             case .apiError(let message):
                 return "API error: \(message)."
             case .cannotIdentifyAsset(let assets):
-                return "Cannot identify suitable asset in list of release assets: (\(assets))."
+                return "Cannot identify suitable asset in list of release assets: \(assets.map { $0.name })."
             case .releaseNotFound(let url):
-                return "Release not found at \(url.path)."
+                return "Release not found at \(url.absoluteString)."
             }
         }
     }
