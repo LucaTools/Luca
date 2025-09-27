@@ -88,12 +88,12 @@ PackageGenerator --help
 sourcery --help
 ```
 
-### Clean installed tools
+### Uninstall installed tools
 
 Remove all installed tools and symlinks:
 
 ```bash
-luca clean
+luca uninstall
 ```
 
 ## How It Works
