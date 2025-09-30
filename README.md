@@ -49,14 +49,14 @@ cp -f .build/release/luca /usr/local/bin/luca
 ```yaml
 ---
 tools:
-  - name: PackageGenerator
-    binaryPath: PackageGenerator
-    version: 3.3.0
-    url: https://github.com/justeattakeaway/PackageGenerator/releases/download/3.3.0/PackageGenerator-macOS.zip
-  - name: Sourcery
-    binaryPath: bin/sourcery
-    version: 2.2.5
-    url: https://github.com/krzysztofzablocki/Sourcery/releases/download/2.2.7/sourcery-2.2.7.zip
+  - name: Tuist
+    binaryPath: tuist
+    version: 4.80.0
+    url: https://github.com/tuist/tuist/releases/download/4.80.0/tuist.zip
+  - name: SwiftLint
+    binaryPath: SwiftLintBinary.artifactbundle/swiftlint-0.61.0-macos/bin/swiftlint
+    version: 0.61.0
+    url: https://github.com/realm/SwiftLint/releases/download/0.61.0/SwiftLintBinary.artifactbundle.zip
 ```
 
 2. Install the tools:
@@ -76,7 +76,7 @@ luca install TogglesPlatform/ToggleGen@1.0.0
 Specify the name of the release asset if the naming is not clear enough for Luca to work it out:
 
 ```bash
-luca install krzysztofzablocki/sourcery@2.2.5 --asset sourcery-2.2.5.zip
+luca install krzysztofzablocki/sourcery@2.2.7 --asset sourcery-2.2.7.zip
 ```
 
 Symlinks will be created in the current directory at `.luca/active`.
@@ -84,8 +84,8 @@ Symlinks will be created in the current directory at `.luca/active`.
 3. Use your tools:
 
 ```bash
-PackageGenerator --help
-sourcery --help
+tuist --help
+swiftlint --help
 ```
 
 ### Uninstall installed tools
