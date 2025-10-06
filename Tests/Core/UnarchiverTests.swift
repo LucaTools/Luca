@@ -11,7 +11,16 @@ struct UnarchiverTests {
         let unarchiverFileManager = UnarchiverFileManagerMock(fileManager: .default)
         let sut = Unarchiver(fileManager: unarchiverFileManager)
         
-        let tool = Tool(name: "Mock", version: "1.2.0", url: URL(string: "https://example.com")!, binaryPath: nil)
+        let tool = Tool(
+            name: "Mock",
+            version: "1.2.0",
+            url: URL(
+                string: "https://example.com"
+            )!,
+            binaryPath: nil,
+            checksum: nil,
+            algorithm: nil
+        )
         
         let bundle = Bundle.module
         let fixture = Fixture(filename: "MockContent", type: "zip")

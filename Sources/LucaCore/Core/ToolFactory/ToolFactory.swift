@@ -32,22 +32,30 @@ struct ToolFactory {
         switch installationType {
         case .spec(let specPath):
             return try specLoader.loadSpec(at: specPath).tools
-        case .individual(let identifier, let asset, let binaryPath):
-            let tool = try await toolForIdentifier(identifier, asset: asset, binaryPath: binaryPath)
+        case .individual(let identifier, let asset, let binaryPath, let checksum, let algorithm):
+            let tool = try await toolForIdentifier(
+                identifier,
+                asset: asset,
+                binaryPath: binaryPath,
+                checksum: checksum,
+                algorithm: algorithm
+            )
             return [tool]
-        case .individualInline(let name, let version, let url, let binaryPath):
+        case .individualInline(let name, let version, let url, let binaryPath, let checksum, let algorithm):
             return [Tool(
                 name: name,
                 version: version,
                 url: url,
-                binaryPath: binaryPath
+                binaryPath: binaryPath,
+                checksum: checksum,
+                algorithm: algorithm
             )]
         }
     }
     
     // MARK: - Private
     
-    private func toolForIdentifier(_ identifier: String, asset: String?, binaryPath: String?) async throws -> Tool {
+    private func toolForIdentifier(_ identifier: String, asset: String?, binaryPath: String?, checksum: String?, algorithm: ChecksumAlgorithm?) async throws -> Tool {
         let components = identifier.split(separator: "@")
         guard components.count == 2,
               let version = components.last.map(String.init) else {
@@ -69,13 +77,18 @@ struct ToolFactory {
             return try await releaseInfoProvider.macOSAsset(for: release).name
         }()
         
-        let releaseAssetUrl = try GitHubReleaseURLFactory().makeReleaseAssetURL(release: release, asset: assetFilename)
+        let releaseAssetUrl = try GitHubReleaseURLFactory().makeReleaseAssetURL(
+            release: release,
+            asset: assetFilename
+        )
         
         return Tool(
             name: repository,
             version: version,
             url: releaseAssetUrl,
-            binaryPath: binaryPath
+            binaryPath: binaryPath,
+            checksum: checksum,
+            algorithm: algorithm
         )
     }
 }

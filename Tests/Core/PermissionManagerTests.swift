@@ -13,7 +13,16 @@ struct PermissionManagerTests {
         let permissionManagerFileManager = PermissionManagerFileManagerMock(fileManager: fileManager)
         let sut = PermissionManager(fileManager: permissionManagerFileManager)
         
-        let tool = EnrichedTool(name: "ToggleGen", version: "1.0.0", url: URL(string: "https://example.com")!, binaryPath: "bin/ToggleGen")
+        let tool = EnrichedTool(
+            name: "ToggleGen",
+            version: "1.0.0",
+            url: URL(
+                string: "https://example.com"
+            )!,
+            binaryPath: "bin/ToggleGen",
+            checksum: nil,
+            algorithm: nil
+        )
         
         let binaryPath = permissionManagerFileManager.toolsFolder
             .appending(components: tool.name, tool.version)
@@ -37,7 +46,16 @@ struct PermissionManagerTests {
             .appending(components: "ToggleGen", "1.0.0", "bin/ToggleGen")
             .path
         
-        let tool = EnrichedTool(name: "ToggleGen", version: "1.0.0", url: URL(string: "https://example.com")!, binaryPath: "bin/ToggleGen")
+        let tool = EnrichedTool(
+            name: "ToggleGen",
+            version: "1.0.0",
+            url: URL(
+                string: "https://example.com"
+            )!,
+            binaryPath: "bin/ToggleGen",
+            checksum: nil,
+            algorithm: nil
+        )
         
         #expect(throws: PermissionManager.PermissionManagerError.missingFile(filePath)) {
             try sut.setExecutablePermission(for: tool)
