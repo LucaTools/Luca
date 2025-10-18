@@ -33,7 +33,17 @@ struct InstallerTests {
             #expect(!fileManager.fileExists(atPath: toolPath.path))
             #expect(!fileManager.fileExists(atPath: toolSymLink.path))
 
-            try await installer.install(installationType: .individualInline(name: tool.name, version: tool.version, url: tool.url, binaryPath: tool.binaryPath))
+            try await installer
+                .install(
+                    installationType: .individualInline(
+                        name: tool.name,
+                        version: tool.version,
+                        url: tool.url,
+                        binaryPath: tool.binaryPath,
+                        checksum: tool.checksum,
+                        algorithm: tool.algorithm
+                    )
+                )
                                         
             #expect(fileManager.fileExists(atPath: toolPath.path))
             #expect(fileManager.fileExists(atPath: toolSymLink.path))

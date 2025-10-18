@@ -8,6 +8,7 @@ public struct Installer {
     private let fileManager: FileManaging
     private let noora: Noorable
     private let binaryFinder: BinaryFinding
+    private let checksumValidator: ChecksumValidating
     private let fileDownloader: FileDownloading
     private let downloader: Downloading
     private let permissionManager: PermissionManaging
@@ -17,6 +18,7 @@ public struct Installer {
         self.fileManager = fileManager
         self.noora = noora
         self.binaryFinder = BinaryFinder(fileManager: fileManager)
+        self.checksumValidator = ChecksumValidator(fileManager: fileManager)
         self.fileDownloader = FileDownloader(session: .shared)
         self.downloader = Downloader(fileDownloader: fileDownloader)
         self.permissionManager = PermissionManager(fileManager: fileManager)
@@ -61,7 +63,9 @@ public struct Installer {
             name: tool.name,
             version: tool.version,
             url: tool.url,
-            binaryPath: binaryPath
+            binaryPath: binaryPath,
+            checksum: tool.checksum,
+            algorithm: tool.algorithm
         )
         try permissionManager.setExecutablePermission(for: enrichedTool)
         let symLink = try symLinker.setSymLink(for: enrichedTool)
@@ -74,6 +78,13 @@ public struct Installer {
         print(noora.format("\(.raw("⬇️ Downloading \(tool.name) version \(tool.version)..."))"))
         
         let localFile = try await downloader.downloadArchive(at: tool.url)
+        
+        if let checksum = tool.checksum {
+            print(noora.format("\(.raw("📋 Validating checksum for \(tool.name) version \(tool.version)..."))"))
+            try checksumValidator.validate(checksum: checksum, for: localFile.path, using: tool.algorithm ?? .sha256)
+        } else {
+            print(noora.format("\(.raw("📋 Skipping checksum validation for \(tool.name) version \(tool.version)..."))"))
+        }
         
         print(noora.format("\(.raw("📦 Unarchiving \(tool.name) version \(tool.version)..."))"))
         
@@ -91,7 +102,9 @@ public struct Installer {
             name: tool.name,
             version: tool.version,
             url: tool.url,
-            binaryPath: binaryPath
+            binaryPath: binaryPath,
+            checksum: tool.checksum,
+            algorithm: tool.algorithm
         )
         try permissionManager.setExecutablePermission(for: enrichedTool)
         

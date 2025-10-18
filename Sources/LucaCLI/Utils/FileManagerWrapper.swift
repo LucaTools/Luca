@@ -71,6 +71,10 @@ public struct FileManagerWrapper: FileManaging {
         try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: mask)
     }
     
+    public func contents(atPath path: String) -> Data? {
+        fileManager.contents(atPath: path)
+    }
+    
     public func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] {
         try fileManager.attributesOfItem(atPath: path)
     }

@@ -85,6 +85,10 @@ class FileManagerWrapperMock: FileManaging {
         try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: mask)
     }
     
+    func contents(atPath path: String) -> Data? {
+        fileManager.contents(atPath: path)
+    }
+    
     func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] {
         try fileManager.attributesOfItem(atPath: path)
     }

@@ -6,6 +6,8 @@ import LucaCore
 import Noora
 import Yams
 
+extension ChecksumAlgorithm: @retroactive ExpressibleByArgument {}
+
 /// Installs the versions of tools specified by a YAML spec file.
 struct InstallCommand: AsyncParsableCommand {
     
@@ -72,11 +74,17 @@ luca install
     @Option(help: "URL of the asset for the tool to install.")
     var url: String?
     
-    @Option(help: "Filename of the asset associated with the release")
+    @Option(help: "Filename of the asset associated with the release.")
     var asset: String?
     
-    @Option(help: "Binary path for the asset associated with the release")
+    @Option(help: "Binary path for the asset associated with the release.")
     var binaryPath: String?
+    
+    @Option(help: "Checksum of the asset associated with the release.")
+    var checksum: String?
+    
+    @Option(help: "Algorithm to use to verify the integrity of the asset.")
+    var algorithm: ChecksumAlgorithm?
 
     private var noora: Noorable { Noora() }
     
@@ -92,7 +100,9 @@ luca install
             name: name,
             version: version,
             url: try toolUrl(for: url),
-            binaryPath: binaryPath
+            binaryPath: binaryPath,
+            checksum: checksum,
+            algorithm: algorithm
         )
         let installationType = try installationType(for: arguments)
         try await installer.install(installationType: installationType)
@@ -108,14 +118,14 @@ luca install
     }
     
     private func installationType(for arguments: Arguments) throws -> InstallationType {
-        switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath) {
-        case (let spec, .none, .none, .none, .none, .none, .none):
+        switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.checksum, arguments.algorithm) {
+        case (let spec, .none, .none, .none, .none, .none, .none, .none, .none):
             let specPath = specPath(providedSpec: spec)
             return .spec(specPath: specPath)
-        case (.none, .some(let identifier), let asset, .none, .none, .none, let binaryPath):
-            return .individual(identifier: identifier, asset: asset, binaryPath: binaryPath)
-        case (.none, .none, .none, .some(let name), .some(let version), .some(let url), let binaryPath):
-            return .individualInline(name: name, version: version, url: url, binaryPath: binaryPath)
+        case (.none, .some(let identifier), let asset, .none, .none, .none, let binaryPath, let checksum, let algorithm):
+            return .individual(identifier: identifier, asset: asset, binaryPath: binaryPath, checksum: checksum, algorithm: algorithm)
+        case (.none, .none, .none, .some(let name), .some(let version), .some(let url), let binaryPath, let checksum, let algorithm):
+            return .individualInline(name: name, version: version, url: url, binaryPath: binaryPath, checksum: checksum, algorithm: algorithm)
         default:
             throw InstallCommandError.invalidCombinationOfArguments(arguments)
         }

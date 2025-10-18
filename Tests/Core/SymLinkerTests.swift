@@ -10,7 +10,16 @@ struct SymLinkerTests {
     
     @Test
     func createSymLink_toolExists() throws {
-        let tool = EnrichedTool(name: "ToggleGen", version: "1.0.0", url: URL(string: "https://example.com")!, binaryPath: "ToggleGen")
+        let tool = EnrichedTool(
+            name: "ToggleGen",
+            version: "1.0.0",
+            url: URL(
+                string: "https://example.com"
+            )!,
+            binaryPath: "ToggleGen",
+            checksum: nil,
+            algorithm: nil
+        )
         
         let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)
         
@@ -35,7 +44,16 @@ struct SymLinkerTests {
     
     @Test
     func createSymLink_toolExists_binaryPathSpecified() throws {
-        let tool = EnrichedTool(name: "ToggleGen", version: "1.0.0", url: URL(string: "https://example.com")!, binaryPath: "ToggleGen")
+        let tool = EnrichedTool(
+            name: "ToggleGen",
+            version: "1.0.0",
+            url: URL(
+                string: "https://example.com"
+            )!,
+            binaryPath: "ToggleGen",
+            checksum: nil,
+            algorithm: nil
+        )
         
         let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)
         
@@ -60,7 +78,16 @@ struct SymLinkerTests {
     
     @Test
     func createSymLink_toolExists_nestedBinaryPathSpecified() throws {
-        let tool = EnrichedTool(name: "ToggleGen", version: "1.0.0", url: URL(string: "https://example.com")!, binaryPath: "bin/ToggleGen")
+        let tool = EnrichedTool(
+            name: "ToggleGen",
+            version: "1.0.0",
+            url: URL(
+                string: "https://example.com"
+            )!,
+            binaryPath: "bin/ToggleGen",
+            checksum: nil,
+            algorithm: nil
+        )
         
         let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)
         
@@ -85,7 +112,16 @@ struct SymLinkerTests {
     
     @Test
     func createSymLink_symLinkExists() throws {
-        let tool = EnrichedTool(name: "ToggleGen", version: "1.0.0", url: URL(string: "https://example.com")!, binaryPath: "ToggleGen")
+        let tool = EnrichedTool(
+            name: "ToggleGen",
+            version: "1.0.0",
+            url: URL(
+                string: "https://example.com"
+            )!,
+            binaryPath: "ToggleGen",
+            checksum: nil,
+            algorithm: nil
+        )
         
         let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)
         
@@ -110,7 +146,16 @@ struct SymLinkerTests {
     
     @Test
     func createSymLink_toolDoesNotExist() throws {
-        let tool = EnrichedTool(name: "ToggleGen", version: "1.0.0", url: URL(string: "https://example.com")!, binaryPath: "bin/ToggleGen")
+        let tool = EnrichedTool(
+            name: "ToggleGen",
+            version: "1.0.0",
+            url: URL(
+                string: "https://example.com"
+            )!,
+            binaryPath: "bin/ToggleGen",
+            checksum: nil,
+            algorithm: nil
+        )
         
         let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)
         
@@ -126,7 +171,12 @@ struct SymLinkerTests {
             .appending(components: tool.name, tool.version)
             .appending(components: tool.binaryPath)
 
-        #expect(throws: SymLinker.SymLinkerError.missingBinaryFile(binaryName: tool.binaryName, expectedLocation: expectedDestination.path)) {
+        #expect(
+            throws: SymLinker.SymLinkerError.missingBinaryFile(
+                binaryName: tool.binaryName,
+                expectedLocation: expectedDestination.path
+            )
+        ) {
             try sut.setSymLink(for: tool)
         }
     }

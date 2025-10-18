@@ -22,8 +22,8 @@ struct ToolFactoryTests {
         )
         
         let spec = Spec(tools: [
-            Tool(name: "ToggleGen", version: "1.0.0", url: toggleGenUrl, binaryPath: nil),
-            Tool(name: "Sourcery", version: "2.2.7", url: sourceryUrl, binaryPath: "bin/sourcery")
+            Tool(name: "ToggleGen", version: "1.0.0", url: toggleGenUrl, binaryPath: nil, checksum: nil, algorithm: nil),
+            Tool(name: "Sourcery", version: "2.2.7", url: sourceryUrl, binaryPath: "bin/sourcery", checksum: nil, algorithm: nil)
         ])
         
         let specString = try YAMLEncoder().encode(spec)
@@ -69,7 +69,15 @@ struct ToolFactoryTests {
         let specLoader = SpecLoader(fileManager: fileManager)
         let sut = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
         
-        let tools = try await sut.toolsForInstallationType(.individual(identifier: "TogglesPlatform/ToggleGen@1.0.0", asset: nil, binaryPath: nil))
+        let tools = try await sut.toolsForInstallationType(
+            .individual(
+                identifier: "TogglesPlatform/ToggleGen@1.0.0",
+                asset: nil,
+                binaryPath: nil,
+                checksum: nil,
+                algorithm: nil
+            )
+        )
         #expect(tools.count == 1)
         
         let urlFactory = GitHubReleaseURLFactory()
@@ -95,7 +103,15 @@ struct ToolFactoryTests {
         let specLoader = SpecLoader(fileManager: fileManager)
         let sut = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
         
-        let tools = try await sut.toolsForInstallationType(.individual(identifier: "TogglesPlatform/ToggleGen@1.0.0", asset: asset, binaryPath: nil))
+        let tools = try await sut.toolsForInstallationType(
+            .individual(
+                identifier: "TogglesPlatform/ToggleGen@1.0.0",
+                asset: asset,
+                binaryPath: nil,
+                checksum: nil,
+                algorithm: nil
+            )
+        )
         #expect(tools.count == 1)
         
         let urlFactory = GitHubReleaseURLFactory()
@@ -122,7 +138,15 @@ struct ToolFactoryTests {
         let specLoader = SpecLoader(fileManager: fileManager)
         let sut = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
         
-        let tools = try await sut.toolsForInstallationType(.individual(identifier: "TogglesPlatform/ToggleGen@1.0.0", asset: asset, binaryPath: binaryPath))
+        let tools = try await sut.toolsForInstallationType(
+            .individual(
+                identifier: "TogglesPlatform/ToggleGen@1.0.0",
+                asset: asset,
+                binaryPath: binaryPath,
+                checksum: nil,
+                algorithm: nil
+            )
+        )
         #expect(tools.count == 1)
         
         let urlFactory = GitHubReleaseURLFactory()
@@ -147,7 +171,16 @@ struct ToolFactoryTests {
         let sut = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
             
         await #expect(throws: ToolFactory.ToolFactoryError.invalidIdentifierFormat("TogglesPlatform/ToggleGen")) {
-            _ = try await sut.toolsForInstallationType(.individual(identifier: "TogglesPlatform/ToggleGen", asset: nil, binaryPath: nil))
+            _ = try await sut
+                .toolsForInstallationType(
+                    .individual(
+                        identifier: "TogglesPlatform/ToggleGen",
+                        asset: nil,
+                        binaryPath: nil,
+                        checksum: nil,
+                        algorithm: nil
+                    )
+                )
         }
     }
     
@@ -160,7 +193,16 @@ struct ToolFactoryTests {
         let sut = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
         
         await #expect(throws: ToolFactory.ToolFactoryError.invalidRepositoryFormat("ToggleGen")) {
-            _ = try await sut.toolsForInstallationType(.individual(identifier: "ToggleGen@1.0.0", asset: nil, binaryPath: nil))
+            _ = try await sut
+                .toolsForInstallationType(
+                    .individual(
+                        identifier: "ToggleGen@1.0.0",
+                        asset: nil,
+                        binaryPath: nil,
+                        checksum: nil,
+                        algorithm: nil
+                    )
+                )
         }
     }
     
@@ -180,7 +222,16 @@ struct ToolFactoryTests {
             asset: "ToggleGen-macOS-universal-binary.zip"
         )
         
-        let tools = try await sut.toolsForInstallationType(.individualInline(name: name, version: version, url: toggleGenUrl, binaryPath: nil))
+        let tools = try await sut.toolsForInstallationType(
+            .individualInline(
+                name: name,
+                version: version,
+                url: toggleGenUrl,
+                binaryPath: nil,
+                checksum: nil,
+                algorithm: nil
+            )
+        )
         #expect(tools.count == 1)
         
         let tool = try #require(tools.first)
@@ -208,7 +259,16 @@ struct ToolFactoryTests {
         
         let binaryPath = "bin/togglegen"
             
-        let tools = try await sut.toolsForInstallationType(.individualInline(name: name, version: version, url: toggleGenUrl, binaryPath: binaryPath))
+        let tools = try await sut.toolsForInstallationType(
+            .individualInline(
+                name: name,
+                version: version,
+                url: toggleGenUrl,
+                binaryPath: binaryPath,
+                checksum: nil,
+                algorithm: nil
+            )
+        )
         #expect(tools.count == 1)
         
         let tool = try #require(tools.first)
