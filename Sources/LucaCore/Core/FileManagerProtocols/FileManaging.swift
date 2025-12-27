@@ -2,7 +2,13 @@
 
 import Foundation
 
-public protocol FileManaging: BinaryFinderFileManaging, ChecksumValidatorFileManaging, PermissionManagerFileManaging, SymLinkFileManaging, UnarchiverFileManaging {
+public protocol FileManaging:
+    BinaryFinderFileManaging,
+    ChecksumValidatorFileManaging,
+    FileTypeDetectorFileManaging,
+    PermissionManagerFileManaging,
+    SymLinkFileManaging,
+    UnarchiverFileManaging {
     var toolsFolder: URL { get }
     var activeFolder: URL { get }
     var homeDirectoryForCurrentUser: URL { get }

@@ -77,21 +77,36 @@ public struct Installer {
     private func install(_ tool: Tool) async throws {
         print(noora.format("\(.raw("⬇️ Downloading \(tool.name) version \(tool.version)..."))"))
         
-        let localFile = try await downloader.downloadArchive(at: tool.url)
-        
+        let downloadedFile = try await downloader.downloadRelease(at: tool.url)
+
         if let checksum = tool.checksum {
             print(noora.format("\(.raw("📋 Validating checksum for \(tool.name) version \(tool.version)..."))"))
-            try checksumValidator.validate(checksum: checksum, for: localFile.path, using: tool.algorithm ?? .sha256)
+            try checksumValidator.validate(checksum: checksum, for: downloadedFile.path, using: tool.algorithm ?? .sha256)
         } else {
             print(noora.format("\(.raw("📋 Skipping checksum validation for \(tool.name) version \(tool.version)..."))"))
         }
+
+        let fileTypeDetector = FileTypeDetector(fileManager: fileManager)
+        let fileType = try fileTypeDetector.detectFileType(at: downloadedFile)
         
+        let installationDestination = fileManager.toolsFolder
+            .appending(components: tool.name, tool.version)
+        
+        switch fileType {
+        case .zip: try installZip(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
+        case .executable: try installExecutable(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
+        case .unknown: print("Warning: Unknown file type. Attempting to treat as executable.")
+        }
+        
+        print(noora.format("\(.success("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))"))
+    }
+    
+    private func installZip(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
         print(noora.format("\(.raw("📦 Unarchiving \(tool.name) version \(tool.version)..."))"))
         
         let unarchiver = Unarchiver(fileManager: fileManager)
-        let installationDestination = try unarchiver.unarchive(tool, filePath: localFile)
-        
-        print(noora.format("\(.raw("💾 Installed \(tool.name) version \(tool.version) at \(installationDestination.path)"))"))
+        // pass installationDestination instead of tool to unarchive
+        try unarchiver.unarchive(tool, filePath: downloadedFile)
         
         let binaryPath: String = try {
             if let binaryPath = tool.binaryPath { return binaryPath }
@@ -108,10 +123,32 @@ public struct Installer {
         )
         try permissionManager.setExecutablePermission(for: enrichedTool)
         
+        print(noora.format("\(.raw("💾 Installed \(tool.name) version \(tool.version) at \(installationDestination.path)"))"))
+        
         let symLink = try symLinker.setSymLink(for: enrichedTool)
         print(noora.format("\(.raw("🔗 Created symlink to \(symLink.path)"))"))
+    }
+    
+    private func installExecutable(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
+        try fileManager.createDirectory(at: installationDestination, withIntermediateDirectories: true)
+        let binaryName = tool.name
+        let destinationFile = installationDestination
+            .appending(components: binaryName)
+        try fileManager.moveItem(at: downloadedFile, to: destinationFile)
+        let enrichedTool = EnrichedTool(
+            name: tool.name,
+            version: tool.version,
+            url: tool.url,
+            binaryPath: binaryName,
+            checksum: nil,
+            algorithm: nil
+        )
+        try permissionManager.setExecutablePermission(for: enrichedTool)
         
-        print(noora.format("\(.success("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))"))
+        print(noora.format("\(.raw("💾 Installed \(tool.name) version \(tool.version) at \(installationDestination.path)"))"))
+        
+        let symLink = try symLinker.setSymLink(for: enrichedTool)
+        print(noora.format("\(.raw("🔗 Created symlink to \(symLink.path)"))"))
     }
 
     private func isToolInstalled(_ tool: Tool) -> Bool {

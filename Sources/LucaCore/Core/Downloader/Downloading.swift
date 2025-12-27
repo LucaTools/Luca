@@ -3,5 +3,5 @@
 import Foundation
 
 protocol Downloading {
-    func downloadArchive(at url: URL) async throws -> URL
+    func downloadRelease(at url: URL) async throws -> URL
 }
