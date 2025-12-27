@@ -105,8 +105,7 @@ public struct Installer {
         print(noora.format("\(.raw("📦 Unarchiving \(tool.name) version \(tool.version)..."))"))
         
         let unarchiver = Unarchiver(fileManager: fileManager)
-        // pass installationDestination instead of tool to unarchive
-        try unarchiver.unarchive(tool, filePath: downloadedFile)
+        try unarchiver.unarchive(filePath: downloadedFile, installationDestination: installationDestination)
         
         let binaryPath: String = try {
             if let binaryPath = tool.binaryPath { return binaryPath }

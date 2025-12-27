@@ -11,25 +11,19 @@ struct UnarchiverTests {
         let unarchiverFileManager = UnarchiverFileManagerMock(fileManager: .default)
         let sut = Unarchiver(fileManager: unarchiverFileManager)
         
-        let tool = Tool(
-            name: "Mock",
-            version: "1.2.0",
-            url: URL(
-                string: "https://example.com"
-            )!,
-            binaryPath: nil,
-            checksum: nil,
-            algorithm: nil
-        )
+        let installationDestination = unarchiverFileManager.toolsFolder
+            .appending(components: "Mock", "1.2.0")
+
+        try unarchiverFileManager.createDirectory(at: installationDestination, withIntermediateDirectories: true)
         
         let bundle = Bundle.module
         let fixture = Fixture(filename: "MockContent", type: "zip")
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = try sut.unarchive(tool, filePath: URL(filePath: path))
+        try sut.unarchive(filePath: URL(filePath: path), installationDestination: installationDestination)
         
         let fileManager = FileManager.default
-        #expect(fileManager.fileExists(atPath: destination.path))
-        #expect(fileManager.fileExists(atPath: destination.appending(component: "MockContent.txt").path))
+        #expect(fileManager.fileExists(atPath: installationDestination.path))
+        #expect(fileManager.fileExists(atPath: installationDestination.appending(component: "MockContent.txt").path))
     }
 }

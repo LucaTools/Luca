@@ -21,15 +21,12 @@ struct Unarchiver: Unarchiving {
         self.fileManager = fileManager
     }
     
-    func unarchive(_ tool: Tool, filePath: URL) throws -> URL {
-        let destinationFolder = fileManager.toolsFolder
-            .appending(components: tool.name, tool.version)
-
-        try fileManager.createDirectory(at: destinationFolder, withIntermediateDirectories: true)
+    func unarchive(filePath: URL, installationDestination: URL) throws {
+        try fileManager.createDirectory(at: installationDestination, withIntermediateDirectories: true)
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["unzip", "-q", "-o", filePath.path, "-d", destinationFolder.path]
+        process.arguments = ["unzip", "-q", "-o", filePath.path, "-d", installationDestination.path]
 
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
@@ -49,6 +46,5 @@ struct Unarchiver: Unarchiving {
             )
             throw UnarchiverError.failedToUnarchive(error)
         }
-        return destinationFolder
     }
 }
