@@ -30,7 +30,7 @@ struct SymLinker: SymLinking {
 
         let destinationFile = fileManager.toolsFolder
             .appending(components: tool.name, tool.version)
-            .appending(components: tool.binaryPath)
+            .appending(components: tool.desiredBinaryName ?? tool.binaryPath)
 
         if !fileManager.fileExists(atPath: destinationFile.path) {
             throw SymLinkerError.missingBinaryFile(binaryName: tool.binaryName, expectedLocation: destinationFile.path)

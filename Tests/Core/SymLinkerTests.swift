@@ -9,14 +9,13 @@ struct SymLinkerTests {
     private let fileManager: FileManager = .default
     
     @Test
-    func createSymLink_toolExists() throws {
+    func createSymLink_toolExists_binaryPathSpecified() throws {
         let tool = EnrichedTool(
             name: "ToggleGen",
             version: "1.0.0",
-            url: URL(
-                string: "https://example.com"
-            )!,
+            url: URL(string: "https://example.com")!,
             binaryPath: "ToggleGen",
+            desiredBinaryName: nil,
             checksum: nil,
             algorithm: nil
         )
@@ -43,14 +42,14 @@ struct SymLinkerTests {
     }
     
     @Test
-    func createSymLink_toolExists_binaryPathSpecified() throws {
+    func createSymLink_toolExists_desiredBinaryNameSpecified() throws {
+        let desiredBinaryName = "togglegen"
         let tool = EnrichedTool(
             name: "ToggleGen",
             version: "1.0.0",
-            url: URL(
-                string: "https://example.com"
-            )!,
+            url: URL(string: "https://example.com")!,
             binaryPath: "ToggleGen",
+            desiredBinaryName: desiredBinaryName,
             checksum: nil,
             algorithm: nil
         )
@@ -59,7 +58,7 @@ struct SymLinkerTests {
         
         let toolFilePath = symLinkFileManager.toolsFolder
             .appending(components: tool.name, "1.0.0")
-            .appending(components: tool.binaryPath)
+            .appending(components: desiredBinaryName)
         try fileManager.createDirectory(at: toolFilePath.deletingLastPathComponent(), withIntermediateDirectories: true)
         fileManager.createFile(atPath: toolFilePath.path, contents: Data())
         
@@ -81,10 +80,9 @@ struct SymLinkerTests {
         let tool = EnrichedTool(
             name: "ToggleGen",
             version: "1.0.0",
-            url: URL(
-                string: "https://example.com"
-            )!,
+            url: URL(string: "https://example.com")!,
             binaryPath: "bin/ToggleGen",
+            desiredBinaryName: nil,
             checksum: nil,
             algorithm: nil
         )
@@ -115,10 +113,9 @@ struct SymLinkerTests {
         let tool = EnrichedTool(
             name: "ToggleGen",
             version: "1.0.0",
-            url: URL(
-                string: "https://example.com"
-            )!,
+            url: URL(string: "https://example.com")!,
             binaryPath: "ToggleGen",
+            desiredBinaryName: nil,
             checksum: nil,
             algorithm: nil
         )
@@ -149,10 +146,9 @@ struct SymLinkerTests {
         let tool = EnrichedTool(
             name: "ToggleGen",
             version: "1.0.0",
-            url: URL(
-                string: "https://example.com"
-            )!,
+            url: URL(string: "https://example.com")!,
             binaryPath: "bin/ToggleGen",
+            desiredBinaryName: nil,
             checksum: nil,
             algorithm: nil
         )

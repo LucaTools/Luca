@@ -22,8 +22,8 @@ struct ToolFactoryTests {
         )
         
         let spec = Spec(tools: [
-            Tool(name: "ToggleGen", version: "1.0.0", url: toggleGenUrl, binaryPath: nil, checksum: nil, algorithm: nil),
-            Tool(name: "Sourcery", version: "2.2.7", url: sourceryUrl, binaryPath: "bin/sourcery", checksum: nil, algorithm: nil)
+            Tool(name: "ToggleGen", version: "1.0.0", url: toggleGenUrl, binaryPath: nil, desiredBinaryName: nil, checksum: nil, algorithm: nil),
+            Tool(name: "Sourcery", version: "2.2.7", url: sourceryUrl, binaryPath: "bin/sourcery", desiredBinaryName: nil, checksum: nil, algorithm: nil)
         ])
         
         let specString = try YAMLEncoder().encode(spec)
@@ -74,6 +74,7 @@ struct ToolFactoryTests {
                 identifier: "TogglesPlatform/ToggleGen@1.0.0",
                 asset: nil,
                 binaryPath: nil,
+                desiredBinaryName: nil,
                 checksum: nil,
                 algorithm: nil
             )
@@ -108,6 +109,7 @@ struct ToolFactoryTests {
                 identifier: "TogglesPlatform/ToggleGen@1.0.0",
                 asset: asset,
                 binaryPath: nil,
+                desiredBinaryName: nil,
                 checksum: nil,
                 algorithm: nil
             )
@@ -143,6 +145,7 @@ struct ToolFactoryTests {
                 identifier: "TogglesPlatform/ToggleGen@1.0.0",
                 asset: asset,
                 binaryPath: binaryPath,
+                desiredBinaryName: nil,
                 checksum: nil,
                 algorithm: nil
             )
@@ -177,6 +180,7 @@ struct ToolFactoryTests {
                         identifier: "TogglesPlatform/ToggleGen",
                         asset: nil,
                         binaryPath: nil,
+                        desiredBinaryName: nil,
                         checksum: nil,
                         algorithm: nil
                     )
@@ -199,6 +203,7 @@ struct ToolFactoryTests {
                         identifier: "ToggleGen@1.0.0",
                         asset: nil,
                         binaryPath: nil,
+                        desiredBinaryName: nil,
                         checksum: nil,
                         algorithm: nil
                     )
@@ -228,6 +233,7 @@ struct ToolFactoryTests {
                 version: version,
                 url: toggleGenUrl,
                 binaryPath: nil,
+                desiredBinaryName: nil,
                 checksum: nil,
                 algorithm: nil
             )
@@ -265,6 +271,7 @@ struct ToolFactoryTests {
                 version: version,
                 url: toggleGenUrl,
                 binaryPath: binaryPath,
+                desiredBinaryName: nil,
                 checksum: nil,
                 algorithm: nil
             )
