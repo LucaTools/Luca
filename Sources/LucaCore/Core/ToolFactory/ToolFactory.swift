@@ -32,21 +32,23 @@ struct ToolFactory {
         switch installationType {
         case .spec(let specPath):
             return try specLoader.loadSpec(at: specPath).tools
-        case .individual(let identifier, let asset, let binaryPath, let checksum, let algorithm):
+        case .individual(let identifier, let asset, let binaryPath, let desiredBinaryName, let checksum, let algorithm):
             let tool = try await toolForIdentifier(
                 identifier,
                 asset: asset,
                 binaryPath: binaryPath,
+                desiredBinaryName: desiredBinaryName,
                 checksum: checksum,
                 algorithm: algorithm
             )
             return [tool]
-        case .individualInline(let name, let version, let url, let binaryPath, let checksum, let algorithm):
+        case .individualInline(let name, let version, let url, let binaryPath, let desiredBinaryName, let checksum, let algorithm):
             return [Tool(
                 name: name,
                 version: version,
                 url: url,
                 binaryPath: binaryPath,
+                desiredBinaryName: desiredBinaryName,
                 checksum: checksum,
                 algorithm: algorithm
             )]
@@ -55,7 +57,7 @@ struct ToolFactory {
     
     // MARK: - Private
     
-    private func toolForIdentifier(_ identifier: String, asset: String?, binaryPath: String?, checksum: String?, algorithm: ChecksumAlgorithm?) async throws -> Tool {
+    private func toolForIdentifier(_ identifier: String, asset: String?, binaryPath: String?, desiredBinaryName: String?, checksum: String?, algorithm: ChecksumAlgorithm?) async throws -> Tool {
         let components = identifier.split(separator: "@")
         guard components.count == 2,
               let version = components.last.map(String.init) else {
@@ -87,6 +89,7 @@ struct ToolFactory {
             version: version,
             url: releaseAssetUrl,
             binaryPath: binaryPath,
+            desiredBinaryName: desiredBinaryName,
             checksum: checksum,
             algorithm: algorithm
         )

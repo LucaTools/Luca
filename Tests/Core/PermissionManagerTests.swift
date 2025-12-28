@@ -16,10 +16,9 @@ struct PermissionManagerTests {
         let tool = EnrichedTool(
             name: "ToggleGen",
             version: "1.0.0",
-            url: URL(
-                string: "https://example.com"
-            )!,
+            url: URL(string: "https://example.com")!,
             binaryPath: "bin/ToggleGen",
+            desiredBinaryName: nil,
             checksum: nil,
             algorithm: nil
         )
@@ -49,10 +48,9 @@ struct PermissionManagerTests {
         let tool = EnrichedTool(
             name: "ToggleGen",
             version: "1.0.0",
-            url: URL(
-                string: "https://example.com"
-            )!,
+            url: URL(string: "https://example.com")!,
             binaryPath: "bin/ToggleGen",
+            desiredBinaryName: nil,
             checksum: nil,
             algorithm: nil
         )

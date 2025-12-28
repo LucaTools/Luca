@@ -75,6 +75,7 @@ public struct Installer {
             version: tool.version,
             url: tool.url,
             binaryPath: binaryPath,
+            desiredBinaryName: tool.desiredBinaryName,
             checksum: tool.checksum,
             algorithm: tool.algorithm
         )
@@ -129,6 +130,7 @@ public struct Installer {
             version: tool.version,
             url: tool.url,
             binaryPath: binaryPath,
+            desiredBinaryName: nil,
             checksum: tool.checksum,
             algorithm: tool.algorithm
         )
@@ -142,7 +144,10 @@ public struct Installer {
     
     private func installExecutable(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
         try fileManager.createDirectory(at: installationDestination, withIntermediateDirectories: true)
-        let binaryName = tool.name
+        let binaryName: String = {
+            if let binaryName = tool.desiredBinaryName { return binaryName }
+            return tool.name
+        }()
         let destinationFile = installationDestination
             .appending(components: binaryName)
         try fileManager.moveItem(at: downloadedFile, to: destinationFile)
@@ -151,6 +156,7 @@ public struct Installer {
             version: tool.version,
             url: tool.url,
             binaryPath: binaryName,
+            desiredBinaryName: binaryName,
             checksum: nil,
             algorithm: nil
         )
@@ -169,9 +175,12 @@ public struct Installer {
             if let binaryPath = tool.binaryPath {
                 return versionFolder
                     .appending(components: binaryPath)
-            } else {
-                return versionFolder
             }
+            if let desiredBinaryName = tool.desiredBinaryName {
+                return versionFolder
+                    .appending(component: desiredBinaryName)
+            }
+            return versionFolder
         }()
         return fileManager.fileExists(atPath: expectedBinaryLocation.path)
     }

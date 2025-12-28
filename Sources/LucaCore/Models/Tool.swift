@@ -12,6 +12,8 @@ struct Tool: Codable {
     let url: URL
     /// Path (possibly nested) to the binary inside the unzipped archive.
     let binaryPath: String?
+    /// Name of the binary stored locally. Requires `url` to point to an executable file, ignored otherwise.
+    let desiredBinaryName: String?
     /// The checksum hash of asset associated with the tool.
     let checksum: String?
     /// The algorithm used to generate the checksum.
@@ -27,6 +29,8 @@ struct EnrichedTool: Codable {
     let url: URL
     /// Path (possibly nested) to the binary inside the unzipped archive.
     let binaryPath: String
+    /// Name of the binary stored locally. Requires `url` to point to an executable file, ignored otherwise.
+    let desiredBinaryName: String?
     /// The checksum hash of asset associated with the tool.
     let checksum: String?
     /// The algorithm used to generate the checksum.
@@ -34,7 +38,10 @@ struct EnrichedTool: Codable {
     
     /// Basename of the binary derived from `binaryPath` if available, otherwise falls back to `name`.
     var binaryName: String {
-        URL(fileURLWithPath: binaryPath)
+        if let desiredBinaryName {
+            return desiredBinaryName
+        }
+        return URL(fileURLWithPath: binaryPath)
             .lastPathComponent
     }
 }

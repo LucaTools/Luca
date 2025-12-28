@@ -43,6 +43,8 @@ luca install TogglesPlatform/Toggles@1.0.0
 luca install krzysztofzablocki/Sourcery@2.2.7
   --asset sourcery-2.2.7.zip
   --binary-path bin/sourcery
+luca install firebase/firebase-tools@v14.12.1
+  --desired-binary-name firebase
   
 # Inline installations
 
@@ -56,6 +58,12 @@ luca install
   --version 2.2.7
   --url https://github.com/krzysztofzablocki/Sourcery/releases/download/2.2.7/sourcery-2.2.7.zip
   --binary-path bin/sourcery
+
+luca install
+  --name FirebaseCLI
+  --version 14.12.1
+  --url https://github.com/firebase/firebase-tools/releases/download/v14.12.1/firebase-tools-macos
+  --desired-binary-name firebase
 """
     )
 
@@ -80,6 +88,9 @@ luca install
     @Option(help: "Binary path for the asset associated with the release.")
     var binaryPath: String?
     
+    @Option(help: "Name of the binary stored locally. Requires `url` to point to an executable file, ignored otherwise.")
+    var desiredBinaryName: String?
+    
     @Option(help: "Checksum of the asset associated with the release.")
     var checksum: String?
     
@@ -101,6 +112,7 @@ luca install
             version: version,
             url: try toolUrl(for: url),
             binaryPath: binaryPath,
+            desiredBinaryName: desiredBinaryName,
             checksum: checksum,
             algorithm: algorithm
         )
@@ -118,14 +130,14 @@ luca install
     }
     
     private func installationType(for arguments: Arguments) throws -> InstallationType {
-        switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.checksum, arguments.algorithm) {
-        case (let spec, .none, .none, .none, .none, .none, .none, .none, .none):
+        switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.desiredBinaryName, arguments.checksum, arguments.algorithm) {
+        case (let spec, .none, .none, .none, .none, .none, .none, .none, .none, .none):
             let specPath = specPath(providedSpec: spec)
             return .spec(specPath: specPath)
-        case (.none, .some(let identifier), let asset, .none, .none, .none, let binaryPath, let checksum, let algorithm):
-            return .individual(identifier: identifier, asset: asset, binaryPath: binaryPath, checksum: checksum, algorithm: algorithm)
-        case (.none, .none, .none, .some(let name), .some(let version), .some(let url), let binaryPath, let checksum, let algorithm):
-            return .individualInline(name: name, version: version, url: url, binaryPath: binaryPath, checksum: checksum, algorithm: algorithm)
+        case (.none, .some(let identifier), let asset, .none, .none, .none, let binaryPath, let desiredBinaryName, let checksum, let algorithm):
+            return .individual(identifier: identifier, asset: asset, binaryPath: binaryPath, desiredBinaryName: desiredBinaryName, checksum: checksum, algorithm: algorithm)
+        case (.none, .none, .none, .some(let name), .some(let version), .some(let url), let binaryPath, let desiredBinaryName, let checksum, let algorithm):
+            return .individualInline(name: name, version: version, url: url, binaryPath: binaryPath, desiredBinaryName: desiredBinaryName, checksum: checksum, algorithm: algorithm)
         default:
             throw InstallCommandError.invalidCombinationOfArguments(arguments)
         }

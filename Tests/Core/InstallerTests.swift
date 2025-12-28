@@ -28,7 +28,7 @@ struct InstallerTests {
                 .appending(component: tool.name)
                 .appending(components: tool.version)
             let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.name)
+                .appending(component: tool.desiredBinaryName ?? tool.name)
 
             #expect(!fileManager.fileExists(atPath: toolPath.path))
             #expect(!fileManager.fileExists(atPath: toolSymLink.path))
@@ -40,6 +40,7 @@ struct InstallerTests {
                         version: tool.version,
                         url: tool.url,
                         binaryPath: tool.binaryPath,
+                        desiredBinaryName: tool.desiredBinaryName,
                         checksum: tool.checksum,
                         algorithm: tool.algorithm
                     )
@@ -79,7 +80,7 @@ struct InstallerTests {
                 .appending(component: tool.name)
                 .appending(components: tool.version)
             let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.name)
+                .appending(component: tool.desiredBinaryName ?? tool.name)
 
             #expect(fileManager.fileExists(atPath: toolPath.path))
             #expect(fileManager.fileExists(atPath: toolSymLink.path))
@@ -129,7 +130,7 @@ struct InstallerTests {
                 .appending(component: tool.name)
                 .appending(components: tool.version)
             let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.name)
+                .appending(component: tool.desiredBinaryName ?? tool.name)
 
             #expect(fileManager.fileExists(atPath: toolPath.path))
             #expect(fileManager.fileExists(atPath: toolSymLink.path))
