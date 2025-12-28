@@ -39,4 +39,24 @@ struct ReleaseInfoProviderTests {
             try await sut.macOSAsset(for: release)
         }
     }
+
+    @Test
+    func fetchReleaseInfo_executableAsset() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "ExecutableAssets", type: "json")))
+        let sut = ReleaseInfoProvider(dataDownloader: dataDownloader)
+        let release = Release(organization: "TogglesPlatform", repository: "ToggleGen", version: "1.0.0")
+        let asset = try await sut.macOSAsset(for: release)
+        let targetAsset = ReleaseAsset(name: "ToggleGen-macOS", url: "https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-macOS")
+        #expect(asset == targetAsset)
+    }
+    
+    @Test
+    func fetchReleaseInfo_mixedAssets_preferZip() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "MixedAssets", type: "json")))
+        let sut = ReleaseInfoProvider(dataDownloader: dataDownloader)
+        let release = Release(organization: "TogglesPlatform", repository: "ToggleGen", version: "1.0.0")
+        let asset = try await sut.macOSAsset(for: release)
+        let targetAsset = ReleaseAsset(name: "ToggleGen-macOS.zip", url: "https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-macOS.zip")
+        #expect(asset == targetAsset)
+    }
 }
