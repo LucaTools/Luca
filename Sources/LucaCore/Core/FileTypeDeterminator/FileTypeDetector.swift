@@ -51,11 +51,13 @@ struct FileTypeDetector {
             }
         }
         
+        let fileExtension = filePath.pathExtension.lowercased()
+        
         // If we can't determine from the above, check the file extension
-        if filePath.pathExtension.lowercased() == "zip" {
+        if fileExtension == "zip" {
             return .zip
         }
         
-        return .unknown
+        return .unknown(fileExtension: fileExtension)
     }
 }

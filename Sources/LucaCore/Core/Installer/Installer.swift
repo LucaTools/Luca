@@ -5,6 +5,17 @@ import Noora
 
 public struct Installer {
     
+    enum InstallerError: Error, LocalizedError {
+        case unknownFileType(String)
+        
+        var errorDescription: String? {
+            switch self {
+            case .unknownFileType(let fileType):
+                return "Unknown file type (\(fileType))."
+            }
+        }
+    }
+    
     private let fileManager: FileManaging
     private let noora: Noorable
     private let binaryFinder: BinaryFinding
@@ -95,7 +106,8 @@ public struct Installer {
         switch fileType {
         case .zip: try installZip(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
         case .executable: try installExecutable(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
-        case .unknown: print("Warning: Unknown file type. Attempting to treat as executable.")
+        case .unknown(let fileExtension):
+            throw InstallerError.unknownFileType(fileExtension)
         }
         
         print(noora.format("\(.success("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))"))

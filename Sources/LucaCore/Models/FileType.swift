@@ -5,5 +5,5 @@ import Foundation
 enum FileType {
     case zip
     case executable
-    case unknown
+    case unknown(fileExtension: String)
 }
