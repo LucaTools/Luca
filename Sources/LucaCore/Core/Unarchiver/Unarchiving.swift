@@ -3,5 +3,5 @@
 import Foundation
 
 protocol Unarchiving {
-    func unarchive(_ tool: Tool, filePath: URL) throws -> URL
+    func unarchive(filePath: URL, installationDestination: URL) throws
 }

@@ -8,7 +8,7 @@ struct Tool: Codable {
     let name: String
     /// Version string (used to build folder names and allow side‑by‑side installs).
     let version: String
-    /// Remote URL to an archive containing the tool.
+    /// Remote URL to an archive containing the tool or an executable file.
     let url: URL
     /// Path (possibly nested) to the binary inside the unzipped archive.
     let binaryPath: String?
@@ -23,7 +23,7 @@ struct EnrichedTool: Codable {
     let name: String
     /// Version string (used to build folder names and allow side‑by‑side installs).
     let version: String
-    /// Remote URL to a zip archive containing the tool.
+    /// Remote URL to an archive containing the tool or an executable file.
     let url: URL
     /// Path (possibly nested) to the binary inside the unzipped archive.
     let binaryPath: String

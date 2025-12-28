@@ -64,23 +64,29 @@ struct ReleaseInfoProvider: ReleaseInfoProviding {
     
     private func findMacOSAsset(in assets: [ReleaseAsset]) throws -> ReleaseAsset {
         let zipAssets = assets.filter { $0.name.lowercased().hasSuffix(".zip") }
+        if let asset = findBestMatch(in: zipAssets) {
+            return asset
+        }
         
-        let sortedZipAssets = zipAssets.sorted { asset1, asset2 in
+        let executableAssets = assets.filter { URL(fileURLWithPath: $0.name).pathExtension.isEmpty }
+        if let asset = findBestMatch(in: executableAssets) {
+            return asset
+        }
+
+        throw ReleaseInfoProviderError.cannotIdentifyAsset(assets)
+    }
+
+    private func findBestMatch(in assets: [ReleaseAsset]) -> ReleaseAsset? {
+        let sortedAssets = assets.sorted { asset1, asset2 in
             let count1 = macOSKeywords.filter { asset1.name.lowercased().contains($0) }.count
             let count2 = macOSKeywords.filter { asset2.name.lowercased().contains($0) }.count
             return count1 > count2
         }
         
-        let potentialMacOSAssets = sortedZipAssets.filter { asset in
+        return sortedAssets.first { asset in
             macOSKeywords.contains { keyword in
                 asset.name.lowercased().contains(keyword)
             }
         }
-
-        guard let macOSAsset = potentialMacOSAssets.first else {
-            throw ReleaseInfoProviderError.cannotIdentifyAsset(assets)
-        }
-
-        return macOSAsset
     }
 }
