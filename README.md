@@ -49,14 +49,17 @@ cp -f .build/release/luca /usr/local/bin/luca
 ```yaml
 ---
 tools:
-  - name: Tuist
-    binaryPath: tuist
-    version: 4.80.0
-    url: https://github.com/tuist/tuist/releases/download/4.80.0/tuist.zip
+  - name: FirebaseCLI
+    version: 14.12.1
+    url: https://github.com/firebase/firebase-tools/releases/download/v14.12.1/firebase-tools-macos
   - name: SwiftLint
     binaryPath: SwiftLintBinary.artifactbundle/swiftlint-0.61.0-macos/bin/swiftlint
     version: 0.61.0
     url: https://github.com/realm/SwiftLint/releases/download/0.61.0/SwiftLintBinary.artifactbundle.zip
+  - name: Tuist
+    binaryPath: tuist
+    version: 4.80.0
+    url: https://github.com/tuist/tuist/releases/download/4.80.0/tuist.zip
 ```
 
 2. Install the tools:
@@ -114,9 +117,9 @@ The Lucafile is a YAML file with the following structure:
 ---
 tools:
   - name: ToolName              # Logical name for the tool
-    binaryPath: path/to/binary  # Path to the binary within the zip file
     version: 1.2.3              # Version to install
-    url: https://example.com/tool-1.2.3.zip  # URL to download the zip archive
+    url: https://example.com/tool-1.2.3.zip  # Remote URL to an archive containing the tool or an executable file.
+    binaryPath: path/to/binary  # Path to the binary within the archive file, if the release comes as an archive (optional)    
 ```
 
 ## Requirements
