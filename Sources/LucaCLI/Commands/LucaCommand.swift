@@ -11,7 +11,8 @@ struct LucaCommand: AsyncParsableCommand {
         version: version,
         subcommands: [
             InstallCommand.self,
-            UninstallCommand.self
+            UninstallCommand.self,
+            UnlinkCommand.self
         ]
     )
 }
