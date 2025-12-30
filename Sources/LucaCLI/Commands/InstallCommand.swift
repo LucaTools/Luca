@@ -54,6 +54,13 @@ luca install
   --url https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-macOS-universal-binary.zip
 
 luca install
+  --name ToggleGen
+  --version 1.0.0
+  --url https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-macOS-universal-binary.zip
+  --checksum e0a6540d01434f436335a9f48405ffd008020043c9b1c21d38742fc8e7c9fdc3
+  --algorithm sha256
+
+luca install
   --name Sourcery
   --version 2.2.7
   --url https://github.com/krzysztofzablocki/Sourcery/releases/download/2.2.7/sourcery-2.2.7.zip
