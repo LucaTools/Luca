@@ -10,6 +10,7 @@ struct LucaCommand: AsyncParsableCommand {
         abstract: "A modern tool manager that helps you install and manage development tools.",
         version: version,
         subcommands: [
+            CalculateChecksumCommand.self,
             InstallCommand.self,
             UninstallCommand.self,
             UnlinkCommand.self
