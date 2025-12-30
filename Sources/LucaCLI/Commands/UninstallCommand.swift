@@ -5,19 +5,16 @@ import Foundation
 import LucaCore
 import Noora
 
-/// Removes all installed tool versions and active symlinks for the current directory.
+/// Uninstall a specific tool version.
 struct UninstallCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(
         commandName: "uninstall",
-        abstract: "Uninstall the installed tools and the symlinks in the current folder."
+        abstract: "Uninstall a specific tool version."
     )
     
-    @Flag(name: .long, inversion: .prefixedNo, help: "Whether to delete all installed tools at $HOME/\(Constants.toolFolder)")
-    var deleteInstalledTools: Bool = true
-    
-    @Flag(name: .long, inversion: .prefixedNo, help: "Whether to delete the symlinks in the current directory at pwd/\(Constants.toolFolder)")
-    var deleteSymLinks: Bool = true
+    @Argument(help: "The tool to uninstall, optionally with version (e.g. SwiftLint@0.61.0)")
+    var tool: String
 
     private var noora: Noorable { Noora() }
     
@@ -26,10 +23,28 @@ struct UninstallCommand: AsyncParsableCommand {
 
         let fileManager = FileManagerWrapper(fileManager: .default)
         let uninstaller = Uninstaller(fileManager: fileManager, noora: noora)
+        let versionLister = VersionLister(fileManager: fileManager)
         
-        try uninstaller.uninstall(
-            installedTools: deleteInstalledTools,
-            localSymLinks: deleteSymLinks
-        )
+        let components = tool.split(separator: "@")
+        let toolName = String(components[0])
+        
+        if components.count > 1 {
+            let version = String(components[1])
+            try uninstaller.uninstall(tool: toolName, version: version)
+        } else {
+            let versions = try versionLister.listVersions(for: toolName)
+            if versions.isEmpty {
+                print(noora.format("\(.info("💁‍♂️ No versions found for \(toolName)."))"))
+                return
+            }
+            
+            let selectedVersion: String = noora.singleChoicePrompt(
+                title: "Select version",
+                question: "Which version of \(toolName) do you want to uninstall?",
+                options: versions
+            )
+            
+            try uninstaller.uninstall(tool: toolName, version: selectedVersion)
+        }
     }
 }
