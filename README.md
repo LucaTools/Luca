@@ -106,6 +106,14 @@ Or specify the version directly:
 luca uninstall SwiftLint@0.61.0
 ```
 
+### Unlinking tools
+
+Remove a symlink from the current project's `.luca/active` directory:
+
+```bash
+luca unlink swiftlint
+```
+
 ## How It Works
 
 Luca performs the following steps:

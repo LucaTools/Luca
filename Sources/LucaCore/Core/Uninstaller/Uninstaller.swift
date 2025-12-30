@@ -3,8 +3,7 @@
 import Foundation
 import Noora
 
-/// Uninstall previously installed tool versions.
-final public class Uninstaller {
+public struct Uninstaller {
 
     public enum UninstallerError: Error, LocalizedError, Equatable {
         case versionNotFound(tool: String, version: String)
