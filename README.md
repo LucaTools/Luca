@@ -131,10 +131,13 @@ The Lucafile is a YAML file with the following structure:
 ```yaml
 ---
 tools:
-  - name: ToolName              # Logical name for the tool
-    version: 1.2.3              # Version to install
+  - name: ToolName                           # Logical name for the tool
+    version: 1.2.3                           # Version to install
     url: https://example.com/tool-1.2.3.zip  # Remote URL to an archive containing the tool or an executable file.
-    binaryPath: path/to/binary  # Path to the binary within the archive file, if the release comes as an archive (optional)    
+    binaryPath: path/to/binary               # Path to the binary within the archive file, if the release comes as an archive (optional)
+    desiredBinaryName: toolname              # Name of the binary stored locally. Requires `url` to point to an executable file, ignored otherwise. (optional)
+    checksum: e0a6540d01434f436335a9...      # The checksum hash of asset associated with the tool (optional)
+    algorithm: (md5|sha1|sha256|sha512)      # The algorithm used to generate the checksum (optional)
 ```
 
 ## Requirements
