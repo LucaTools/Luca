@@ -1,10 +1,21 @@
-//  Cleaner.swift
+//  Uninstaller.swift
 
 import Foundation
 import Noora
 
-/// Uninstall previously installed tool versions and active symlinks.
+/// Uninstall previously installed tool versions.
 final public class Uninstaller {
+
+    public enum UninstallerError: Error, LocalizedError, Equatable {
+        case versionNotFound(tool: String, version: String)
+        
+        public var errorDescription: String? {
+            switch self {
+            case .versionNotFound(let tool, let version):
+                return "Version '\(version)' of tool '\(tool)' not found."
+            }
+        }
+    }
 
     private let fileManager: FileManaging
     private let noora: Noorable
@@ -14,38 +25,23 @@ final public class Uninstaller {
         self.noora = noora
     }
 
-    public func uninstall(installedTools: Bool, localSymLinks: Bool) throws {
-        if installedTools {
-            try uninstallInstalledTools()
-        }
-        if localSymLinks {
-            try uninstallSymLinks()
-        }
-    }
-    
-    // MARK: - Private
-    
-    /// Remove all versioned installs
-    private func uninstallInstalledTools() throws {
-        let toolsFolder = fileManager.toolsFolder
-        if fileManager.fileExists(atPath: toolsFolder.path) {
-            print(noora.format("\(.raw("👀 Uninstalling all installed tools..."))"))
-                try fileManager.removeItem(atPath: toolsFolder.path)
-            print(noora.format("\(.success("🙌 All tools have been uninstallad."))"))
+    public func uninstall(tool: String, version: String) throws {
+        let versionFolder = fileManager.toolsFolder
+            .appending(component: tool)
+            .appending(component: version)
+        
+        if fileManager.fileExists(atPath: versionFolder.path) {
+            print(noora.format("\(.raw("👀 Uninstalling \(tool) \(version)..."))"))
+            try fileManager.removeItem(at: versionFolder)
+            print(noora.format("\(.success("🙌 \(tool) \(version) has been uninstalled."))"))
+            
+            // Clean up tool folder if empty
+            let toolFolder = fileManager.toolsFolder.appending(component: tool)
+            if let contents = try? fileManager.contentsOfDirectory(at: toolFolder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles), contents.isEmpty {
+                try? fileManager.removeItem(at: toolFolder)
+            }
         } else {
-            print(noora.format("\(.info("💁‍♂️ No tools installad. Nothing to uninstall."))"))
-        }
-    }
-
-    /// Remove all active symlinks
-    private func uninstallSymLinks() throws {
-        let activeFolder = fileManager.activeFolder
-        if fileManager.fileExists(atPath: activeFolder.path) {
-            print(noora.format("\(.raw("👀 Deleting symlinks for current project..."))"))
-            try fileManager.removeItem(atPath: activeFolder.path)
-            print(noora.format("\(.success("🙌 All symlinks for current project have been deleted."))"))
-        } else {
-            print(noora.format("\(.info("💁‍♀️ No symlinks present. Nothing to delete."))"))
+            throw UninstallerError.versionNotFound(tool: tool, version: version)
         }
     }
 }

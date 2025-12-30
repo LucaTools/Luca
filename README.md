@@ -42,7 +42,7 @@ cp -f .build/release/luca /usr/local/bin/luca
 
 ## Usage
 
-### Using a Lucafile
+### Installing tools using a Lucafile
 
 1. Create a `Lucafile` in your project directory:
 
@@ -68,7 +68,7 @@ tools:
 luca install
 ```
 
-### Installing Directly from GitHub
+### Installing tools directly from GitHub
 
 You can also install tools directly from GitHub releases by specifying the organization, repository, and version:
 
@@ -91,12 +91,19 @@ tuist --help
 swiftlint --help
 ```
 
-### Uninstall installed tools
+### Uninstalling tools
 
-Remove all installed tools and symlinks:
+Uninstall a specific tool version:
 
 ```bash
-luca uninstall
+luca uninstall SwiftLint
+# Prompts to select a version to uninstall
+```
+
+Or specify the version directly:
+
+```bash
+luca uninstall SwiftLint@0.61.0
 ```
 
 ## How It Works
