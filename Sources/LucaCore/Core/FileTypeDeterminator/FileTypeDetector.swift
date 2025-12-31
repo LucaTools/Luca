@@ -6,7 +6,7 @@ struct FileTypeDetector {
     
     let fileManager: FileTypeDetectorFileManaging
     
-    func detectFileType(at filePath: URL) throws -> FileType {
+    func detectFileType(at filePath: URL) throws -> FileType? {
         // Check the file signature (magic numbers)
         let fileHandle = try FileHandle(forReadingFrom: filePath)
         defer { fileHandle.closeFile() }
@@ -16,6 +16,11 @@ struct FileTypeDetector {
         // Check if it's a zip file (PK magic number)
         if magicNumbers.count >= 2 && magicNumbers[0] == 0x50 && magicNumbers[1] == 0x4B {
             return .zip
+        }
+
+        // Check if it's a GZIP file (GZIP magic number)
+        if magicNumbers.count >= 2 && magicNumbers[0] == 0x1F && magicNumbers[1] == 0x8B {
+            return .targz
         }
         
         // Check if it's executable
@@ -51,13 +56,17 @@ struct FileTypeDetector {
             }
         }
         
+        // If we can't determine from the above, rely on the file extension
         let fileExtension = filePath.pathExtension.lowercased()
         
-        // If we can't determine from the above, check the file extension
         if fileExtension == "zip" {
             return .zip
         }
         
-        return .unknown(fileExtension: fileExtension)
+        if fileExtension == "gz" {
+            return .targz
+        }
+        
+        return nil
     }
 }

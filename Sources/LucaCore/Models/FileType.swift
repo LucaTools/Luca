@@ -2,8 +2,8 @@
 
 import Foundation
 
-enum FileType {
+enum FileType: String {
     case zip
+    case targz
     case executable
-    case unknown(fileExtension: String)
 }

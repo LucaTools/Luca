@@ -6,10 +6,12 @@ import Testing
 
 struct UnarchiverTests {
     
-    @Test
-    func unarchive_zip() throws {
+    @Test(arguments: ["zip", "tar.gz"])
+    func unarchive(archiveType: String) throws {
         let unarchiverFileManager = UnarchiverFileManagerMock(fileManager: .default)
-        let sut = Unarchiver(fileManager: unarchiverFileManager)
+        let fileTypeDetectorFileManager = FileTypeDetectorFileManagerMock(fileManager: .default)
+        let fileTypeDetector = FileTypeDetector(fileManager: fileTypeDetectorFileManager)
+        let sut = Unarchiver(fileManager: unarchiverFileManager, fileTypeDetector: fileTypeDetector)
         
         let installationDestination = unarchiverFileManager.toolsFolder
             .appending(components: "Mock", "1.2.0")
@@ -17,7 +19,7 @@ struct UnarchiverTests {
         try unarchiverFileManager.createDirectory(at: installationDestination, withIntermediateDirectories: true)
         
         let bundle = Bundle.module
-        let fixture = Fixture(filename: "MockContent", type: "zip")
+        let fixture = Fixture(filename: "MockContent", type: archiveType)
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
         try sut.unarchive(filePath: URL(filePath: path), installationDestination: installationDestination)
