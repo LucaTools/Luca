@@ -10,8 +10,8 @@ public struct Installer {
         
         var errorDescription: String? {
             switch self {
-            case .unknownFileType(let fileType):
-                return "Unknown file type (\(fileType))."
+            case .unknownFileType(let file):
+                return "Unknown file type for file \(file))."
             }
         }
     }
@@ -99,25 +99,27 @@ public struct Installer {
         }
 
         let fileTypeDetector = FileTypeDetector(fileManager: fileManager)
-        let fileType = try fileTypeDetector.detectFileType(at: downloadedFile)
+        guard let fileType = try fileTypeDetector.detectFileType(at: downloadedFile) else {
+            throw InstallerError.unknownFileType(downloadedFile.path)
+        }
         
         let installationDestination = fileManager.toolsFolder
             .appending(components: tool.name, tool.version)
         
         switch fileType {
-        case .zip: try installZip(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
+        case .zip, .targz: try installArchive(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
         case .executable: try installExecutable(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
-        case .unknown(let fileExtension):
-            throw InstallerError.unknownFileType(fileExtension)
         }
         
         print(noora.format("\(.success("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))"))
     }
     
-    private func installZip(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
+    private func installArchive(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
         print(noora.format("\(.raw("📦 Unarchiving \(tool.name) version \(tool.version)..."))"))
         
-        let unarchiver = Unarchiver(fileManager: fileManager)
+        let fileTypeDetector = FileTypeDetector(fileManager: fileManager)
+        
+        let unarchiver = Unarchiver(fileManager: fileManager, fileTypeDetector: fileTypeDetector)
         try unarchiver.unarchive(filePath: downloadedFile, installationDestination: installationDestination)
         
         let binaryPath: String = try {
