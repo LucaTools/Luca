@@ -29,7 +29,7 @@ struct InstalledCommand: AsyncParsableCommand {
         
         for tool in sortedTools {
             if let versions = installedTools[tool] {
-                print(noora.format("\(.raw("\(tool):"))"))
+                print(noora.format("\(.primary("\(tool):"))"))
                 for version in versions {
                     print(noora.format("\(.raw("  - \(version)"))"))
                 }
