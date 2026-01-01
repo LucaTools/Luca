@@ -108,16 +108,41 @@ luca uninstall SwiftLint@0.61.0
 
 ### Listing installed tools
 
-List all tools and versions installed in the local cache:
+List all tools and versions installed:
 
 ```bash
 luca installed
 
+FirebaseCLI:
+  - 14.12.1
+Sourcery:
+  - 2.2.5
 SwiftLint:
   - 0.53.0
   - 0.62.0
 tuist:
   - 4.78.0
+```
+
+### Listing linked tools
+
+List the tools linked in a project:
+
+```bash
+luca linked
+
+FirebaseCLI:
+  version: 14.12.1
+  binary: firebasee
+  location: /Users/alberto/.luca/tools/FirebaseCLI/14.12.1/firebasee
+Sourcery:
+  version: 2.2.5
+  binary: sourcery
+  location: /Users/alberto/.luca/tools/Sourcery/2.2.5/bin/sourcery
+tuist:
+  version: 4.78.0
+  binary: tuist
+  location: /Users/alberto/.luca/tools/tuist/4.78.0/tuist
 ```
 
 ### Unlinking tools
