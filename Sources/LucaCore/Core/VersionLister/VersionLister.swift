@@ -19,7 +19,7 @@ public final class VersionLister {
         self.fileManager = fileManager
     }
 
-    public func listVersions(for tool: String) throws -> [String] {
+    public func versions(for tool: String) throws -> [String] {
         let toolFolder = fileManager.toolsFolder.appending(component: tool)
         guard fileManager.fileExists(atPath: toolFolder.path) else {
             throw VersionListerError.toolNotFound(tool: tool)
