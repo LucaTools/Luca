@@ -106,6 +106,20 @@ Or specify the version directly:
 luca uninstall SwiftLint@0.61.0
 ```
 
+### Listing installed tools
+
+List all tools and versions installed in the local cache:
+
+```bash
+luca installed
+
+SwiftLint:
+  - 0.53.0
+  - 0.62.0
+tuist:
+  - 4.78.0
+```
+
 ### Unlinking tools
 
 Remove a symlink from the current project's `.luca/active` directory:

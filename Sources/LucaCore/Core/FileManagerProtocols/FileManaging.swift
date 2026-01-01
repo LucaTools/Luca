@@ -6,6 +6,7 @@ public protocol FileManaging:
     BinaryFinderFileManaging,
     ChecksumValidatorFileManaging,
     FileTypeDetectorFileManaging,
+    InstalledToolsFileManaging,
     PermissionManagerFileManaging,
     SymLinkFileManaging,
     UnarchiverFileManaging {

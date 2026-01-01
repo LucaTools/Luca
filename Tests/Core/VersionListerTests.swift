@@ -12,7 +12,7 @@ struct VersionListerTests {
         let versionLister = VersionLister(fileManager: fileManager)
         
         #expect(throws: VersionLister.VersionListerError.toolNotFound(tool: "NonExistentTool")) {
-            try versionLister.listVersions(for: "NonExistentTool")
+            try versionLister.versions(for: "NonExistentTool")
         }
     }
     
@@ -32,7 +32,7 @@ struct VersionListerTests {
             try fileManager.createDirectory(at: versionFolder, withIntermediateDirectories: true)
         }
         
-        let listedVersions = try versionLister.listVersions(for: toolName)
+        let listedVersions = try versionLister.versions(for: toolName)
         
         #expect(listedVersions.sorted() == versions.sorted())
     }

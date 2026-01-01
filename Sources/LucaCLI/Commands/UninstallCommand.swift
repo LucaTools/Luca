@@ -32,7 +32,7 @@ struct UninstallCommand: AsyncParsableCommand {
             let version = String(components[1])
             try uninstaller.uninstall(tool: toolName, version: version)
         } else {
-            let versions = try versionLister.listVersions(for: toolName)
+            let versions = try versionLister.versions(for: toolName)
             if versions.isEmpty {
                 print(noora.format("\(.info("💁‍♂️ No versions found for \(toolName)."))"))
                 return
