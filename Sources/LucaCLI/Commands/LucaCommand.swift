@@ -12,6 +12,7 @@ struct LucaCommand: AsyncParsableCommand {
         subcommands: [
             CalculateChecksumCommand.self,
             InstallCommand.self,
+            InstalledCommand.self,
             UninstallCommand.self,
             UnlinkCommand.self
         ]
