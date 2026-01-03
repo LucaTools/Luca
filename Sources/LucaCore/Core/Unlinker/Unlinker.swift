@@ -19,7 +19,7 @@ public struct Unlinker {
     private let fileManager: FileManaging
     private let noora: Noorable
     
-    public init(fileManager: FileManaging, noora: Noorable = Noora()) {
+    public init(fileManager: FileManaging, noora: Noorable) {
         self.fileManager = fileManager
         self.noora = noora
     }

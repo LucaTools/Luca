@@ -12,9 +12,8 @@ struct LinkedCommand: AsyncParsableCommand {
         abstract: "List tools linked in the current project."
     )
     
-    private var noora: Noorable { Noora() }
-    
     func run() async throws {
+        let noora = Noora()
         let fileManager = FileManagerWrapper()
         let lister = LinkedToolsLister(fileManager: fileManager)
         

@@ -7,7 +7,7 @@ struct UnlinkerTests {
     @Test
     func unlink_success() throws {
         let fileManager = FileManagerWrapperMock()
-        let unlinker = Unlinker(fileManager: fileManager)
+        let unlinker = Unlinker(fileManager: fileManager, noora: NooraMock())
         
         let symlinkName = "mytool"
         let symlinkFile = fileManager.activeFolder.appending(component: symlinkName)
@@ -26,7 +26,7 @@ struct UnlinkerTests {
     @Test
     func unlink_symlinkNotFound() throws {
         let fileManager = FileManagerWrapperMock()
-        let unlinker = Unlinker(fileManager: fileManager)
+        let unlinker = Unlinker(fileManager: fileManager, noora: NooraMock())
         
         let symlinkName = "nonexistent"
         

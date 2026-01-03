@@ -104,9 +104,8 @@ luca install
     @Option(help: "Algorithm to use to verify the integrity of the asset.")
     var algorithm: ChecksumAlgorithm?
 
-    private var noora: Noorable { Noora() }
-    
     func run() async throws {
+        let noora = Noora()
         Header(noora: noora).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)
