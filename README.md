@@ -194,6 +194,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+You can also contribute by buying me a coffee and letting me know on the socials [X](https://x.com/albertodebo) / [Bluesky](https://bsky.app/profile/albertodebo.bsky.social) 😉
+
+[![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)]([www.buymeacoffee.com](https://www.buymeacoffee.com/albertodebortoli))
+
+
 ## License
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
