@@ -16,9 +16,8 @@ struct UnlinkCommand: AsyncParsableCommand {
     @Argument(help: "The name of the symlink to remove (e.g. swiftlint)")
     var symlink: String
 
-    private var noora: Noorable { Noora() }
-    
     func run() async throws {
+        let noora = Noora()
         Header(noora: noora).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)

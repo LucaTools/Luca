@@ -12,9 +12,8 @@ struct InstalledCommand: AsyncParsableCommand {
         abstract: "List installed tools and versions."
     )
     
-    private var noora: Noorable { Noora() }
-    
     func run() async throws {
+        let noora = Noora()
         let fileManager = FileManagerWrapper()
         let lister = InstalledToolsLister(fileManager: fileManager)
         

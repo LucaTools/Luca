@@ -25,7 +25,7 @@ public struct Installer {
     private let permissionManager: PermissionManaging
     private let symLinker: SymLinking
     
-    public init(fileManager: FileManaging, noora: Noorable = Noora()) {
+    public init(fileManager: FileManaging, noora: Noorable) {
         self.fileManager = fileManager
         self.noora = noora
         self.binaryFinder = BinaryFinder(fileManager: fileManager)

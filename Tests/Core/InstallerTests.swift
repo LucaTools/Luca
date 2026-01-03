@@ -15,7 +15,7 @@ struct InstallerTests {
       
     @Test(arguments: ["Lucafile_valid", "Lucafile_valid_missingBinaryPath"])
     func test_installIndividuals(filename: String) async throws {
-        let installer = Installer(fileManager: fileManager)
+        let installer = Installer(fileManager: fileManager, noora: NooraMock())
         
         let fixture = Fixture(filename: filename, type: "yml")
         let bundle = Bundle.module
@@ -65,7 +65,7 @@ struct InstallerTests {
     
     @Test(arguments: ["Lucafile_valid", "Lucafile_valid_missingBinaryPath"])
     func test_installSpec(filename: String) async throws {
-        let installer = Installer(fileManager: fileManager)
+        let installer = Installer(fileManager: fileManager, noora: NooraMock())
         
         let fixture = Fixture(filename: filename, type: "yml")
         let bundle = Bundle.module
@@ -101,7 +101,7 @@ struct InstallerTests {
     
     @Test
     func test_installInvalid() async throws {
-        let installer = Installer(fileManager: fileManager)
+        let installer = Installer(fileManager: fileManager, noora: NooraMock())
         
         let fixture = Fixture(filename: "Lucafile_invalid", type: "yml")
         let bundle = Bundle.module
@@ -114,7 +114,7 @@ struct InstallerTests {
     
     @Test
     func test_reinstallSpec() async throws {
-        let installer = Installer(fileManager: fileManager)
+        let installer = Installer(fileManager: fileManager, noora: NooraMock())
         
         let fixture = Fixture(filename: "Lucafile_valid", type: "yml")
         let bundle = Bundle.module
@@ -151,7 +151,7 @@ struct InstallerTests {
     
     @Test
     func test_installToolUpgradeVersion() async throws {
-        let installer = Installer(fileManager: fileManager)
+        let installer = Installer(fileManager: fileManager, noora: NooraMock())
         
         let lowVersionFixture = Fixture(filename: "Lucafile_LowVersion", type: "yml")
         let highVersionFixture = Fixture(filename: "Lucafile_HighVersion", type: "yml")
@@ -185,7 +185,7 @@ struct InstallerTests {
     
     @Test
     func test_installToolDowngradeVersion() async throws {
-        let installer = Installer(fileManager: fileManager)
+        let installer = Installer(fileManager: fileManager, noora: NooraMock())
         
         let lowVersionFixture = Fixture(filename: "Lucafile_LowVersion", type: "yml")
         let highVersionFixture = Fixture(filename: "Lucafile_HighVersion", type: "yml")

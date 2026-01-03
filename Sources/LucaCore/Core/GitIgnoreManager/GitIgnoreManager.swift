@@ -8,7 +8,7 @@ public struct GitIgnoreManager {
     private let fileManager: GitIgnoreFileManaging
     private let noora: Noorable
     
-    public init(fileManager: GitIgnoreFileManaging, noora: Noorable = Noora()) {
+    public init(fileManager: GitIgnoreFileManaging, noora: Noorable) {
         self.fileManager = fileManager
         self.noora = noora
     }

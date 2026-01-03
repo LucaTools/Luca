@@ -16,9 +16,8 @@ struct UninstallCommand: AsyncParsableCommand {
     @Argument(help: "The tool to uninstall, optionally with version (e.g. SwiftLint@0.61.0)")
     var tool: String
 
-    private var noora: Noorable { Noora() }
-    
     func run() async throws {
+        let noora = Noora()
         Header(noora: noora).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)
