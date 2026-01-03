@@ -78,4 +78,12 @@ public struct FileManagerWrapper: FileManaging {
     public func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] {
         try fileManager.attributesOfItem(atPath: path)
     }
+    
+    public func readString(at url: URL) throws -> String {
+        try String(contentsOf: url, encoding: .utf8)
+    }
+    
+    public func writeString(_ content: String, to url: URL) throws {
+        try content.write(to: url, atomically: true, encoding: .utf8)
+    }
 }

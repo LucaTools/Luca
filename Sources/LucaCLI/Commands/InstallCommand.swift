@@ -124,6 +124,10 @@ luca install
             algorithm: algorithm
         )
         let installationType = try installationType(for: arguments)
+        
+        let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, noora: noora)
+        try gitIgnoreManager.ensureGitIgnoreIncludesActiveFolder()
+        
         try await installer.install(installationType: installationType)
     }
     
