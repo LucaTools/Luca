@@ -1,16 +1,15 @@
 //  GitIgnoreManager.swift
 
 import Foundation
-import Noora
 
 public struct GitIgnoreManager {
     
     private let fileManager: GitIgnoreFileManaging
-    private let noora: Noorable
+    private let printer: Printing
     
-    public init(fileManager: GitIgnoreFileManaging, noora: Noorable) {
+    public init(fileManager: GitIgnoreFileManaging, printer: Printing) {
         self.fileManager = fileManager
-        self.noora = noora
+        self.printer = printer
     }
     
     public func ensureGitIgnoreIncludesActiveFolder() throws {
@@ -29,12 +28,12 @@ public struct GitIgnoreManager {
             if !content.contains(entryToAdd) {
                 let newContent = content.hasSuffix("\n") ? content + entryToAdd + "\n" : content + "\n" + entryToAdd + "\n"
                 try fileManager.writeString(newContent, to: gitIgnoreFile)
-                print(noora.format("\(.raw("🙈 Added \(entryToAdd) to .gitignore"))"))
+                printer.printFormatted("\(.raw("🙈 Added \(entryToAdd) to .gitignore"))")
             }
         } else {
             let content = entryToAdd + "\n"
             try fileManager.writeString(content, to: gitIgnoreFile)
-            print(noora.format("\(.raw("🙈 Created .gitignore with \(entryToAdd)"))"))
+            printer.printFormatted("\(.raw("🙈 Created .gitignore with \(entryToAdd)"))")
         }
     }
 }

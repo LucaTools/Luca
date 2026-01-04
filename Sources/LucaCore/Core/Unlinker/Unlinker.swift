@@ -1,7 +1,6 @@
 //  Unlinker.swift
 
 import Foundation
-import Noora
 
 public struct Unlinker {
 
@@ -17,19 +16,19 @@ public struct Unlinker {
     }
 
     private let fileManager: FileManaging
-    private let noora: Noorable
+    private let printer: Printing
     
-    public init(fileManager: FileManaging, noora: Noorable) {
+    public init(fileManager: FileManaging, printer: Printing) {
         self.fileManager = fileManager
-        self.noora = noora
+        self.printer = printer
     }
 
     public func unlink(symlink: String) throws {
         let symlinkFile = fileManager.activeFolder.appending(component: symlink)
         if fileManager.fileExists(atPath: symlinkFile.path) {
-            print(noora.format("\(.raw("👀 Removing symlink \(symlink)..."))"))
+            printer.printFormatted("\(.raw("👀 Removing symlink \(symlink)..."))")
             try fileManager.removeItem(at: symlinkFile)
-            print(noora.format("\(.success("🙌 Symlink \(symlink) has been removed."))"))
+            printer.printFormatted("\(.success("🙌 Symlink \(symlink) has been removed."))")
         } else {
             throw UninstallerError.symlinkNotFound(symlink: symlink)
         }

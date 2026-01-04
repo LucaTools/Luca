@@ -1,11 +1,11 @@
 //  Header.swift
 
 import Foundation
-import Noora
+import LucaCore
 
 struct Header {
 
-    let noora: Noorable
+    let printer: Printer
 
     func printHeader() {
         let asciiHeader = """
@@ -24,6 +24,6 @@ struct Header {
         
         let fullHeader = asciiHeader + "\n" + paddedVersion
         
-        print(noora.format("\(.accent(fullHeader))"))
+        printer.printFormatted("\(.accent(fullHeader))")
     }
 }

@@ -17,11 +17,12 @@ struct UninstallCommand: AsyncParsableCommand {
     var tool: String
 
     func run() async throws {
+        let printer = Printer()
         let noora = Noora()
-        Header(noora: noora).printHeader()
+        Header(printer: printer).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)
-        let uninstaller = Uninstaller(fileManager: fileManager, noora: noora)
+        let uninstaller = Uninstaller(fileManager: fileManager, printer: printer)
         let versionLister = VersionLister(fileManager: fileManager)
         
         let components = tool.split(separator: "@")
@@ -33,7 +34,7 @@ struct UninstallCommand: AsyncParsableCommand {
         } else {
             let versions = try versionLister.versions(for: toolName)
             if versions.isEmpty {
-                print(noora.format("\(.info("💁‍♂️ No versions found for \(toolName)."))"))
+                printer.printFormatted("\(.info("💁‍♂️ No versions found for \(toolName)."))")
                 return
             }
             

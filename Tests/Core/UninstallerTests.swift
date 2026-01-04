@@ -7,7 +7,7 @@ struct UninstallerTests {
     @Test
     func uninstall_success() throws {
         let fileManager = FileManagerWrapperMock()
-        let uninstaller = Uninstaller(fileManager: fileManager, noora: NooraMock())
+        let uninstaller = Uninstaller(fileManager: fileManager, printer: PrinterMock())
         
         let toolName = "MyTool"
         let version = "1.0.0"
@@ -28,7 +28,7 @@ struct UninstallerTests {
     @Test
     func uninstall_versionNotFound() throws {
         let fileManager = FileManagerWrapperMock()
-        let uninstaller = Uninstaller(fileManager: fileManager, noora: NooraMock())
+        let uninstaller = Uninstaller(fileManager: fileManager, printer: PrinterMock())
         
         let toolName = "MyTool"
         let version = "1.0.0"
@@ -41,7 +41,7 @@ struct UninstallerTests {
     @Test
     func uninstall_removesEmptyToolFolder() throws {
         let fileManager = FileManagerWrapperMock()
-        let uninstaller = Uninstaller(fileManager: fileManager, noora: NooraMock())
+        let uninstaller = Uninstaller(fileManager: fileManager, printer: PrinterMock())
         
         let toolName = "MyTool"
         let version = "1.0.0"
@@ -59,7 +59,7 @@ struct UninstallerTests {
     @Test
     func uninstall_keepsNonEmptyToolFolder() throws {
         let fileManager = FileManagerWrapperMock()
-        let uninstaller = Uninstaller(fileManager: fileManager, noora: NooraMock())
+        let uninstaller = Uninstaller(fileManager: fileManager, printer: PrinterMock())
         
         let toolName = "MyTool"
         let version1 = "1.0.0"
