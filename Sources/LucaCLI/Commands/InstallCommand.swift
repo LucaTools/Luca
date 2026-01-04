@@ -3,7 +3,6 @@
 import ArgumentParser
 import Foundation
 import LucaCore
-import Noora
 import Yams
 
 extension ChecksumAlgorithm: @retroactive ExpressibleByArgument {}
@@ -105,11 +104,11 @@ luca install
     var algorithm: ChecksumAlgorithm?
 
     func run() async throws {
-        let noora = Noora()
-        Header(noora: noora).printHeader()
+        let printer = Printer()
+        Header(printer: printer).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)
-        let installer = Installer(fileManager: fileManager, noora: noora)
+        let installer = Installer(fileManager: fileManager, printer: printer)
         let arguments = Arguments(
             spec: spec,
             identifier: identifier,
@@ -124,7 +123,7 @@ luca install
         )
         let installationType = try installationType(for: arguments)
         
-        let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, noora: noora)
+        let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
         try gitIgnoreManager.ensureGitIgnoreIncludesActiveFolder()
         
         try await installer.install(installationType: installationType)

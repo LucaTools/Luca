@@ -1,7 +1,6 @@
 //  Uninstaller.swift
 
 import Foundation
-import Noora
 
 public struct Uninstaller {
 
@@ -17,11 +16,11 @@ public struct Uninstaller {
     }
 
     private let fileManager: FileManaging
-    private let noora: Noorable
+    private let printer: Printing
     
-    public init(fileManager: FileManaging, noora: Noorable) {
+    public init(fileManager: FileManaging, printer: Printing) {
         self.fileManager = fileManager
-        self.noora = noora
+        self.printer = printer
     }
 
     public func uninstall(tool: String, version: String) throws {
@@ -30,9 +29,9 @@ public struct Uninstaller {
             .appending(component: version)
         
         if fileManager.fileExists(atPath: versionFolder.path) {
-            print(noora.format("\(.raw("👀 Uninstalling \(tool) \(version)..."))"))
+            printer.printFormatted("\(.raw("👀 Uninstalling \(tool) \(version)..."))")
             try fileManager.removeItem(at: versionFolder)
-            print(noora.format("\(.success("🙌 \(tool) \(version) has been uninstalled."))"))
+            printer.printFormatted("\(.success("🙌 \(tool) \(version) has been uninstalled."))")
             
             // Clean up tool folder if empty
             let toolFolder = fileManager.toolsFolder.appending(component: tool)

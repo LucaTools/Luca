@@ -3,7 +3,6 @@
 import ArgumentParser
 import Foundation
 import LucaCore
-import Noora
 
 /// Removes a specific symlink from the active folder.
 struct UnlinkCommand: AsyncParsableCommand {
@@ -17,11 +16,11 @@ struct UnlinkCommand: AsyncParsableCommand {
     var symlink: String
 
     func run() async throws {
-        let noora = Noora()
-        Header(noora: noora).printHeader()
+        let printer = Printer()
+        Header(printer: printer).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)
-        let unlinker = Unlinker(fileManager: fileManager, noora: noora)
+        let unlinker = Unlinker(fileManager: fileManager, printer: printer)
         
         try unlinker.unlink(symlink: symlink)
     }

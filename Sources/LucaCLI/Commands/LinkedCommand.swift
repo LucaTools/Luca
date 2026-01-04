@@ -3,7 +3,6 @@
 import ArgumentParser
 import Foundation
 import LucaCore
-import Noora
 
 struct LinkedCommand: AsyncParsableCommand {
     
@@ -13,22 +12,22 @@ struct LinkedCommand: AsyncParsableCommand {
     )
     
     func run() async throws {
-        let noora = Noora()
+        let printer = Printer()
         let fileManager = FileManagerWrapper()
         let lister = LinkedToolsLister(fileManager: fileManager)
         
         let linkedTools = try lister.linkedTools()
         
         if linkedTools.isEmpty {
-            print(noora.format("\(.info("No tools linked in the current project."))"))
+            printer.printFormatted("\(.info("No tools linked in the current project."))")
             return
         }
         
         for tool in linkedTools.sorted(by: { $0.name < $1.name }) {
-            print(noora.format("\(.primary("\(tool.name):"))"))
-            print(noora.format("\(.raw("  version: \(tool.version)"))"))
-            print(noora.format("\(.raw("  binary: \(tool.binaryName)"))"))
-            print(noora.format("\(.raw("  location: \(tool.path)"))"))
+            printer.printFormatted("\(.primary("\(tool.name):"))")
+            printer.printFormatted("\(.raw("  version: \(tool.version)"))")
+            printer.printFormatted("\(.raw("  binary: \(tool.binaryName)"))")
+            printer.printFormatted("\(.raw("  location: \(tool.path)"))")
         }
     }
 }

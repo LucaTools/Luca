@@ -11,7 +11,7 @@ final class GitIgnoreManagerTests: XCTestCase {
     override func setUp() {
         super.setUp()
         fileManager = FileManagerWrapperMock()
-        sut = GitIgnoreManager(fileManager: fileManager, noora: NooraMock())
+        sut = GitIgnoreManager(fileManager: fileManager, printer: PrinterMock())
     }
     
     override func tearDown() {
