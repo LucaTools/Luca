@@ -16,8 +16,8 @@ struct Downloader: Downloading {
     }
     
     enum SupportedFileTypes: String, CaseIterable {
-        case zip
-        case unknown = ""
+        case zip = "zip"
+        case targz = "tar.gz"
     }
     
     private var fileDownloader: FileDownloading
@@ -27,9 +27,14 @@ struct Downloader: Downloading {
     }
     
     func downloadRelease(at url: URL) async throws -> URL {
-        guard SupportedFileTypes(rawValue: url.pathExtension) != nil else {
-            throw DownloaderError.unsupportedFileType(url)
+        if SupportedFileTypes.allCases.contains(where: {
+            url.lastPathComponent.hasSuffix($0.rawValue)
+        }) == false {
+            if url.pathExtension != "" {
+                throw DownloaderError.unsupportedFileType(url)
+            }
         }
+        
         let (tempDownloadURL, _) = try await fileDownloader.download(from: url)
         return tempDownloadURL
     }
