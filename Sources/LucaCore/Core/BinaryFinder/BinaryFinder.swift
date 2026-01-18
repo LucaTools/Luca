@@ -16,7 +16,7 @@ struct BinaryFinder: BinaryFinding {
             case .cannotEnumerateDirectory(let path):
                 return "Could not enumerate directories at \(path)"
             case .missingBinaryFile(let location):
-                return "Could not fing binary at \(location)."
+                return "Could not find binary at \(location)."
             }
         }
     }

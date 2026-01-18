@@ -70,6 +70,7 @@ luca install
   --version 14.12.1
   --url https://github.com/firebase/firebase-tools/releases/download/v14.12.1/firebase-tools-macos
   --desired-binary-name firebase
+  --ignore-arch-check
 """
     )
 
@@ -102,13 +103,16 @@ luca install
     
     @Option(help: "Algorithm to use to verify the integrity of the asset.")
     var algorithm: ChecksumAlgorithm?
+    
+    @Flag(help: "Skip architecture compatibility validation during installation.")
+    var ignoreArchCheck: Bool = false
 
     func run() async throws {
         let printer = Printer()
         Header(printer: printer).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)
-        let installer = Installer(fileManager: fileManager, printer: printer)
+        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: ignoreArchCheck, printer: printer)
         let arguments = Arguments(
             spec: spec,
             identifier: identifier,
