@@ -7,7 +7,7 @@ on:
 
 env:
   TOOL_NAME: Luca
-  XCODE_VERSION: 16.4.0 # Keep aligned with other workflows
+  XCODE_VERSION: 26.2.0 # Keep aligned with other workflows
 
 jobs:
   build-macos:
