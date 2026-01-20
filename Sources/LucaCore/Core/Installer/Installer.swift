@@ -19,20 +19,24 @@ public struct Installer {
     private let printer: Printing
     private let binaryFinder: BinaryFinding
     private let checksumValidator: ChecksumValidating
+    private let architectureValidator: ArchitectureValidating
     private let fileDownloader: FileDownloading
     private let downloader: Downloading
     private let permissionManager: PermissionManaging
     private let symLinker: SymLinking
+    private let ignoreArchitectureCheck: Bool
     
-    public init(fileManager: FileManaging, printer: Printing) {
+    public init(fileManager: FileManaging, ignoreArchitectureCheck: Bool, printer: Printing) {
         self.fileManager = fileManager
         self.printer = printer
         self.binaryFinder = BinaryFinder(fileManager: fileManager)
         self.checksumValidator = ChecksumValidator(fileManager: fileManager)
+        self.architectureValidator = ArchitectureValidator(fileManager: fileManager)
         self.fileDownloader = FileDownloader(session: .shared)
         self.downloader = Downloader(fileDownloader: fileDownloader)
         self.permissionManager = PermissionManager(fileManager: fileManager)
         self.symLinker = SymLinker(fileManager: fileManager)
+        self.ignoreArchitectureCheck = ignoreArchitectureCheck
     }
     
     public func install(installationType: InstallationType) async throws {
@@ -126,6 +130,13 @@ public struct Installer {
             return try binaryFinder.findBinary(atPath: installationDestination.path)
         }()
         
+        let fullBinaryPath = installationDestination.appending(path: binaryPath).path
+        try validateArchitectureIfNeeded(
+            tool: tool,
+            binaryPath: fullBinaryPath,
+            installationDestination: installationDestination
+        )
+        
         let enrichedTool = EnrichedTool(
             name: tool.name,
             version: tool.version,
@@ -152,6 +163,13 @@ public struct Installer {
         let destinationFile = installationDestination
             .appending(components: binaryName)
         try fileManager.moveItem(at: downloadedFile, to: destinationFile)
+        
+        try validateArchitectureIfNeeded(
+            tool: tool,
+            binaryPath: destinationFile.path,
+            installationDestination: installationDestination
+        )
+
         let enrichedTool = EnrichedTool(
             name: tool.name,
             version: tool.version,
@@ -184,5 +202,20 @@ public struct Installer {
             return versionFolder
         }()
         return fileManager.fileExists(atPath: expectedBinaryLocation.path)
+    }
+
+    private func validateArchitectureIfNeeded(tool: Tool, binaryPath: String, installationDestination: URL) throws {
+        if ignoreArchitectureCheck {
+            printer.printFormatted("\(.raw("🔍 Skipping architecture validation for \(tool.name) version \(tool.version)..."))")
+        } else {
+            printer.printFormatted("\(.raw("🔍 Validating architecture for \(tool.name) version \(tool.version)..."))")
+            do {
+                try architectureValidator.validate(binaryPath: binaryPath)
+            } catch {
+                printer.printFormatted("\(.raw("🗑️ Cleaning up incompatible tool \(tool.name) version \(tool.version)..."))")
+                try? fileManager.removeItem(at: installationDestination)
+                throw error
+            }
+        }
     }
 }

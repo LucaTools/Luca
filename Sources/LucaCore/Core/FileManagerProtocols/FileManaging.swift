@@ -3,6 +3,7 @@
 import Foundation
 
 public protocol FileManaging:
+    ArchitectureValidatorFileManaging,
     BinaryFinderFileManaging,
     ChecksumValidatorFileManaging,
     FileTypeDetectorFileManaging,
