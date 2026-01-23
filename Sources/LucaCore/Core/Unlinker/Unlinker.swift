@@ -28,7 +28,8 @@ public struct Unlinker {
         if fileManager.fileExists(atPath: symlinkFile.path) {
             printer.printFormatted("\(.raw("👀 Removing symlink \(symlink)..."))")
             try fileManager.removeItem(at: symlinkFile)
-            printer.printFormatted("\(.success("🙌 Symlink \(symlink) has been removed."))")
+            printer.printFormatted("\(.primary("🙌 Symlink \(symlink) has been removed."))")
+            printer.printFormatted("")
         } else {
             throw UninstallerError.symlinkNotFound(symlink: symlink)
         }

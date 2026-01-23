@@ -24,6 +24,8 @@ public struct Installer {
     private let downloader: Downloading
     private let permissionManager: PermissionManaging
     private let symLinker: SymLinking
+    private let linkedToolsLister: LinkedToolsLister
+    private let unlinker: Unlinker
     private let ignoreArchitectureCheck: Bool
     
     public init(fileManager: FileManaging, ignoreArchitectureCheck: Bool, printer: Printing) {
@@ -36,6 +38,8 @@ public struct Installer {
         self.downloader = Downloader(fileDownloader: fileDownloader)
         self.permissionManager = PermissionManager(fileManager: fileManager)
         self.symLinker = SymLinker(fileManager: fileManager)
+        self.linkedToolsLister = LinkedToolsLister(fileManager: fileManager)
+        self.unlinker = Unlinker(fileManager: fileManager, printer: printer)
         self.ignoreArchitectureCheck = ignoreArchitectureCheck
     }
     
@@ -44,10 +48,20 @@ public struct Installer {
         let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
         let specLoader = SpecLoader(fileManager: .default)
         let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
-        printer.printFormatted("\(.raw("🧠 Detecting tools to install..."))")
-        let tools = try await toolFactory.toolsForInstallationType(installationType)
-        printer.printFormatted("\(.raw("🏃‍♂️ Installing tools for the current project."))")
+        
+        printer.printFormatted("\(.info("🧠 Detecting tools to install..."))")
         printer.printFormatted("")
+        
+        let tools = try await toolFactory.toolsForInstallationType(installationType)
+        
+        // Unlink orphaned tools only when installing from a spec
+        if case .spec = installationType {
+            try unlinkOrphanedTools(specTools: tools)
+        }
+        
+        printer.printFormatted("\(.info("🏃‍♂️ Installing tools for the current project."))")
+        printer.printFormatted("")
+        
         try await installTools(tools)
     }
     
@@ -86,7 +100,7 @@ public struct Installer {
         let symLink = try symLinker.setSymLink(for: enrichedTool)
         printer.printFormatted("\(.raw("🔗 Recreated symlink at \(symLink.path)"))")
         
-        printer.printFormatted("\(.success("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
+        printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
     }
     
     private func install(_ tool: Tool) async throws {
@@ -114,7 +128,7 @@ public struct Installer {
         case .executable: try installExecutable(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
         }
         
-        printer.printFormatted("\(.success("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
+        printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
     }
     
     private func installArchive(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
@@ -216,6 +230,24 @@ public struct Installer {
                 try? fileManager.removeItem(at: installationDestination)
                 throw error
             }
+        }
+    }
+    
+    private func unlinkOrphanedTools(specTools: [Tool]) throws {
+        let linkedTools = try linkedToolsLister.linkedTools()
+        
+        // Build a set of tool names from spec for efficient lookup
+        let specToolNames: Set<String> = Set(specTools.map(\.name))
+        
+        // Find linked tools that are not in the spec
+        let orphanedTools = linkedTools.filter { linkedTool in
+            !specToolNames.contains(linkedTool.name)
+        }
+        
+        // Unlink each orphaned tool
+        for orphanedTool in orphanedTools {
+            printer.printFormatted("\(.raw("🧹 Unlinking \(orphanedTool.binaryName) (removed from spec)..."))")
+            try unlinker.unlink(symlink: orphanedTool.binaryName)
         }
     }
 }
