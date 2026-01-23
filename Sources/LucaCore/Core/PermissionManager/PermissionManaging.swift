@@ -3,5 +3,5 @@
 import Foundation
 
 protocol PermissionManaging {
-    func setExecutablePermission(for tool: EnrichedTool) throws
+    func setExecutablePermission(for tool: Tool) throws
 }

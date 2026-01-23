@@ -3,5 +3,5 @@
 import Foundation
 
 protocol SymLinking {
-    func setSymLink(for tool: EnrichedTool) throws -> URL
+    func setSymLink(for tool: Tool) throws -> URL
 }

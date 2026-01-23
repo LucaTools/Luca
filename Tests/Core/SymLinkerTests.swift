@@ -10,7 +10,7 @@ struct SymLinkerTests {
     
     @Test
     func createSymLink_toolExists_binaryPathSpecified() throws {
-        let tool = EnrichedTool(
+        let tool = Tool(
             name: "ToggleGen",
             version: "1.0.0",
             url: URL(string: "https://example.com")!,
@@ -24,14 +24,14 @@ struct SymLinkerTests {
         
         let toolFilePath = symLinkFileManager.toolsFolder
             .appending(components: tool.name, "1.0.0")
-            .appending(components: tool.binaryPath)
+            .appending(path: tool.effectiveBinaryPath)
         try fileManager.createDirectory(at: toolFilePath.deletingLastPathComponent(), withIntermediateDirectories: true)
         fileManager.createFile(atPath: toolFilePath.path, contents: Data())
         
         let sut = SymLinker(fileManager: symLinkFileManager)
         
         let symLinkPath = symLinkFileManager.activeFolder
-            .appending(component: tool.binaryName)
+            .appending(component: tool.expectedBinaryName)
             .path
         
         #expect(!symLinkExists(atPath: symLinkPath))
@@ -44,7 +44,7 @@ struct SymLinkerTests {
     @Test
     func createSymLink_toolExists_desiredBinaryNameSpecified() throws {
         let desiredBinaryName = "togglegen"
-        let tool = EnrichedTool(
+        let tool = Tool(
             name: "ToggleGen",
             version: "1.0.0",
             url: URL(string: "https://example.com")!,
@@ -58,14 +58,14 @@ struct SymLinkerTests {
         
         let toolFilePath = symLinkFileManager.toolsFolder
             .appending(components: tool.name, "1.0.0")
-            .appending(components: desiredBinaryName)
+            .appending(component: desiredBinaryName)
         try fileManager.createDirectory(at: toolFilePath.deletingLastPathComponent(), withIntermediateDirectories: true)
         fileManager.createFile(atPath: toolFilePath.path, contents: Data())
         
         let sut = SymLinker(fileManager: symLinkFileManager)
         
         let symLinkPath = symLinkFileManager.activeFolder
-            .appending(component: tool.binaryName)
+            .appending(component: tool.expectedBinaryName)
             .path
         
         #expect(!symLinkExists(atPath: symLinkPath))
@@ -77,7 +77,7 @@ struct SymLinkerTests {
     
     @Test
     func createSymLink_toolExists_nestedBinaryPathSpecified() throws {
-        let tool = EnrichedTool(
+        let tool = Tool(
             name: "ToggleGen",
             version: "1.0.0",
             url: URL(string: "https://example.com")!,
@@ -91,14 +91,14 @@ struct SymLinkerTests {
         
         let toolFilePath = symLinkFileManager.toolsFolder
             .appending(components: tool.name, "1.0.0")
-            .appending(components: tool.binaryPath)
+            .appending(path: tool.effectiveBinaryPath)
         try fileManager.createDirectory(at: toolFilePath.deletingLastPathComponent(), withIntermediateDirectories: true)
         fileManager.createFile(atPath: toolFilePath.path, contents: Data())
         
         let sut = SymLinker(fileManager: symLinkFileManager)
         
         let symLinkPath = symLinkFileManager.activeFolder
-            .appending(component: tool.binaryName)
+            .appending(component: tool.expectedBinaryName)
             .path
         
         #expect(!symLinkExists(atPath: symLinkPath))
@@ -110,7 +110,7 @@ struct SymLinkerTests {
     
     @Test
     func createSymLink_symLinkExists() throws {
-        let tool = EnrichedTool(
+        let tool = Tool(
             name: "ToggleGen",
             version: "1.0.0",
             url: URL(string: "https://example.com")!,
@@ -126,13 +126,13 @@ struct SymLinkerTests {
             .appending(components: tool.name, "1.0.0")
         try fileManager.createDirectory(at: toolFolderPath, withIntermediateDirectories: true)
         let toolFilePath = toolFolderPath
-            .appending(components: tool.binaryPath)
+            .appending(path: tool.effectiveBinaryPath)
         fileManager.createFile(atPath: toolFilePath.path, contents: Data())
         
         let sut = SymLinker(fileManager: symLinkFileManager)
         
         let symLinkPath = symLinkFileManager.activeFolder
-            .appending(component: tool.binaryName)
+            .appending(component: tool.expectedBinaryName)
             .path
         
         try sut.setSymLink(for: tool)
@@ -143,7 +143,7 @@ struct SymLinkerTests {
     
     @Test
     func createSymLink_toolDoesNotExist() throws {
-        let tool = EnrichedTool(
+        let tool = Tool(
             name: "ToggleGen",
             version: "1.0.0",
             url: URL(string: "https://example.com")!,
@@ -158,18 +158,18 @@ struct SymLinkerTests {
         let sut = SymLinker(fileManager: symLinkFileManager)
         
         let symLinkPath = symLinkFileManager.activeFolder
-            .appending(component: tool.binaryName)
+            .appending(component: tool.expectedBinaryName)
             .path
         
         #expect(!symLinkExists(atPath: symLinkPath))
         
         let expectedDestination = symLinkFileManager.toolsFolder
             .appending(components: tool.name, tool.version)
-            .appending(components: tool.binaryPath)
+            .appending(path: tool.effectiveBinaryPath)
 
         #expect(
             throws: SymLinker.SymLinkerError.missingBinaryFile(
-                binaryName: tool.binaryName,
+                binaryName: tool.expectedBinaryName,
                 expectedLocation: expectedDestination.path
             )
         ) {
