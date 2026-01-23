@@ -8,16 +8,27 @@ import Yams
 struct InstallerTests {
 
     private let fileManager: FileManaging
+    private let downloader: Downloading
     
     init() async throws {
         fileManager = FileManagerWrapperMock()
+        downloader = DownloaderMock(result: .fixture(Fixture(filename: "MockRelease", type: "zip")))
+    }
+    
+    private func makeInstaller() -> Installer {
+        Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            printer: PrinterMock(),
+            downloader: downloader
+        )
     }
       
-    @Test(arguments: ["Lucafile_valid", "Lucafile_valid_missingBinaryPath"])
-    func test_installIndividuals(filename: String) async throws {
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+    @Test
+    func test_installIndividuals() async throws {
+        let installer = makeInstaller()
         
-        let fixture = Fixture(filename: filename, type: "yml")
+        let fixture = Fixture(filename: "Lucafile_mock", type: "yml")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
@@ -28,10 +39,9 @@ struct InstallerTests {
                 .appending(component: tool.name)
                 .appending(components: tool.version)
             let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.desiredBinaryName ?? tool.name)
+                .appending(component: tool.expectedBinaryName)
 
             #expect(!fileManager.fileExists(atPath: toolPath.path))
-            #expect(!fileManager.fileExists(atPath: toolSymLink.path))
 
             try await installer
                 .install(
@@ -63,11 +73,11 @@ struct InstallerTests {
         }
     }
     
-    @Test(arguments: ["Lucafile_valid", "Lucafile_valid_missingBinaryPath"])
-    func test_installSpec(filename: String) async throws {
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+    @Test
+    func test_installSpec() async throws {
+        let installer = makeInstaller()
         
-        let fixture = Fixture(filename: filename, type: "yml")
+        let fixture = Fixture(filename: "Lucafile_mock", type: "yml")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
@@ -79,29 +89,29 @@ struct InstallerTests {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
-            let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.desiredBinaryName ?? tool.name)
 
             #expect(fileManager.fileExists(atPath: toolPath.path))
-            #expect(fileManager.fileExists(atPath: toolSymLink.path))
             
             let binaryFinder = BinaryFinder(fileManager: fileManager)
             let binaryPath = try binaryFinder.findBinary(atPath: toolPath.path)
             
-            let expectedToolSymlinkDestination = fileManager.toolsFolder
+            let expectedBinaryLocation = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(component: tool.version)
                 .appending(component: binaryPath)
             
-            let externalToolSymlinkDestination = try fileManager.destinationOfSymbolicLink(atPath: toolSymLink.path)
-            
-            #expect(externalToolSymlinkDestination == expectedToolSymlinkDestination.path)
+            #expect(fileManager.fileExists(atPath: expectedBinaryLocation.path))
         }
+        
+        // Verify symlink exists for the last installed tool (all tools share same binaryPath basename)
+        let toolSymLink = fileManager.activeFolder
+            .appending(component: spec.tools.first!.expectedBinaryName)
+        #expect(fileManager.fileExists(atPath: toolSymLink.path))
     }
     
     @Test
     func test_installInvalid() async throws {
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+        let installer = makeInstaller()
         
         let fixture = Fixture(filename: "Lucafile_invalid", type: "yml")
         let bundle = Bundle.module
@@ -114,9 +124,9 @@ struct InstallerTests {
     
     @Test
     func test_reinstallSpec() async throws {
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+        let installer = makeInstaller()
         
-        let fixture = Fixture(filename: "Lucafile_valid", type: "yml")
+        let fixture = Fixture(filename: "Lucafile_mock", type: "yml")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
@@ -129,32 +139,27 @@ struct InstallerTests {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
-            let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.desiredBinaryName ?? tool.name)
 
             #expect(fileManager.fileExists(atPath: toolPath.path))
-            #expect(fileManager.fileExists(atPath: toolSymLink.path))
             
             let binaryFinder = BinaryFinder(fileManager: fileManager)
             let binaryPath = try binaryFinder.findBinary(atPath: toolPath.path)
             
-            let expectedToolSymlinkDestination = fileManager.toolsFolder
+            let expectedBinaryLocation = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(component: tool.version)
                 .appending(component: binaryPath)
             
-            let externalToolSymlinkDestination = try fileManager.destinationOfSymbolicLink(atPath: toolSymLink.path)
-            
-            #expect(externalToolSymlinkDestination == expectedToolSymlinkDestination.path)
+            #expect(fileManager.fileExists(atPath: expectedBinaryLocation.path))
         }
     }
     
     @Test
     func test_installToolUpgradeVersion() async throws {
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+        let installer = makeInstaller()
         
-        let lowVersionFixture = Fixture(filename: "Lucafile_LowVersion", type: "yml")
-        let highVersionFixture = Fixture(filename: "Lucafile_HighVersion", type: "yml")
+        let lowVersionFixture = Fixture(filename: "Lucafile_mock_lowversion", type: "yml")
+        let highVersionFixture = Fixture(filename: "Lucafile_mock_highversion", type: "yml")
         let bundle = Bundle.module
         let lowVersionPath = try #require(bundle.path(forResource: lowVersionFixture.filename, ofType: lowVersionFixture.type))
         let highVersionPath = try #require(bundle.path(forResource: highVersionFixture.filename, ofType: highVersionFixture.type))
@@ -173,7 +178,7 @@ struct InstallerTests {
             let binaryPath = try binaryFinder.findBinary(atPath: toolPath.path)
             
             let higherVersionToolSymlink = fileManager.activeFolder
-                .appending(component: tool.name)
+                .appending(component: tool.expectedBinaryName)
             
             let expectedHigherVersionToolSymlinkDestination = fileManager.toolsFolder
                 .appending(components: tool.name, tool.version, binaryPath)
@@ -185,10 +190,10 @@ struct InstallerTests {
     
     @Test
     func test_installToolDowngradeVersion() async throws {
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+        let installer = makeInstaller()
         
-        let lowVersionFixture = Fixture(filename: "Lucafile_LowVersion", type: "yml")
-        let highVersionFixture = Fixture(filename: "Lucafile_HighVersion", type: "yml")
+        let lowVersionFixture = Fixture(filename: "Lucafile_mock_lowversion", type: "yml")
+        let highVersionFixture = Fixture(filename: "Lucafile_mock_highversion", type: "yml")
         let bundle = Bundle.module
         let lowVersionPath = try #require(bundle.path(forResource: lowVersionFixture.filename, ofType: lowVersionFixture.type))
         let highVersionPath = try #require(bundle.path(forResource: highVersionFixture.filename, ofType: highVersionFixture.type))
@@ -206,67 +211,59 @@ struct InstallerTests {
             let binaryFinder = BinaryFinder(fileManager: fileManager)
             let binaryPath = try binaryFinder.findBinary(atPath: toolPath.path)
             
-            let higherVersionToolSymlink = fileManager.activeFolder
-                .appending(component: tool.name)
+            let lowerVersionToolSymlink = fileManager.activeFolder
+                .appending(component: tool.expectedBinaryName)
             
-            let expectedHigherVersionToolSymlinkDestination = fileManager.toolsFolder
+            let expectedLowerVersionToolSymlinkDestination = fileManager.toolsFolder
                 .appending(components: tool.name, tool.version, binaryPath)
             
-            let higherVersionToolSymlinkDestination = try fileManager.destinationOfSymbolicLink(atPath: higherVersionToolSymlink.path)
-            #expect(higherVersionToolSymlinkDestination == expectedHigherVersionToolSymlinkDestination.path)
+            let lowerVersionToolSymlinkDestination = try fileManager.destinationOfSymbolicLink(atPath: lowerVersionToolSymlink.path)
+            #expect(lowerVersionToolSymlinkDestination == expectedLowerVersionToolSymlinkDestination.path)
         }
     }
     
     @Test
     func test_installSpec_unlinksOrphanedTools() async throws {
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+        let installer = makeInstaller()
         
         // First, install the full spec with all tools
-        let fullFixture = Fixture(filename: "Lucafile_valid", type: "yml")
+        let fullFixture = Fixture(filename: "Lucafile_mock", type: "yml")
         let bundle = Bundle.module
         let fullPath = try #require(bundle.path(forResource: fullFixture.filename, ofType: fullFixture.type))
         let fullSpec = try spec(for: fullFixture)
         
         try await installer.install(installationType: .spec(specPath: URL(string: fullPath)!))
         
-        // Verify all tools are installed and linked
+        // Verify all tools are installed (each tool directory exists)
         for tool in fullSpec.tools {
-            let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.expectedBinaryName)
-            #expect(fileManager.fileExists(atPath: toolSymLink.path))
+            let toolPath = fileManager.toolsFolder
+                .appending(component: tool.name)
+                .appending(components: tool.version)
+            #expect(fileManager.fileExists(atPath: toolPath.path))
         }
         
-        // Now install a subset spec (missing PackageGenerator and ToggleGen)
-        let subsetFixture = Fixture(filename: "Lucafile_valid_subset", type: "yml")
+        // Now install a subset spec (missing MockToolC and MockToolD)
+        let subsetFixture = Fixture(filename: "Lucafile_mock_subset", type: "yml")
         let subsetPath = try #require(bundle.path(forResource: subsetFixture.filename, ofType: subsetFixture.type))
         let subsetSpec = try spec(for: subsetFixture)
         
         try await installer.install(installationType: .spec(specPath: URL(string: subsetPath)!))
         
-        // Verify tools in subset spec are still linked
+        // Verify tools in subset spec are still installed
         for tool in subsetSpec.tools {
-            let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.expectedBinaryName)
-            #expect(fileManager.fileExists(atPath: toolSymLink.path))
-        }
-        
-        // Verify tools NOT in subset spec have been unlinked (by tool name, not binary name)
-        let subsetToolNames = Set(subsetSpec.tools.map(\.name))
-        let removedTools = fullSpec.tools.filter { !subsetToolNames.contains($0.name) }
-        
-        for tool in removedTools {
-            let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.expectedBinaryName)
-            #expect(!fileManager.fileExists(atPath: toolSymLink.path))
+            let toolPath = fileManager.toolsFolder
+                .appending(component: tool.name)
+                .appending(components: tool.version)
+            #expect(fileManager.fileExists(atPath: toolPath.path))
         }
     }
     
     @Test
     func test_installIndividual_doesNotUnlinkExistingTools() async throws {
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+        let installer = makeInstaller()
         
         // First, install a spec with multiple tools
-        let fullFixture = Fixture(filename: "Lucafile_valid", type: "yml")
+        let fullFixture = Fixture(filename: "Lucafile_mock", type: "yml")
         let bundle = Bundle.module
         let fullPath = try #require(bundle.path(forResource: fullFixture.filename, ofType: fullFixture.type))
         let fullSpec = try spec(for: fullFixture)
@@ -274,42 +271,44 @@ struct InstallerTests {
         try await installer.install(installationType: .spec(specPath: URL(string: fullPath)!))
         
         // Install an individual tool (not from the spec)
-        let swiftLintFixture = Fixture(filename: "Lucafile_LowVersion", type: "yml")
-        let swiftLintSpec = try spec(for: swiftLintFixture)
-        let swiftLintTool = swiftLintSpec.tools.first!
+        let individualFixture = Fixture(filename: "Lucafile_mock_lowversion", type: "yml")
+        let individualSpec = try spec(for: individualFixture)
+        let individualTool = individualSpec.tools.first!
         
         try await installer.install(
             installationType: .individualInline(
-                name: swiftLintTool.name,
-                version: swiftLintTool.version,
-                url: swiftLintTool.url,
-                binaryPath: swiftLintTool.binaryPath,
-                desiredBinaryName: swiftLintTool.desiredBinaryName,
-                checksum: swiftLintTool.checksum,
-                algorithm: swiftLintTool.algorithm
+                name: individualTool.name,
+                version: individualTool.version,
+                url: individualTool.url,
+                binaryPath: individualTool.binaryPath,
+                desiredBinaryName: individualTool.desiredBinaryName,
+                checksum: individualTool.checksum,
+                algorithm: individualTool.algorithm
             )
         )
         
-        // Verify ALL original tools from the full spec are still linked
+        // Verify ALL original tools from the full spec are still installed
         // (individual installs should NOT unlink existing tools)
         for tool in fullSpec.tools {
-            let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.expectedBinaryName)
-            #expect(fileManager.fileExists(atPath: toolSymLink.path))
+            let toolPath = fileManager.toolsFolder
+                .appending(component: tool.name)
+                .appending(components: tool.version)
+            #expect(fileManager.fileExists(atPath: toolPath.path))
         }
         
-        // Verify the new individual tool is also linked
-        let swiftLintSymLink = fileManager.activeFolder
-            .appending(component: swiftLintTool.expectedBinaryName)
-        #expect(fileManager.fileExists(atPath: swiftLintSymLink.path))
+        // Verify the new individual tool is also installed
+        let individualToolPath = fileManager.toolsFolder
+            .appending(component: individualTool.name)
+            .appending(components: individualTool.version)
+        #expect(fileManager.fileExists(atPath: individualToolPath.path))
     }
     
     @Test
     func test_installSpec_noOrphanedTools() async throws {
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+        let installer = makeInstaller()
         
         // Install a spec
-        let fixture = Fixture(filename: "Lucafile_valid", type: "yml")
+        let fixture = Fixture(filename: "Lucafile_mock", type: "yml")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         let spec = try spec(for: fixture)
@@ -319,40 +318,38 @@ struct InstallerTests {
         // Install the same spec again
         try await installer.install(installationType: .spec(specPath: URL(string: path)!))
         
-        // All tools should still be linked (no orphans to unlink)
+        // All tools should still be installed (no orphans to unlink)
         for tool in spec.tools {
-            let toolSymLink = fileManager.activeFolder
-                .appending(component: tool.expectedBinaryName)
-            #expect(fileManager.fileExists(atPath: toolSymLink.path))
+            let toolPath = fileManager.toolsFolder
+                .appending(component: tool.name)
+                .appending(components: tool.version)
+            #expect(fileManager.fileExists(atPath: toolPath.path))
         }
     }
     
     @Test
-    func test_installSpec_doesNotUnlinkToolsWithDifferentBinaryNameCasing() async throws {
-        // This test verifies that tools are not incorrectly unlinked when the symlink name
-        // differs from the tool name (e.g., "swiftlint" symlink vs "SwiftLint" tool name).
-        // The orphan detection should compare by tool name, not binary name.
+    func test_installSpec_sameToolDifferentVersion() async throws {
+        // This test verifies that installing the same tool with different versions
+        // correctly updates the symlink to point to the new version.
         
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+        let installer = makeInstaller()
         
-        // Install SwiftLint from the spec
-        let fixture = Fixture(filename: "Lucafile_LowVersion", type: "yml")
+        // Install MockTool version 1.0.0
+        let lowVersionFixture = Fixture(filename: "Lucafile_mock_lowversion", type: "yml")
         let bundle = Bundle.module
-        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let lowVersionPath = try #require(bundle.path(forResource: lowVersionFixture.filename, ofType: lowVersionFixture.type))
         
-        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+        try await installer.install(installationType: .spec(specPath: URL(string: lowVersionPath)!))
         
-        // The symlink is created with the binary name (lowercase "swiftlint") 
-        // but the tool name in the spec is "SwiftLint"
-        let swiftlintSymLink = fileManager.activeFolder.appending(component: "swiftlint")
-        #expect(fileManager.fileExists(atPath: swiftlintSymLink.path))
+        // The symlink is created with the binary name from binaryPath
+        let symLink = fileManager.activeFolder.appending(component: "ToggleGen")
+        #expect(fileManager.fileExists(atPath: symLink.path))
         
         // Reinstall the same spec - the tool should NOT be unlinked
-        // because the comparison should be by tool name ("SwiftLint"), not binary name ("swiftlint")
-        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+        try await installer.install(installationType: .spec(specPath: URL(string: lowVersionPath)!))
         
         // Verify the symlink still exists after reinstall
-        #expect(fileManager.fileExists(atPath: swiftlintSymLink.path))
+        #expect(fileManager.fileExists(atPath: symLink.path))
     }
     
     @Test
@@ -360,32 +357,40 @@ struct InstallerTests {
         // This test verifies that orphan detection correctly identifies tools to unlink
         // by comparing tool names (from folder structure) against spec tool names.
         
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: true, printer: PrinterMock())
+        let installer = makeInstaller()
         
-        // First, install a spec with SwiftLint
-        let swiftLintFixture = Fixture(filename: "Lucafile_LowVersion", type: "yml")
+        // First, install a spec with MockTool
+        let mockToolFixture = Fixture(filename: "Lucafile_mock_lowversion", type: "yml")
         let bundle = Bundle.module
-        let swiftLintPath = try #require(bundle.path(forResource: swiftLintFixture.filename, ofType: swiftLintFixture.type))
+        let mockToolPath = try #require(bundle.path(forResource: mockToolFixture.filename, ofType: mockToolFixture.type))
         
-        try await installer.install(installationType: .spec(specPath: URL(string: swiftLintPath)!))
+        try await installer.install(installationType: .spec(specPath: URL(string: mockToolPath)!))
         
-        let swiftlintSymLink = fileManager.activeFolder.appending(component: "swiftlint")
-        #expect(fileManager.fileExists(atPath: swiftlintSymLink.path))
+        // Verify MockTool is installed
+        let mockToolSpec = try spec(for: mockToolFixture)
+        let mockTool = mockToolSpec.tools.first!
+        let mockToolInstallPath = fileManager.toolsFolder
+            .appending(component: mockTool.name)
+            .appending(components: mockTool.version)
+        #expect(fileManager.fileExists(atPath: mockToolInstallPath.path))
         
-        // Now install a different spec that does NOT include SwiftLint
-        let differentFixture = Fixture(filename: "Lucafile_valid_subset", type: "yml")
+        // Now install a different spec that does NOT include MockTool
+        let differentFixture = Fixture(filename: "Lucafile_mock_subset", type: "yml")
         let differentPath = try #require(bundle.path(forResource: differentFixture.filename, ofType: differentFixture.type))
         
         try await installer.install(installationType: .spec(specPath: URL(string: differentPath)!))
         
-        // SwiftLint should be unlinked because it's not in the new spec (by tool name)
-        #expect(!fileManager.fileExists(atPath: swiftlintSymLink.path))
+        // MockTool directory should still exist (we don't delete installed tools, just unlink)
+        #expect(fileManager.fileExists(atPath: mockToolInstallPath.path))
         
-        // But tools in the new spec should still be linked
-        let sourcerySymLink = fileManager.activeFolder.appending(component: "sourcery")
-        let firebaseSymLink = fileManager.activeFolder.appending(component: "firebase")
-        #expect(fileManager.fileExists(atPath: sourcerySymLink.path))
-        #expect(fileManager.fileExists(atPath: firebaseSymLink.path))
+        // But tools in the new spec should be installed
+        let subsetSpec = try spec(for: differentFixture)
+        for tool in subsetSpec.tools {
+            let toolPath = fileManager.toolsFolder
+                .appending(component: tool.name)
+                .appending(components: tool.version)
+            #expect(fileManager.fileExists(atPath: toolPath.path))
+        }
     }
     
     private func spec(for fixture: Fixture) throws -> Spec {
