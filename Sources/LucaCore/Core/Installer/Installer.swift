@@ -87,7 +87,7 @@ public struct Installer {
         let installationDestination = fileManager.toolsFolder
             .appending(components: tool.name, tool.version)
         let binaryPath = try binaryFinder.findBinary(atPath: installationDestination.path)
-        let enrichedTool = EnrichedTool(
+        let resolvedTool = Tool(
             name: tool.name,
             version: tool.version,
             url: tool.url,
@@ -96,8 +96,8 @@ public struct Installer {
             checksum: tool.checksum,
             algorithm: tool.algorithm
         )
-        try permissionManager.setExecutablePermission(for: enrichedTool)
-        let symLink = try symLinker.setSymLink(for: enrichedTool)
+        try permissionManager.setExecutablePermission(for: resolvedTool)
+        let symLink = try symLinker.setSymLink(for: resolvedTool)
         printer.printFormatted("\(.raw("🔗 Recreated symlink at \(symLink.path)"))")
         
         printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
@@ -151,7 +151,7 @@ public struct Installer {
             installationDestination: installationDestination
         )
         
-        let enrichedTool = EnrichedTool(
+        let resolvedTool = Tool(
             name: tool.name,
             version: tool.version,
             url: tool.url,
@@ -160,11 +160,11 @@ public struct Installer {
             checksum: tool.checksum,
             algorithm: tool.algorithm
         )
-        try permissionManager.setExecutablePermission(for: enrichedTool)
+        try permissionManager.setExecutablePermission(for: resolvedTool)
         
         printer.printFormatted("\(.raw("💾 Installed \(tool.name) version \(tool.version) at \(installationDestination.path)"))")
         
-        let symLink = try symLinker.setSymLink(for: enrichedTool)
+        let symLink = try symLinker.setSymLink(for: resolvedTool)
         printer.printFormatted("\(.raw("🔗 Created symlink to \(symLink.path)"))")
     }
     
@@ -184,7 +184,7 @@ public struct Installer {
             installationDestination: installationDestination
         )
 
-        let enrichedTool = EnrichedTool(
+        let resolvedTool = Tool(
             name: tool.name,
             version: tool.version,
             url: tool.url,
@@ -193,11 +193,11 @@ public struct Installer {
             checksum: nil,
             algorithm: nil
         )
-        try permissionManager.setExecutablePermission(for: enrichedTool)
+        try permissionManager.setExecutablePermission(for: resolvedTool)
         
         printer.printFormatted("\(.raw("💾 Installed \(tool.name) version \(tool.version) at \(installationDestination.path)"))")
         
-        let symLink = try symLinker.setSymLink(for: enrichedTool)
+        let symLink = try symLinker.setSymLink(for: resolvedTool)
         printer.printFormatted("\(.raw("🔗 Created symlink to \(symLink.path)"))")
     }
 

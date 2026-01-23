@@ -24,10 +24,10 @@ struct PermissionManager: PermissionManaging {
         self.fileManager = fileManager
     }
     
-    func setExecutablePermission(for tool: EnrichedTool) throws {
+    func setExecutablePermission(for tool: Tool) throws {
         let destinationFile = fileManager.toolsFolder
             .appending(components: tool.name, tool.version)
-            .appending(components: tool.desiredBinaryName ?? tool.binaryPath)
+            .appending(path: tool.effectiveBinaryPath)
         
         guard fileManager.fileExists(atPath: destinationFile.path) else {
             throw PermissionManagerError.missingFile(destinationFile.path)

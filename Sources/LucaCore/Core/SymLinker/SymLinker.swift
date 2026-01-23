@@ -24,16 +24,16 @@ struct SymLinker: SymLinking {
     // MARK: - Internal
     
     @discardableResult
-    func setSymLink(for tool: EnrichedTool) throws -> URL {
+    func setSymLink(for tool: Tool) throws -> URL {
         let symLinkFile = fileManager.activeFolder
-            .appending(component: tool.binaryName)
+            .appending(component: tool.expectedBinaryName)
 
         let destinationFile = fileManager.toolsFolder
             .appending(components: tool.name, tool.version)
-            .appending(components: tool.desiredBinaryName ?? tool.binaryPath)
+            .appending(path: tool.effectiveBinaryPath)
 
         if !fileManager.fileExists(atPath: destinationFile.path) {
-            throw SymLinkerError.missingBinaryFile(binaryName: tool.binaryName, expectedLocation: destinationFile.path)
+            throw SymLinkerError.missingBinaryFile(binaryName: tool.expectedBinaryName, expectedLocation: destinationFile.path)
         }
         if symLinkExists(atPath: symLinkFile.path) {
             try fileManager.removeItem(at: symLinkFile)
