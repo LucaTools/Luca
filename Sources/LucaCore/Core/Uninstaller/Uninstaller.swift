@@ -31,7 +31,7 @@ public struct Uninstaller {
         if fileManager.fileExists(atPath: versionFolder.path) {
             printer.printFormatted("\(.raw("👀 Uninstalling \(tool) \(version)..."))")
             try fileManager.removeItem(at: versionFolder)
-            printer.printFormatted("\(.success("🙌 \(tool) \(version) has been uninstalled."))")
+            printer.printFormatted("\(.primary("🙌 \(tool) \(version) has been uninstalled."))")
             
             // Clean up tool folder if empty
             let toolFolder = fileManager.toolsFolder.appending(component: tool)

@@ -20,6 +20,16 @@ struct Tool: Codable {
     let algorithm: ChecksumAlgorithm?
 }
 
+extension Tool {
+    /// Resolves the expected binary name for comparison with linked tools.
+    /// Priority: desiredBinaryName > binaryPath basename > tool name.
+    var expectedBinaryName: String {
+        if let desiredBinaryName { return desiredBinaryName }
+        if let binaryPath { return URL(fileURLWithPath: binaryPath).lastPathComponent }
+        return name
+    }
+}
+
 struct EnrichedTool: Codable {
     /// Logical name of the tool (used for directory hierarchy).
     let name: String
