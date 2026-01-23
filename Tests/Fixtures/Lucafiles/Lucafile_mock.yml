@@ -1,0 +1,22 @@
+---
+tools:
+  - name: MockToolA
+    binaryPath: bin/ToggleGen
+    version: 1.0.0
+    url: https://example.com/mock/MockToolA.zip
+  - name: MockToolB
+    binaryPath: bin/ToggleGen
+    version: 2.0.0
+    url: https://example.com/mock/MockToolB.zip
+  - name: MockToolC
+    binaryPath: bin/ToggleGen
+    version: 3.0.0
+    url: https://example.com/mock/MockToolC.zip
+  - name: MockToolD
+    binaryPath: bin/ToggleGen
+    version: 4.0.0
+    url: https://example.com/mock/MockToolD.zip
+    checksum: 76b801daea0ed90f2871b0c66ebb8c4b9680d14e8011277d971cd74445fdaac5
+    algorithm: sha256
+  
+version: 0.0.1

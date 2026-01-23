@@ -20,7 +20,6 @@ public struct Installer {
     private let binaryFinder: BinaryFinding
     private let checksumValidator: ChecksumValidating
     private let architectureValidator: ArchitectureValidating
-    private let fileDownloader: FileDownloading
     private let downloader: Downloading
     private let permissionManager: PermissionManaging
     private let symLinker: SymLinking
@@ -28,14 +27,18 @@ public struct Installer {
     private let unlinker: Unlinker
     private let ignoreArchitectureCheck: Bool
     
-    public init(fileManager: FileManaging, ignoreArchitectureCheck: Bool, printer: Printing) {
+    public init(
+        fileManager: FileManaging,
+        ignoreArchitectureCheck: Bool,
+        printer: Printing,
+        downloader: Downloading? = nil
+    ) {
         self.fileManager = fileManager
         self.printer = printer
         self.binaryFinder = BinaryFinder(fileManager: fileManager)
         self.checksumValidator = ChecksumValidator(fileManager: fileManager)
         self.architectureValidator = ArchitectureValidator(fileManager: fileManager)
-        self.fileDownloader = FileDownloader(session: .shared)
-        self.downloader = Downloader(fileDownloader: fileDownloader)
+        self.downloader = downloader ?? Downloader(fileDownloader: FileDownloader(session: .shared))
         self.permissionManager = PermissionManager(fileManager: fileManager)
         self.symLinker = SymLinker(fileManager: fileManager)
         self.linkedToolsLister = LinkedToolsLister(fileManager: fileManager)

@@ -2,6 +2,6 @@
 
 import Foundation
 
-protocol Downloading {
+public protocol Downloading {
     func downloadRelease(at url: URL) async throws -> URL
 }

@@ -1,0 +1,12 @@
+---
+tools:
+  - name: MockToolA
+    binaryPath: bin/ToggleGen
+    version: 1.0.0
+    url: https://example.com/mock/MockToolA.zip
+  - name: MockToolB
+    binaryPath: bin/ToggleGen
+    version: 2.0.0
+    url: https://example.com/mock/MockToolB.zip
+  
+version: 0.0.1

@@ -1,0 +1,8 @@
+---
+tools:
+  - name: MockTool
+    binaryPath: bin/ToggleGen
+    version: 1.0.0
+    url: https://example.com/mock/MockTool-1.0.0.zip
+  
+version: 0.0.1
