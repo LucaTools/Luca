@@ -1,6 +1,7 @@
 //  Installer.swift
 
 import Foundation
+import Noora
 
 public struct Installer {
     
@@ -26,12 +27,16 @@ public struct Installer {
     private let linkedToolsLister: LinkedToolsLister
     private let unlinker: Unlinker
     private let ignoreArchitectureCheck: Bool
+    private let quiet: Bool
+    private let noora: Noorable
     
     public init(
         fileManager: FileManaging,
         ignoreArchitectureCheck: Bool,
+        quiet: Bool = false,
         printer: Printing,
-        downloader: Downloading? = nil
+        downloader: Downloading? = nil,
+        noora: Noorable = Noora()
     ) {
         self.fileManager = fileManager
         self.printer = printer
@@ -44,9 +49,52 @@ public struct Installer {
         self.linkedToolsLister = LinkedToolsLister(fileManager: fileManager)
         self.unlinker = Unlinker(fileManager: fileManager, printer: printer)
         self.ignoreArchitectureCheck = ignoreArchitectureCheck
+        self.quiet = quiet
+        self.noora = noora
     }
     
     public func install(installationType: InstallationType) async throws {
+        if quiet {
+            try await installQuietly(installationType: installationType)
+        } else {
+            try await installVerbose(installationType: installationType)
+        }
+    }
+    
+    // MARK: - Private
+    
+    private func installQuietly(installationType: InstallationType) async throws {
+        try await noora.progressStep(
+            message: "Installing tools",
+            successMessage: "Tools have been installed for the current project",
+            errorMessage: "Failed to install tools",
+            showSpinner: true
+        ) { updateMessage in
+            let dataDownloader = DataDownloader(session: .shared)
+            let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
+            let specLoader = SpecLoader(fileManager: .default)
+            let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
+            
+            updateMessage("Detecting tools to install")
+            let tools = try await toolFactory.toolsForInstallationType(installationType)
+            
+            // Unlink orphaned tools only when installing from a spec
+            if case .spec = installationType {
+                try unlinkOrphanedTools(specTools: tools)
+            }
+            
+            for tool in tools {
+                updateMessage("Installing \(tool.name) \(tool.version)")
+                if isToolInstalled(tool) {
+                    try reinstall(tool)
+                } else {
+                    try await install(tool)
+                }
+            }
+        }
+    }
+    
+    private func installVerbose(installationType: InstallationType) async throws {
         let dataDownloader = DataDownloader(session: .shared)
         let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
         let specLoader = SpecLoader(fileManager: .default)
@@ -64,13 +112,7 @@ public struct Installer {
         
         printer.printFormatted("\(.info("🏃‍♂️ Installing tools for the current project."))")
         printer.printFormatted("")
-        
-        try await installTools(tools)
-    }
-    
-    // MARK: - Private
-    
-    private func installTools(_ tools: [Tool]) async throws {
+
         for tool in tools {
             if isToolInstalled(tool) {
                 try reinstall(tool)

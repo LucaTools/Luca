@@ -106,13 +106,21 @@ luca install
     
     @Flag(help: "Skip architecture compatibility validation during installation.")
     var ignoreArchCheck: Bool = false
+    
+    @Flag(help: "Suppress all output except final success message.")
+    var quiet: Bool = false
 
     func run() async throws {
-        let printer = Printer()
+        let printer: Printing = quiet ? QuietPrinter() : Printer()
         Header(printer: printer).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)
-        let installer = Installer(fileManager: fileManager, ignoreArchitectureCheck: ignoreArchCheck, printer: printer)
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: ignoreArchCheck,
+            quiet: quiet,
+            printer: printer
+        )
         let arguments = Arguments(
             spec: spec,
             identifier: identifier,
