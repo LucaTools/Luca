@@ -15,18 +15,19 @@ struct InstallerTests {
         downloader = DownloaderMock(result: .fixture(Fixture(filename: "MockRelease", type: "zip")))
     }
     
-    private func makeInstaller() -> Installer {
+    private func makeInstaller(quiet: Bool) -> Installer {
         Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: true,
+            quiet: quiet,
             printer: PrinterMock(),
             downloader: downloader
         )
     }
       
-    @Test
-    func test_installIndividuals() async throws {
-        let installer = makeInstaller()
+    @Test(arguments: [true, false])
+    func test_installIndividuals(quiet: Bool) async throws {
+        let installer = makeInstaller(quiet: quiet)
         
         let fixture = Fixture(filename: "Lucafile_mock", type: "yml")
         let bundle = Bundle.module
@@ -73,9 +74,9 @@ struct InstallerTests {
         }
     }
     
-    @Test
-    func test_installSpec() async throws {
-        let installer = makeInstaller()
+    @Test(arguments: [true, false])
+    func test_installSpec(quiet: Bool) async throws {
+        let installer = makeInstaller(quiet: quiet)
         
         let fixture = Fixture(filename: "Lucafile_mock", type: "yml")
         let bundle = Bundle.module
@@ -109,9 +110,9 @@ struct InstallerTests {
         #expect(fileManager.fileExists(atPath: toolSymLink.path))
     }
     
-    @Test
-    func test_installInvalid() async throws {
-        let installer = makeInstaller()
+    @Test(arguments: [true, false])
+    func test_installInvalid(quiet: Bool) async throws {
+        let installer = makeInstaller(quiet: quiet)
         
         let fixture = Fixture(filename: "Lucafile_invalid", type: "yml")
         let bundle = Bundle.module
@@ -122,9 +123,9 @@ struct InstallerTests {
         }
     }
     
-    @Test
-    func test_reinstallSpec() async throws {
-        let installer = makeInstaller()
+    @Test(arguments: [true, false])
+    func test_reinstallSpec(quiet: Bool) async throws {
+        let installer = makeInstaller(quiet: quiet)
         
         let fixture = Fixture(filename: "Lucafile_mock", type: "yml")
         let bundle = Bundle.module
@@ -154,9 +155,9 @@ struct InstallerTests {
         }
     }
     
-    @Test
-    func test_installToolUpgradeVersion() async throws {
-        let installer = makeInstaller()
+    @Test(arguments: [true, false])
+    func test_installToolUpgradeVersion(quiet: Bool) async throws {
+        let installer = makeInstaller(quiet: quiet)
         
         let lowVersionFixture = Fixture(filename: "Lucafile_mock_lowversion", type: "yml")
         let highVersionFixture = Fixture(filename: "Lucafile_mock_highversion", type: "yml")
@@ -188,9 +189,9 @@ struct InstallerTests {
         }
     }
     
-    @Test
-    func test_installToolDowngradeVersion() async throws {
-        let installer = makeInstaller()
+    @Test(arguments: [true, false])
+    func test_installToolDowngradeVersion(quiet: Bool) async throws {
+        let installer = makeInstaller(quiet: quiet)
         
         let lowVersionFixture = Fixture(filename: "Lucafile_mock_lowversion", type: "yml")
         let highVersionFixture = Fixture(filename: "Lucafile_mock_highversion", type: "yml")
@@ -222,9 +223,9 @@ struct InstallerTests {
         }
     }
     
-    @Test
-    func test_installSpec_unlinksOrphanedTools() async throws {
-        let installer = makeInstaller()
+    @Test(arguments: [true, false])
+    func test_installSpec_unlinksOrphanedTools(quiet: Bool) async throws {
+        let installer = makeInstaller(quiet: quiet)
         
         // First, install the full spec with all tools
         let fullFixture = Fixture(filename: "Lucafile_mock", type: "yml")
@@ -258,9 +259,9 @@ struct InstallerTests {
         }
     }
     
-    @Test
-    func test_installIndividual_doesNotUnlinkExistingTools() async throws {
-        let installer = makeInstaller()
+    @Test(arguments: [true, false])
+    func test_installIndividual_doesNotUnlinkExistingTools(quiet: Bool) async throws {
+        let installer = makeInstaller(quiet: quiet)
         
         // First, install a spec with multiple tools
         let fullFixture = Fixture(filename: "Lucafile_mock", type: "yml")
@@ -303,9 +304,9 @@ struct InstallerTests {
         #expect(fileManager.fileExists(atPath: individualToolPath.path))
     }
     
-    @Test
-    func test_installSpec_noOrphanedTools() async throws {
-        let installer = makeInstaller()
+    @Test(arguments: [true, false])
+    func test_installSpec_noOrphanedTools(quiet: Bool) async throws {
+        let installer = makeInstaller(quiet: quiet)
         
         // Install a spec
         let fixture = Fixture(filename: "Lucafile_mock", type: "yml")
@@ -327,12 +328,12 @@ struct InstallerTests {
         }
     }
     
-    @Test
-    func test_installSpec_sameToolDifferentVersion() async throws {
+    @Test(arguments: [true, false])
+    func test_installSpec_sameToolDifferentVersion(quiet: Bool) async throws {
         // This test verifies that installing the same tool with different versions
         // correctly updates the symlink to point to the new version.
         
-        let installer = makeInstaller()
+        let installer = makeInstaller(quiet: quiet)
         
         // Install MockTool version 1.0.0
         let lowVersionFixture = Fixture(filename: "Lucafile_mock_lowversion", type: "yml")
@@ -352,12 +353,12 @@ struct InstallerTests {
         #expect(fileManager.fileExists(atPath: symLink.path))
     }
     
-    @Test
-    func test_installSpec_unlinksToolsByName() async throws {
+    @Test(arguments: [true, false])
+    func test_installSpec_unlinksToolsByName(quiet: Bool) async throws {
         // This test verifies that orphan detection correctly identifies tools to unlink
         // by comparing tool names (from folder structure) against spec tool names.
         
-        let installer = makeInstaller()
+        let installer = makeInstaller(quiet: quiet)
         
         // First, install a spec with MockTool
         let mockToolFixture = Fixture(filename: "Lucafile_mock_lowversion", type: "yml")

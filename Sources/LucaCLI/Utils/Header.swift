@@ -5,7 +5,7 @@ import LucaCore
 
 struct Header {
 
-    let printer: Printer
+    let printer: Printing
 
     func printHeader() {
         let asciiHeader = """
