@@ -1,2 +1,2 @@
-.luca/active/swiftlint --version
+swiftlint --version
 # Output: 0.61.0
