@@ -5,7 +5,7 @@ import Foundation
 import LucaCore
 import Yams
 
-extension ChecksumAlgorithm: @retroactive ExpressibleByArgument {}
+extension ChecksumAlgorithm: ExpressibleByArgument {}
 
 /// Installs the versions of tools specified by a YAML spec file.
 struct InstallCommand: AsyncParsableCommand {
