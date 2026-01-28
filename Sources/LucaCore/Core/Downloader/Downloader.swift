@@ -2,6 +2,21 @@
 
 import Foundation
 
+/// Downloads release archives and executables from remote URLs.
+///
+/// The `Downloader` handles fetching tool releases from remote servers,
+/// supporting both archive formats (ZIP, tar.gz) and standalone executables.
+///
+/// ## Supported File Types
+///
+/// - `.zip` - ZIP archives
+/// - `.tar.gz` - Gzipped tar archives
+/// - No extension - Treated as executable files
+///
+/// ## Topics
+///
+/// ### Downloading Files
+/// - ``downloadRelease(at:)``
 struct Downloader: Downloading {
     
     enum DownloaderError: Error, LocalizedError, Equatable {
@@ -26,6 +41,12 @@ struct Downloader: Downloading {
         self.fileDownloader = fileDownloader
     }
     
+    /// Downloads a release from the specified URL.
+    ///
+    /// - Parameter url: The URL to download from.
+    /// - Returns: A URL to the downloaded file in a temporary location.
+    /// - Throws: ``DownloaderError/unsupportedFileType(_:)`` if the URL has
+    ///   an unsupported file extension.
     func downloadRelease(at url: URL) async throws -> URL {
         if SupportedFileTypes.allCases.contains(where: {
             url.lastPathComponent.hasSuffix($0.rawValue)

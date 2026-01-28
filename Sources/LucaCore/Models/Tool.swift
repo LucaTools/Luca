@@ -3,6 +3,37 @@
 import Foundation
 
 /// A single installable tool (binary) described in the spec file.
+///
+/// A `Tool` represents a command-line tool that can be downloaded, installed,
+/// and linked by Luca. Each tool is identified by a name and version, and
+/// includes information about where to download it and how to locate the
+/// binary within the downloaded archive.
+///
+/// ## Example
+///
+/// ```yaml
+/// - name: SwiftLint
+///   version: 0.61.0
+///   url: https://github.com/realm/SwiftLint/releases/download/0.61.0/SwiftLintBinary.artifactbundle.zip
+///   binaryPath: SwiftLintBinary.artifactbundle/swiftlint-0.61.0-macos/bin/swiftlint
+/// ```
+///
+/// ## Topics
+///
+/// ### Required Properties
+/// - ``name``
+/// - ``version``
+/// - ``url``
+///
+/// ### Optional Properties
+/// - ``binaryPath``
+/// - ``desiredBinaryName``
+/// - ``checksum``
+/// - ``algorithm``
+///
+/// ### Computed Properties
+/// - ``expectedBinaryName``
+/// - ``effectiveBinaryPath``
 struct Tool: Codable {
     /// Logical name of the tool (used for directory hierarchy).
     let name: String

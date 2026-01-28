@@ -2,6 +2,19 @@
 
 import Foundation
 
+/// Creates and manages symbolic links for installed tools.
+///
+/// The `SymLinker` is responsible for creating symbolic links in the project's
+/// `.luca/active/` directory that point to the actual tool binaries stored
+/// in `~/.luca/tools/`.
+///
+/// This allows projects to reference tools via a consistent path while
+/// supporting multiple versions installed globally.
+///
+/// ## Topics
+///
+/// ### Creating Symlinks
+/// - ``setSymLink(for:)``
 struct SymLinker: SymLinking {
     
     enum SymLinkerError: Error, LocalizedError, Equatable {
@@ -23,6 +36,12 @@ struct SymLinker: SymLinking {
     
     // MARK: - Internal
     
+    /// Creates a symbolic link for the specified tool.
+    ///
+    /// - Parameter tool: The tool to create a symlink for.
+    /// - Returns: The URL of the created symlink.
+    /// - Throws: ``SymLinkerError/missingBinaryFile(binaryName:expectedLocation:)``
+    ///   if the binary file doesn't exist at the expected location.
     @discardableResult
     func setSymLink(for tool: Tool) throws -> URL {
         let symLinkFile = fileManager.activeFolder

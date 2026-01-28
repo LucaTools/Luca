@@ -2,6 +2,20 @@
 
 import Foundation
 
+/// Extracts tool archives to their installation destination.
+///
+/// The `Unarchiver` handles extracting ZIP and tar.gz archives using
+/// system utilities (`unzip` and `tar`).
+///
+/// ## Supported Formats
+///
+/// - **ZIP** - Extracted using `/usr/bin/unzip`
+/// - **tar.gz** - Extracted using `/usr/bin/tar`
+///
+/// ## Topics
+///
+/// ### Extracting Archives
+/// - ``unarchive(filePath:installationDestination:)``
 struct Unarchiver: Unarchiving {
     
     enum UnarchiverError: Error, LocalizedError {
@@ -29,6 +43,15 @@ struct Unarchiver: Unarchiving {
         self.fileTypeDetector = fileTypeDetector
     }
     
+    /// Extracts an archive to the specified destination.
+    ///
+    /// - Parameters:
+    ///   - filePath: The path to the archive file.
+    ///   - installationDestination: The directory to extract files into.
+    /// - Throws: ``UnarchiverError/unrecognisedFileType(_:)`` if the file type
+    ///   cannot be determined, ``UnarchiverError/notAnArchive(_:)`` if the file
+    ///   is an executable, or ``UnarchiverError/failedToUnarchive(_:)`` if
+    ///   extraction fails.
     func unarchive(filePath: URL, installationDestination: URL) throws {
         try fileManager.createDirectory(at: installationDestination, withIntermediateDirectories: true)
 

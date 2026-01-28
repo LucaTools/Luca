@@ -1,0 +1,106 @@
+@Tutorial(time: 10) {
+    @Intro(title: "Installing Your First Tool") {
+        Learn how to install Luca and configure your first project with managed tools.
+        
+        In this tutorial, you'll install Luca, create a Lucafile, and set up 
+        SwiftLint for your project.
+    }
+    
+    @Section(title: "Install Luca") {
+        @ContentAndMedia {
+            First, you need to install Luca on your machine. You can either use 
+            the install script or build from source.
+        }
+        
+        @Steps {
+            @Step {
+                Open Terminal and run the install script to download and install 
+                the latest version of Luca.
+                
+                @Code(name: "Terminal", file: "install-luca.sh")
+            }
+            
+            @Step {
+                Verify the installation by checking the version.
+                
+                @Code(name: "Terminal", file: "verify-install.sh")
+            }
+        }
+    }
+    
+    @Section(title: "Create a Lucafile") {
+        @ContentAndMedia {
+            A Lucafile defines the tools your project needs. Create one in your 
+            project's root directory to specify which tools and versions to install.
+        }
+        
+        @Steps {
+            @Step {
+                Navigate to your project directory.
+                
+                @Code(name: "Terminal", file: "cd-project.sh")
+            }
+            
+            @Step {
+                Create a new file named `Lucafile` with your preferred text editor.
+                Start with the YAML header.
+                
+                @Code(name: "Lucafile", file: "Lucafile-01.yml")
+            }
+            
+            @Step {
+                Add a tools section with your first tool definition. Here we'll 
+                add SwiftLint as an example.
+                
+                @Code(name: "Lucafile", file: "Lucafile-02.yml")
+            }
+        }
+    }
+    
+    @Section(title: "Install Tools") {
+        @ContentAndMedia {
+            With your Lucafile ready, use Luca to download and install the 
+            specified tools.
+        }
+        
+        @Steps {
+            @Step {
+                Run `luca install` to download and set up all tools defined in 
+                your Lucafile.
+                
+                @Code(name: "Terminal", file: "luca-install.sh")
+            }
+            
+            @Step {
+                Luca downloads the tool, extracts it, and creates a symlink in 
+                `.luca/active/`. You can now use the tool directly.
+                
+                @Code(name: "Terminal", file: "use-swiftlint.sh")
+            }
+        }
+    }
+    
+    @Section(title: "Install from GitHub Directly") {
+        @ContentAndMedia {
+            You can also install tools directly from GitHub without modifying 
+            your Lucafile. This is useful for quick installations or testing 
+            different versions.
+        }
+        
+        @Steps {
+            @Step {
+                Install a tool by specifying the GitHub organization, repository, 
+                and version.
+                
+                @Code(name: "Terminal", file: "install-github.sh")
+            }
+            
+            @Step {
+                If the release has multiple assets, specify which one to download 
+                using the `--asset` flag.
+                
+                @Code(name: "Terminal", file: "install-asset.sh")
+            }
+        }
+    }
+}
