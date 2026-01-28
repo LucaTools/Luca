@@ -107,6 +107,9 @@ luca install
     @Flag(help: "Skip architecture compatibility validation during installation.")
     var ignoreArchCheck: Bool = false
     
+    @Flag(inversion: .prefixedNo, help: "Install the post-checkout git hook in the current repository.")
+    var installPostCheckoutGitHook: Bool = true
+    
     @Flag(help: "Suppress all output except final success message.")
     var quiet: Bool = false
 
@@ -137,6 +140,11 @@ luca install
         
         let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
         try gitIgnoreManager.ensureGitIgnoreIncludesActiveFolder()
+        
+        if installPostCheckoutGitHook {
+            let gitHookInstaller = GitHookInstaller(fileManager: fileManager, printer: printer)
+            try gitHookInstaller.installPostCheckoutHook()
+        }
         
         try await installer.install(installationType: installationType)
     }
