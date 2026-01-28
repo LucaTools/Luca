@@ -79,6 +79,10 @@ public struct FileManagerWrapper: FileManaging {
         try fileManager.attributesOfItem(atPath: path)
     }
     
+    public func copyItem(at srcURL: URL, to dstURL: URL) throws {
+        try fileManager.copyItem(at: srcURL, to: dstURL)
+    }
+    
     public func readString(at url: URL) throws -> String {
         try String(contentsOf: url, encoding: .utf8)
     }

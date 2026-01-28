@@ -7,6 +7,7 @@ public protocol FileManaging:
     BinaryFinderFileManaging,
     ChecksumValidatorFileManaging,
     FileTypeDetectorFileManaging,
+    GitHookInstallerFileManaging,
     GitIgnoreFileManaging,
     InstalledToolsFileManaging,
     PermissionManagerFileManaging,
@@ -27,4 +28,5 @@ public protocol FileManaging:
     func setAttributes(_ attributes: [FileAttributeKey: Any], ofItemAtPath path: String) throws
     func contentsOfDirectory(at url: URL, includingPropertiesForKeys keys: [URLResourceKey]?, options mask: FileManager.DirectoryEnumerationOptions) throws -> [URL]
     func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any]
+    func copyItem(at srcURL: URL, to dstURL: URL) throws
 }

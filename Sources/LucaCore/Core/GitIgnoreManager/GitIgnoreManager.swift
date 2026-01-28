@@ -28,12 +28,12 @@ public struct GitIgnoreManager {
             if !content.contains(entryToAdd) {
                 let newContent = content.hasSuffix("\n") ? content + entryToAdd + "\n" : content + "\n" + entryToAdd + "\n"
                 try fileManager.writeString(newContent, to: gitIgnoreFile)
-                printer.printFormatted("\(.raw("🙈 Added \(entryToAdd) to .gitignore"))")
+                printer.printFormatted("\(.info("🙈 Added \(entryToAdd) to .gitignore"))")
             }
         } else {
             let content = entryToAdd + "\n"
             try fileManager.writeString(content, to: gitIgnoreFile)
-            printer.printFormatted("\(.raw("🙈 Created .gitignore with \(entryToAdd)"))")
+            printer.printFormatted("\(.info("🙈 Created .gitignore with \(entryToAdd)"))")
         }
     }
 }

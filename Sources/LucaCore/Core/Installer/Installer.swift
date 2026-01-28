@@ -101,7 +101,6 @@ public struct Installer {
         let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
         
         printer.printFormatted("\(.info("🧠 Detecting tools to install..."))")
-        printer.printFormatted("")
         
         let tools = try await toolFactory.toolsForInstallationType(installationType)
         
