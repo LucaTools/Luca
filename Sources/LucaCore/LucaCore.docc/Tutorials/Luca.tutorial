@@ -1,0 +1,19 @@
+@Tutorials(name: "Luca") {
+    @Intro(title: "Meet Luca") {
+        Learn how to use Luca to manage your development tools efficiently. 
+        Luca helps you install, version, and organize command-line tools 
+        specific to each of your projects.
+    }
+    
+    @Chapter(name: "Getting Started") {
+        Install Luca and set up your first Lucafile to manage project tools.
+        
+        @TutorialReference(tutorial: "doc:InstallingTools")
+    }
+    
+    @Chapter(name: "Managing Tools") {
+        Learn how to list, update, and remove tools from your projects.
+        
+        @TutorialReference(tutorial: "doc:ManagingTools")
+    }
+}

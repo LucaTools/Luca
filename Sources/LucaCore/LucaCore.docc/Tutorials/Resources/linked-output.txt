@@ -1,0 +1,8 @@
+SwiftLint:
+  version: 0.61.0
+  binary: swiftlint
+  location: /Users/you/.luca/tools/SwiftLint/0.61.0/swiftlint
+tuist:
+  version: 4.80.0
+  binary: tuist
+  location: /Users/you/.luca/tools/tuist/4.80.0/tuist

@@ -3,6 +3,34 @@
 import Foundation
 import Noora
 
+/// Downloads, verifies, and installs tools from remote URLs.
+///
+/// The `Installer` orchestrates the complete installation process for development tools:
+/// 1. Downloads the release archive or executable from the specified URL
+/// 2. Validates the checksum (if provided)
+/// 3. Extracts archives or handles executables
+/// 4. Validates architecture compatibility
+/// 5. Sets executable permissions
+/// 6. Creates symlinks in the project's `.luca/active/` directory
+///
+/// ## Usage
+///
+/// ```swift
+/// let installer = Installer(
+///     fileManager: FileManager.default,
+///     ignoreArchitectureCheck: false,
+///     printer: Printer()
+/// )
+/// try await installer.install(installationType: .spec(path: lucafilePath))
+/// ```
+///
+/// ## Topics
+///
+/// ### Installing Tools
+/// - ``install(installationType:)``
+///
+/// ### Installation Types
+/// - ``InstallationType``
 public struct Installer {
     
     enum InstallerError: Error, LocalizedError {
@@ -53,6 +81,12 @@ public struct Installer {
         self.noora = noora
     }
     
+    /// Installs tools based on the specified installation type.
+    ///
+    /// - Parameter installationType: Specifies how to determine which tools to install.
+    ///   Can be either `.spec` to read from a Lucafile, or `.github` to install directly
+    ///   from a GitHub release.
+    /// - Throws: An error if downloading, extracting, or linking fails.
     public func install(installationType: InstallationType) async throws {
         if quiet {
             try await installQuietly(installationType: installationType)
