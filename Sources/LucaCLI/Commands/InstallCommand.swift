@@ -26,91 +26,143 @@ struct InstallCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(
         commandName: "install",
-        abstract: """
-Install versions of tools defined in a spec file or directly from GitHub releases.
-
-Example of usages:
-  
-# From a spec
-
-luca install
-luca install --spec ./Lucafile
-  
-# Individual installations
-
-luca install TogglesPlatform/Toggles@1.0.0
-luca install krzysztofzablocki/Sourcery@2.2.7
-  --asset sourcery-2.2.7.zip
-  --binary-path bin/sourcery
-luca install firebase/firebase-tools@v14.12.1
-  --desired-binary-name firebase
-  
-# Inline installations
-
-luca install
-  --name ToggleGen
-  --version 1.0.0
-  --url https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-macOS-universal-binary.zip
-
-luca install
-  --name ToggleGen
-  --version 1.0.0
-  --url https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-macOS-universal-binary.zip
-  --checksum e0a6540d01434f436335a9f48405ffd008020043c9b1c21d38742fc8e7c9fdc3
-  --algorithm sha256
-
-luca install
-  --name Sourcery
-  --version 2.2.7
-  --url https://github.com/krzysztofzablocki/Sourcery/releases/download/2.2.7/sourcery-2.2.7.zip
-  --binary-path bin/sourcery
-
-luca install
-  --name FirebaseCLI
-  --version 14.12.1
-  --url https://github.com/firebase/firebase-tools/releases/download/v14.12.1/firebase-tools-macos
-  --desired-binary-name firebase
-  --ignore-arch-check
-"""
+        abstract: "Install tools from a spec file or GitHub releases.",
+        discussion: """
+        Supports three installation modes:
+        - Spec file: Install all tools defined in a Lucafile
+        - Individual: Install from GitHub using org/repo@version format
+        - Inline: Install from a direct URL with explicit parameters
+        
+        See parameter help for detailed examples.
+        """
     )
 
-    @Option(name: .long, help: "The location of the spec file.")
+    @Option(name: .long, help: ArgumentHelp(
+        "Path to the spec file.",
+        discussion: """
+        Defaults to './Lucafile' in the current directory if not specified.
+        Examples:
+          luca install
+          luca install --spec ./config/Lucafile
+        """,
+        valueName: "path"
+    ))
     var spec: String?
     
-    @Argument(help: "Tool to install in format 'organization/repository@version'")
+    @Argument(help: ArgumentHelp(
+        "Tool to install in 'org/repo@version' format.",
+        discussion: """
+        Examples:
+          luca install TogglesPlatform/Toggles@1.0.0
+          luca install krzysztofzablocki/Sourcery@2.2.7 --asset sourcery-2.2.7.zip
+        """,
+        valueName: "org/repo@version"
+    ))
     var identifier: String?
     
-    @Option(help: "Name of the tool to install.")
+    @Option(help: ArgumentHelp(
+        "Name of the tool (inline mode).",
+        discussion: """
+        Requires --version and --url.
+        Example:
+          luca install --name ToggleGen --version 1.0.0 \\
+            --url https://github.com/.../ToggleGen.zip
+        """,
+        valueName: "tool-name"
+    ))
     var name: String?
     
-    @Option(help: "Version of the tool to install.")
+    @Option(help: ArgumentHelp(
+        "Version of the tool (inline mode).",
+        discussion: "Requires --name and --url.",
+        valueName: "version"
+    ))
     var version: String?
     
-    @Option(help: "URL of the asset for the tool to install.")
+    @Option(help: ArgumentHelp(
+        "URL of the asset to download (inline mode).",
+        discussion: "Requires --name and --version.",
+        valueName: "url"
+    ))
     var url: String?
     
-    @Option(help: "Filename of the asset associated with the release.")
+    @Option(help: ArgumentHelp(
+        "Filename of the release asset to download.",
+        discussion: """
+        Use when the release contains multiple assets.
+        Example:
+          luca install krzysztofzablocki/Sourcery@2.2.7 \\
+            --asset sourcery-2.2.7.zip
+        """,
+        valueName: "filename"
+    ))
     var asset: String?
     
-    @Option(help: "Binary path for the asset associated with the release.")
+    @Option(help: ArgumentHelp(
+        "Path to the executable inside the archive.",
+        discussion: """
+        Required when the binary is nested within the archive.
+        Example:
+          --binary-path bin/sourcery
+        """,
+        valueName: "path"
+    ))
     var binaryPath: String?
     
-    @Option(help: "Name of the binary stored locally. Requires `url` to point to an executable file, ignored otherwise.")
+    @Option(help: ArgumentHelp(
+        "Local name for the installed binary.",
+        discussion: """
+        Useful when the downloaded file has a different name.
+        Example:
+          luca install firebase/firebase-tools@v14.12.1 \\
+            --desired-binary-name firebase
+        """,
+        valueName: "name"
+    ))
     var desiredBinaryName: String?
     
-    @Option(help: "Checksum of the asset associated with the release.")
+    @Option(help: ArgumentHelp(
+        "Expected checksum for integrity verification.",
+        discussion: """
+        Use with --algorithm.
+        Example:
+          --checksum e0a6540d01434f436335a9f48405ffd00802...
+        """,
+        valueName: "hash"
+    ))
     var checksum: String?
     
-    @Option(help: "Algorithm to use to verify the integrity of the asset.")
+    @Option(help: ArgumentHelp(
+        "Hash algorithm for checksum verification.",
+        valueName: "algorithm"
+    ))
     var algorithm: ChecksumAlgorithm?
     
-    @Flag(help: "Skip architecture compatibility validation during installation.")
+    @Flag(help: ArgumentHelp(
+        "Skip architecture compatibility validation.",
+        discussion: """
+        Use for platform-independent executables.
+        Example:
+          luca install firebase/firebase-tools@v14.12.1 \\
+            --desired-binary-name firebase \\
+            --ignore-arch-check
+        """
+    ))
     var ignoreArchCheck: Bool = false
     
-    @Flag(inversion: .prefixedNo, help: "Install the post-checkout git hook in the current repository.")
+    @Flag(inversion: .prefixedNo, help: ArgumentHelp(
+        "Install the post-checkout git hook.",
+        discussion: """
+        Enabled by default. Automatically runs 'luca install' after git checkout.
+        Use --no-install-post-checkout-git-hook to disable.
+        """
+    ))
     var installPostCheckoutGitHook: Bool = true
     
-    @Flag(help: "Suppress all output except final success message.")
+    @Flag(help: ArgumentHelp(
+        "Suppress output except final success message.",
+        discussion: "Useful for CI/CD pipelines or scripting."
+    ))
     var quiet: Bool = false
 
     func run() async throws {

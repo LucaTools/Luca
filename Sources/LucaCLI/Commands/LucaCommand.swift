@@ -9,13 +9,22 @@ struct LucaCommand: AsyncParsableCommand {
         commandName: "luca",
         abstract: "A modern tool manager that helps you install and manage development tools.",
         version: version,
-        subcommands: [
-            CalculateChecksumCommand.self,
-            InstallCommand.self,
-            InstalledCommand.self,
-            LinkedCommand.self,
-            UninstallCommand.self,
-            UnlinkCommand.self
-        ]
+        groupedSubcommands: [
+            CommandGroup(name: "Installation", subcommands: [
+                InstallCommand.self,
+                UninstallCommand.self
+            ]),
+            CommandGroup(name: "Linking", subcommands: [
+                LinkedCommand.self,
+                UnlinkCommand.self
+            ]),
+            CommandGroup(name: "Listing", subcommands: [
+                InstalledCommand.self
+            ]),
+            CommandGroup(name: "Validation", subcommands: [
+                CalculateChecksumCommand.self
+            ])
+        ],
+        defaultSubcommand: InstallCommand.self
     )
 }
