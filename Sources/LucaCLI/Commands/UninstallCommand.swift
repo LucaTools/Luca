@@ -10,10 +10,22 @@ struct UninstallCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(
         commandName: "uninstall",
-        abstract: "Uninstall a specific tool version."
+        abstract: "Uninstall a specific tool version.",
+        discussion: """
+        Removes an installed tool version from the local cache.
+        If no version is specified, prompts for selection interactively.
+        """
     )
     
-    @Argument(help: "The tool to uninstall, optionally with version (e.g. SwiftLint@0.61.0)")
+    @Argument(help: ArgumentHelp(
+        "Tool to uninstall, optionally with version.",
+        discussion: """
+        Examples:
+          luca uninstall SwiftLint
+          luca uninstall SwiftLint@0.61.0
+        """,
+        valueName: "tool[@version]"
+    ))
     var tool: String
 
     func run() async throws {

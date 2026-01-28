@@ -9,10 +9,21 @@ struct UnlinkCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(
         commandName: "unlink",
-        abstract: "Removes a specific symlink from the active folder."
+        abstract: "Remove a symlink from the active folder.",
+        discussion: """
+        Removes the symlink without uninstalling the underlying tool.
+        The tool remains available for re-linking to a different version.
+        """
     )
     
-    @Argument(help: "The name of the symlink to remove (e.g. swiftlint)")
+    @Argument(help: ArgumentHelp(
+        "Name of the symlink to remove.",
+        discussion: """
+        Example:
+          luca unlink swiftlint
+        """,
+        valueName: "name"
+    ))
     var symlink: String
 
     func run() async throws {

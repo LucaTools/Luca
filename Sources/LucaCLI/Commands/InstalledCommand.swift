@@ -8,7 +8,11 @@ struct InstalledCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(
         commandName: "installed",
-        abstract: "List installed tools and versions."
+        abstract: "List installed tools and versions.",
+        discussion: """
+        Shows all tools in the local cache with their installed versions.
+        Use 'luca linked' to see which versions are currently active.
+        """
     )
     
     func run() async throws {
