@@ -1,4 +1,4 @@
-@Tutorial(time: 8) {
+@Tutorial(time: 5) {
     @Intro(title: "Managing Your Tools") {
         Learn how to list, inspect, and remove tools managed by Luca.
         

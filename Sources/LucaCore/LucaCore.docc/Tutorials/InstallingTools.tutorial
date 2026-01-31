@@ -1,4 +1,4 @@
-@Tutorial(time: 10) {
+@Tutorial(time: 5) {
     @Intro(title: "Installing Your First Tool") {
         Learn how to install Luca and configure your first project with managed tools.
         
