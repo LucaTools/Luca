@@ -3,6 +3,7 @@
 import ArgumentParser
 import Foundation
 import LucaCore
+import Noora
 import Yams
 
 extension ChecksumAlgorithm: ExpressibleByArgument {}
@@ -188,7 +189,7 @@ struct InstallCommand: AsyncParsableCommand {
             checksum: checksum,
             algorithm: algorithm
         )
-        let installationType = try installationType(for: arguments)
+        let installationType = try installationType(for: arguments, fileManager: fileManager)
         
         let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
         try gitIgnoreManager.ensureGitIgnoreIncludesActiveFolder()
@@ -202,18 +203,46 @@ struct InstallCommand: AsyncParsableCommand {
     }
     
     /// Path to the spec file: either explicit via `--spec` or default to `Constants.specFile` in current directory.
-    private func specPath(providedSpec: String?) -> URL {
+    /// When no exact `Lucafile` exists, discovers files with the `Lucafile` prefix and prompts the user to pick one.
+    private func specPath(providedSpec: String?, fileManager: FileManaging) throws -> URL {
         if let providedSpec {
             return URL(fileURLWithPath: providedSpec)
         }
-        return URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-            .appending(component: Constants.specFile)
+
+        let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
+        let defaultPath = currentDirectory.appending(component: Constants.specFile)
+
+        // If exact Lucafile exists, use it directly.
+        if fileManager.fileExists(atPath: defaultPath.path) {
+            return defaultPath
+        }
+
+        // Auto-discover files with the Lucafile prefix.
+        let finder = SpecFinder(fileManager: fileManager)
+        let candidates = try finder.findSpecFiles(in: currentDirectory)
+
+        switch candidates.count {
+        case 0:
+            // Return default path; will trigger a missing-spec error downstream.
+            return defaultPath
+        case 1:
+            return candidates[0]
+        default:
+            let noora = Noora()
+            let options = candidates.map { $0.lastPathComponent }
+            let selected: String = noora.singleChoicePrompt(
+                title: "Select spec",
+                question: "Multiple \(Constants.specFile) found. Which one do you want to use?",
+                options: options
+            )
+            return currentDirectory.appending(component: selected)
+        }
     }
     
-    private func installationType(for arguments: Arguments) throws -> InstallationType {
+    private func installationType(for arguments: Arguments, fileManager: FileManaging) throws -> InstallationType {
         switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.desiredBinaryName, arguments.checksum, arguments.algorithm) {
         case (let spec, .none, .none, .none, .none, .none, .none, .none, .none, .none):
-            let specPath = specPath(providedSpec: spec)
+            let specPath = try specPath(providedSpec: spec, fileManager: fileManager)
             return .spec(specPath: specPath)
         case (.none, .some(let identifier), let asset, .none, .none, .none, let binaryPath, let desiredBinaryName, let checksum, let algorithm):
             return .individual(identifier: identifier, asset: asset, binaryPath: binaryPath, desiredBinaryName: desiredBinaryName, checksum: checksum, algorithm: algorithm)
