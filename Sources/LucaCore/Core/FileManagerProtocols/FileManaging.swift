@@ -11,6 +11,7 @@ public protocol FileManaging:
     GitIgnoreFileManaging,
     InstalledToolsFileManaging,
     PermissionManagerFileManaging,
+    SpecFinderFileManaging,
     SymLinkFileManaging,
     UnarchiverFileManaging {
     var toolsFolder: URL { get }
