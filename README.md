@@ -1,10 +1,10 @@
 # Luca
 
 [![Swift](https://img.shields.io/badge/Swift-5.7+-orange.svg)](https://swift.org)
-[![Platforms](https://img.shields.io/badge/Platforms-macOS-blue.svg)](https://apple.com/macos)
+[![Platforms](https://img.shields.io/badge/Platforms-macOS%20|%20Linux-blue.svg)](https://swift.org/platform-support)
 [![License](https://img.shields.io/badge/License-Apache%202-green.svg)](LICENSE)
 
-Luca is a lightweight tool manager for macOS that helps developers install, manage, and activate specific versions of development tools in their projects. It creates project-specific tool environments without polluting your global PATH.
+Luca is a lightweight tool manager for macOS and Linux that helps developers install, manage, and activate specific versions of development tools in their projects. It creates project-specific tool environments without polluting your global PATH.
 
 ## Features
 
@@ -38,6 +38,12 @@ git clone https://github.com/LucaTools/Luca.git
 cd Luca
 swift build -c release
 cp -f .build/release/luca /usr/local/bin/luca
+```
+
+On Linux, you can build a portable binary that doesn't require the Swift runtime:
+
+```bash
+swift build -c release -Xswiftc -static-stdlib
 ```
 
 ## Usage
@@ -181,8 +187,10 @@ tools:
 
 ## Requirements
 
-- macOS 13.0 or later
+- macOS 13.0 or later, or Linux (x86_64)
 - Swift 5.7 or later (for building from source)
+
+> **Note:** On Linux, Luca compiles and runs, but some features (e.g., Mach-O architecture detection, macOS-specific asset resolution) are not yet available. Full Linux runtime support is planned for a future release.
 
 ## Contributing
 
