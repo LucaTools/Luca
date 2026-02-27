@@ -1,6 +1,9 @@
 //  ReleaseInfoProvider.swift
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 struct ReleaseInfoProvider: ReleaseInfoProviding {
     

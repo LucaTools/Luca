@@ -19,8 +19,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  run-tests:
-    name: Run tests
+  run-tests-macos:
+    name: Run tests (macOS)
     runs-on: macos-15
     timeout-minutes: 10
     steps:
@@ -31,6 +31,23 @@ jobs:
 
       - name: Select Xcode
         uses: ./.github/actions/select-xcode
+
+      - name: Delete build artifacts
+        run: swift package clean
+
+      - name: Run package tests
+        run: swift test
+
+  run-tests-linux:
+    name: Run tests (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.0-jammy
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Delete build artifacts
         run: swift package clean

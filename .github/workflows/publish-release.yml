@@ -6,6 +6,7 @@ on:
       - '*'
 
 env:
+  PRODUCT_NAME: luca
   TOOL_NAME: Luca
 
 jobs:
@@ -68,22 +69,143 @@ jobs:
           name: macOS-universal-binary
           path: ${{ steps.create-macos-universal-binary.outputs.binary-folder }}/${{ env.TOOL_NAME }}-macOS.zip
           if-no-files-found: error
-    
+
+  build-linux:
+    name: Build Linux x86_64 binary
+    runs-on: ubuntu-latest
+    container: swift:6.0-jammy
+    timeout-minutes: 15
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y curl zip
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update version in Version.swift
+        run: |
+          if [ -f "Sources/LucaCLI/Version.swift" ]; then
+            sed -i 's/let version = "[^"]*"/let version = "${{ github.ref_name }}"/' Sources/LucaCLI/Version.swift
+          else
+            echo "No Sources/LucaCLI/Version.swift file found."
+            exit 1
+          fi
+
+      - name: Delete build artifacts
+        run: swift package clean
+
+      - name: Build binary (x86_64)
+        run: swift build --product ${{ env.PRODUCT_NAME }} -c release -Xswiftc -static-stdlib
+
+      - name: Zip binary
+        run: |
+          set -euo pipefail
+          OUT_DIR=".github/.build"
+          mkdir -p "$OUT_DIR"
+          cp .build/release/${{ env.PRODUCT_NAME }} "$OUT_DIR/${{ env.TOOL_NAME }}"
+          chmod +x "$OUT_DIR/${{ env.TOOL_NAME }}"
+          cd "$OUT_DIR"
+          zip -r ${{ env.TOOL_NAME }}-Linux.zip ${{ env.TOOL_NAME }}
+
+      - name: Upload Linux binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Linux-binary
+          path: .github/.build/${{ env.TOOL_NAME }}-Linux.zip
+          if-no-files-found: error
+
+  generate-artifactbundle:
+    name: Generate artifactbundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [ build-macos, build-linux ]
+    steps:
+      - name: Download macOS universal binary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macOS-universal-binary
+          path: artifacts/macos
+
+      - name: Download Linux binary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Linux-binary
+          path: artifacts/linux
+
+      - name: Extract binaries
+        run: |
+          set -euo pipefail
+          mkdir -p extracted/macos extracted/linux
+          unzip artifacts/macos/${{ env.TOOL_NAME }}-macOS.zip -d extracted/macos
+          unzip artifacts/linux/${{ env.TOOL_NAME }}-Linux.zip -d extracted/linux
+
+      - name: Create artifactbundle
+        run: |
+          set -euo pipefail
+          BUNDLE="${{ env.TOOL_NAME }}.artifactbundle"
+          mkdir -p "$BUNDLE/macos" "$BUNDLE/linux"
+          cp extracted/macos/${{ env.TOOL_NAME }} "$BUNDLE/macos/${{ env.TOOL_NAME }}"
+          cp extracted/linux/${{ env.TOOL_NAME }} "$BUNDLE/linux/${{ env.TOOL_NAME }}"
+          chmod +x "$BUNDLE/macos/${{ env.TOOL_NAME }}" "$BUNDLE/linux/${{ env.TOOL_NAME }}"
+          cat > "$BUNDLE/info.json" << 'EOF'
+          {
+            "schemaVersion": "1.0",
+            "artifacts": {
+              "${{ env.TOOL_NAME }}": {
+                "version": "${{ github.ref_name }}",
+                "type": "executable",
+                "variants": [
+                  {
+                    "path": "macos/${{ env.TOOL_NAME }}",
+                    "supportedTriples": ["x86_64-apple-macosx", "arm64-apple-macosx"]
+                  },
+                  {
+                    "path": "linux/${{ env.TOOL_NAME }}",
+                    "supportedTriples": ["x86_64-unknown-linux-gnu"]
+                  }
+                ]
+              }
+            }
+          }
+          EOF
+          zip -r "${{ env.TOOL_NAME }}.artifactbundle.zip" "$BUNDLE"
+
+      - name: Upload artifactbundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifactbundle
+          path: ${{ env.TOOL_NAME }}.artifactbundle.zip
+          if-no-files-found: error
+
   create-release:
     name: Create release w/ artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [ build-macos ]
+    needs: [ generate-artifactbundle ]
     permissions:
       contents: write # Needed for release creation & asset upload
     steps:
       - name: Download macOS universal binary artifact
-        id: download-macos-artifact
         uses: actions/download-artifact@v4
         with:
           name: macOS-universal-binary
           path: artifacts
-  
+
+      - name: Download Linux binary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Linux-binary
+          path: artifacts
+
+      - name: Download artifactbundle
+        uses: actions/download-artifact@v4
+        with:
+          name: artifactbundle
+          path: artifacts
+
       - name: Create GitHub Release (if not exists)
         id: create-release
         env:
@@ -132,4 +254,44 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             -H "Content-Type: application/octet-stream" \
             "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.create-release.outputs.release_id }}/assets?name=${{ env.TOOL_NAME }}-macOS.zip" \
+              --data-binary @"$FILE"
+
+      - name: Upload Linux binary release asset
+        env:
+          RELEASE_ID: ${{ steps.create-release.outputs.release_id }}
+        run: |
+          set -euo pipefail
+          FILE="artifacts/${{ env.TOOL_NAME }}-Linux.zip"
+          if [ ! -f "$FILE" ]; then
+            echo "Asset file not found: $FILE" >&2
+            ls -R .
+            exit 1
+          fi
+          curl -sSL \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/octet-stream" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.create-release.outputs.release_id }}/assets?name=${{ env.TOOL_NAME }}-Linux.zip" \
+              --data-binary @"$FILE"
+
+      - name: Upload artifactbundle release asset
+        env:
+          RELEASE_ID: ${{ steps.create-release.outputs.release_id }}
+        run: |
+          set -euo pipefail
+          FILE="artifacts/${{ env.TOOL_NAME }}.artifactbundle.zip"
+          if [ ! -f "$FILE" ]; then
+            echo "Asset file not found: $FILE" >&2
+            ls -R .
+            exit 1
+          fi
+          curl -sSL \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/octet-stream" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.create-release.outputs.release_id }}/assets?name=${{ env.TOOL_NAME }}.artifactbundle.zip" \
               --data-binary @"$FILE"

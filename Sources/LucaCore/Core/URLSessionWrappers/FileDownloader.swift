@@ -1,6 +1,9 @@
 //  FileDownloader.swift
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 struct FileDownloader: FileDownloading {
     
