@@ -40,7 +40,7 @@ struct LinkedToolsListerTests {
         let binaryURL = toolFolder.appending(component: "bin").appending(component: binaryName)
         
         try fileManager.createDirectory(at: binaryURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        fileManager.fileManager.createFile(atPath: binaryURL.path, contents: nil)
+        _ = fileManager.fileManager.createFile(atPath: binaryURL.path, contents: nil)
         
         // Setup active folder and symlink
         try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
@@ -65,7 +65,7 @@ struct LinkedToolsListerTests {
         
         try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
         let fileURL = fileManager.activeFolder.appending(component: "regularFile")
-        fileManager.fileManager.createFile(atPath: fileURL.path, contents: nil)
+        _ = fileManager.fileManager.createFile(atPath: fileURL.path, contents: nil)
         
         let linkedTools = try lister.linkedTools()
         #expect(linkedTools.isEmpty)
@@ -79,7 +79,7 @@ struct LinkedToolsListerTests {
         try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
         
         let externalFile = fileManager.fileManager.temporaryDirectory.appending(component: "external")
-        fileManager.fileManager.createFile(atPath: externalFile.path, contents: nil)
+        _ = fileManager.fileManager.createFile(atPath: externalFile.path, contents: nil)
         
         let symlinkURL = fileManager.activeFolder.appending(component: "externalLink")
         try fileManager.createSymbolicLink(at: symlinkURL, withDestinationURL: externalFile)
