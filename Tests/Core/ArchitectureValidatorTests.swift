@@ -37,7 +37,7 @@ struct ArchitectureValidatorTests {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = fileManager.currentDirectoryPath + "/tmp_ArchTest-\(UUID().uuidString)/"
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_ArchTest-\(UUID().uuidString)/"
         defer { try? fileManager.removeItem(atPath: destination) }
         
         let process = Process()
@@ -67,7 +67,7 @@ struct ArchitectureValidatorTests {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = fileManager.currentDirectoryPath + "/tmp_ArchTest-\(UUID().uuidString)/"
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_ArchTest-\(UUID().uuidString)/"
         defer { try? fileManager.removeItem(atPath: destination) }
         
         let process = Process()

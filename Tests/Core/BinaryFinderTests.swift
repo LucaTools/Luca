@@ -17,7 +17,7 @@ struct BinaryFinderTests {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = fileManager.currentDirectoryPath + "/tmp_MockRelease-\(UUID().uuidString)/"
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_MockRelease-\(UUID().uuidString)/"
         
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
@@ -39,7 +39,7 @@ struct BinaryFinderTests {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = fileManager.currentDirectoryPath + "/tmp_MockELFRelease-\(UUID().uuidString)/"
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_MockELFRelease-\(UUID().uuidString)/"
         
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
@@ -61,7 +61,7 @@ struct BinaryFinderTests {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = fileManager.currentDirectoryPath + "/tmp_MockRelease-\(UUID().uuidString)/"
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_MockRelease-\(UUID().uuidString)/"
         
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
