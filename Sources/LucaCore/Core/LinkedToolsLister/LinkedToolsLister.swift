@@ -1,6 +1,6 @@
 import Foundation
 
-public final class LinkedToolsLister {
+public struct LinkedToolsLister {
     
     public struct LinkedTool {
         public let name: String

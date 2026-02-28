@@ -1,6 +1,6 @@
 import Foundation
 
-public final class InstalledToolsLister {
+public struct InstalledToolsLister {
     
     private let fileManager: InstalledToolsFileManaging
     

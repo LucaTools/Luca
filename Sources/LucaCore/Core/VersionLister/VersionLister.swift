@@ -1,6 +1,6 @@
 import Foundation
 
-public final class VersionLister {
+public struct VersionLister {
     
     public enum VersionListerError: Error, LocalizedError, Equatable {
         case toolNotFound(tool: String)
