@@ -14,7 +14,7 @@ struct BinaryFinder: BinaryFinding {
             case .cannotConstructUrl(let path):
                 return "Cannot construct URL from String '\(path)'."
             case .cannotEnumerateDirectory(let path):
-                return "Could not enumerate directories at \(path)"
+                return "Could not enumerate directories at \(path)."
             case .missingBinaryFile(let location):
                 return "Could not find binary at \(location)."
             }

@@ -33,13 +33,13 @@ import Noora
 /// - ``InstallationType``
 public struct Installer {
     
-    enum InstallerError: Error, LocalizedError {
+    enum InstallerError: Error, LocalizedError, Equatable {
         case unknownFileType(String)
         
         var errorDescription: String? {
             switch self {
             case .unknownFileType(let file):
-                return "Unknown file type for file \(file))."
+                return "Unknown file type for file \(file)."
             }
         }
     }
@@ -157,9 +157,7 @@ public struct Installer {
         
         printer.printFormatted("\(.success("🚀 Tools have been installed for the current project."))")
     }
-    
-    // MARK: - Private
-    
+
     private func reinstall(_ tool: Tool) throws {
         printer.printFormatted("\(.raw("👀 Tool \(tool.name) version \(tool.version) is already installed."))")
         let installationDestination = fileManager.toolsFolder

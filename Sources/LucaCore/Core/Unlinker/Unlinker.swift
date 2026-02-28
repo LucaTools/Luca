@@ -4,7 +4,7 @@ import Foundation
 
 public struct Unlinker {
 
-    public enum UninstallerError: Error, LocalizedError, Equatable {
+    public enum UnlinkerError: Error, LocalizedError, Equatable {
         case symlinkNotFound(symlink: String)
         
         public var errorDescription: String? {
@@ -31,7 +31,7 @@ public struct Unlinker {
             printer.printFormatted("\(.primary("🙌 Symlink \(symlink) has been removed."))")
             printer.printFormatted("")
         } else {
-            throw UninstallerError.symlinkNotFound(symlink: symlink)
+            throw UnlinkerError.symlinkNotFound(symlink: symlink)
         }
     }
 }

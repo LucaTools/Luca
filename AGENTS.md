@@ -73,3 +73,8 @@ Uses **Swift Testing** (not XCTest).
 - Parameterized tests via `@Test(arguments:)`
 - File system interaction: use `FileManagerWrapperMock`, which redirects home/CWD to a UUID-named temp directory for full isolation
 - Fixtures loaded from `Bundle.module` via the `Fixture(filename:type:)` helper
+
+## Pull Request
+
+- Always create a pull request for new features
+- Always respect the template at .github/PULL_REQUEST_TEMPLATE.md
