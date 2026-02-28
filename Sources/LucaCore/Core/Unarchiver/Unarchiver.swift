@@ -19,14 +19,14 @@ import Foundation
 struct Unarchiver: Unarchiving {
     
     enum UnarchiverError: Error, LocalizedError {
-        case unrecognisedFileType(String)
+        case unrecognizedFileType(String)
         case notAnArchive(String)
         case failedToUnarchive(Error)
         
         var errorDescription: String? {
             switch self {
-            case .unrecognisedFileType(let file):
-                return "Unrecognised file type \(file)."
+            case .unrecognizedFileType(let file):
+                return "Unrecognized file type \(file)."
             case .notAnArchive(let file):
                 return "File \(file) is not an archive."
             case .failedToUnarchive(let error):
@@ -48,7 +48,7 @@ struct Unarchiver: Unarchiving {
     /// - Parameters:
     ///   - filePath: The path to the archive file.
     ///   - installationDestination: The directory to extract files into.
-    /// - Throws: ``UnarchiverError/unrecognisedFileType(_:)`` if the file type
+    /// - Throws: ``UnarchiverError/unrecognizedFileType(_:)`` if the file type
     ///   cannot be determined, ``UnarchiverError/notAnArchive(_:)`` if the file
     ///   is an executable, or ``UnarchiverError/failedToUnarchive(_:)`` if
     ///   extraction fails.
@@ -59,7 +59,7 @@ struct Unarchiver: Unarchiving {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         
         guard let fileType = try fileTypeDetector.detectFileType(at: filePath) else {
-            throw UnarchiverError.unrecognisedFileType(filePath.path)
+            throw UnarchiverError.unrecognizedFileType(filePath.path)
         }
         
         switch fileType {

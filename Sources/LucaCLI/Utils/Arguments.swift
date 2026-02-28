@@ -52,7 +52,7 @@ extension Arguments: CustomStringConvertible {
          version: \(version ?? "nil")
          url: \(url?.absoluteString ?? "nil")
          binaryPath: \(binaryPath ?? "nil")
-         desiredBinaryName: \(binaryPath ?? "nil")
+         desiredBinaryName: \(desiredBinaryName ?? "nil")
          checksum: \(checksum ?? "nil")
          algorithm: \(algorithm?.rawValue ?? "nil")
         """

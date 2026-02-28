@@ -30,7 +30,7 @@ struct UnlinkerTests {
         
         let symlinkName = "nonexistent"
         
-        #expect(throws: Unlinker.UninstallerError.symlinkNotFound(symlink: symlinkName)) {
+        #expect(throws: Unlinker.UnlinkerError.symlinkNotFound(symlink: symlinkName)) {
             try unlinker.unlink(symlink: symlinkName)
         }
     }
