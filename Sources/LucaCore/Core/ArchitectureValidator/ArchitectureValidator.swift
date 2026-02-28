@@ -214,7 +214,7 @@ struct ArchitectureValidator: ArchitectureValidating {
         case Self.EM_X86_64:
             return .x86_64
         case Self.EM_AARCH64:
-            return .arm64
+            return .aarch64
         default:
             throw ArchitectureValidatorError.unknownArchitecture(path: path)
         }

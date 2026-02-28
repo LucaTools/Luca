@@ -24,11 +24,11 @@ struct ArchitectureValidatorTests {
     @Test
     func hostArchitecture_returnsValidArchitecture() {
         let host = Architecture.host
-        #expect(host == .arm64 || host == .x86_64)
+        #expect(host == .arm64 || host == .aarch64 || host == .x86_64)
     }
     
     @Test
-    func universalArchitecture_isAlwaysCompatible() {
+    func universalArchitecture_isCompatibleOnMacOSAndNotCompatibleOnLinux() {
         #if os(Linux)
         #expect(Architecture.universal.isCompatibleWithHost == false)
         #else
@@ -81,7 +81,7 @@ struct ArchitectureValidatorTests {
         #if os(Linux)
         let fixture: Fixture
         switch Architecture.host {
-        case .arm64:
+        case .aarch64:
             fixture = Fixture(filename: "MockELF_ARM64_Release", type: "zip")
         case .x86_64:
             fixture = Fixture(filename: "MockELF_X86_64_Release", type: "zip")
@@ -169,7 +169,7 @@ struct ArchitectureValidatorTests {
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
         
         let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
-        #expect(architecture == .arm64)
+        #expect(architecture == .aarch64)
     }
     
     @Test
@@ -184,7 +184,8 @@ struct ArchitectureValidatorTests {
     
     @Test
     func validate_compatibleELF_succeeds() throws {
-        // Create a synthetic ELF matching the host architecture
+        // ELF is a Linux format; on macOS, an ELF aarch64 binary is not compatible with the arm64 host.
+        #if os(Linux)
         let format: SyntheticBinaryFileManagerMock.BinaryFormat = {
             #if arch(arm64)
             return .elfAarch64
@@ -194,15 +195,15 @@ struct ArchitectureValidatorTests {
         }()
         let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: format)
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
-        
         try architectureValidator.validate(binaryPath: "/fake/path/binary")
+        #endif
     }
     
     @Test
     func validate_incompatibleELF_throws() throws {
-        let incompatibleFormat: SyntheticBinaryFileManagerMock.BinaryFormat =
-            Architecture.host == .arm64 ? .elfX86_64 : .elfAarch64
-        let expectedArch: Architecture = Architecture.host == .arm64 ? .x86_64 : .arm64
+        let isArmHost = Architecture.host == .arm64 || Architecture.host == .aarch64
+        let incompatibleFormat: SyntheticBinaryFileManagerMock.BinaryFormat = isArmHost ? .elfX86_64 : .elfAarch64
+        let expectedArch: Architecture = isArmHost ? .x86_64 : .aarch64
         let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: incompatibleFormat)
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
         
@@ -221,9 +222,18 @@ struct ArchitectureValidatorTests {
     func detectArchitecture_syntheticArm64Binary() throws {
         let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(architecture: .arm64)
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
-        
+
         let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
         #expect(architecture == .arm64)
+    }
+
+    @Test
+    func detectArchitecture_syntheticAarch64Binary() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .elfAarch64)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+
+        let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
+        #expect(architecture == .aarch64)
     }
     
     @Test
@@ -247,7 +257,12 @@ struct ArchitectureValidatorTests {
     @Test
     func validate_incompatibleArchitecture_throws() throws {
         // Create a mock that returns the opposite architecture of the host
-        let incompatibleArch: Architecture = Architecture.host == .arm64 ? .x86_64 : .arm64
+        let incompatibleArch: Architecture
+        switch Architecture.host {
+        case .arm64, .aarch64: incompatibleArch = .x86_64
+        case .x86_64: incompatibleArch = .arm64
+        case .universal: fatalError("host cannot be universal")
+        }
         let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(architecture: incompatibleArch)
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
         
@@ -281,6 +296,7 @@ private struct SyntheticBinaryFileManagerMock: ArchitectureValidatorFileManaging
     init(architecture: Architecture) {
         switch architecture {
         case .arm64:     self.binaryFormat = .machOArm64
+        case .aarch64:   self.binaryFormat = .elfAarch64
         case .x86_64:    self.binaryFormat = .machOX86_64
         case .universal: self.binaryFormat = .machOUniversal
         }
