@@ -35,11 +35,11 @@ struct BinaryFinderTests {
         let binaryFinderFileManager = BinaryFinderFileManagerMock(fileManager: .default)
         let binaryFinder = BinaryFinder(fileManager: binaryFinderFileManager)
         
-        let fixture = Fixture(filename: "MockELFRelease", type: "zip")
+        let fixture = Fixture(filename: "MockELF_ARM64_Release", type: "zip")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = fileManager.temporaryDirectory.path() + "/tmp_MockELFRelease-\(UUID().uuidString)/"
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_MockELF_ARM64_Release-\(UUID().uuidString)/"
         
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
