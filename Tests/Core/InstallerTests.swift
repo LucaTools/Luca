@@ -66,7 +66,7 @@ struct InstallerTests {
             let expectedToolSymlinkDestination = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(component: tool.version)
-                .appending(component: binaryPath)
+                .appending(path: binaryPath)
             
             let externalToolSymlinkDestination = try fileManager.destinationOfSymbolicLink(atPath: toolSymLink.path)
             
@@ -99,7 +99,7 @@ struct InstallerTests {
             let expectedBinaryLocation = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(component: tool.version)
-                .appending(component: binaryPath)
+                .appending(path: binaryPath)
             
             #expect(fileManager.fileExists(atPath: expectedBinaryLocation.path))
         }
@@ -149,7 +149,7 @@ struct InstallerTests {
             let expectedBinaryLocation = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(component: tool.version)
-                .appending(component: binaryPath)
+                .appending(path: binaryPath)
             
             #expect(fileManager.fileExists(atPath: expectedBinaryLocation.path))
         }
@@ -182,7 +182,8 @@ struct InstallerTests {
                 .appending(component: tool.expectedBinaryName)
             
             let expectedHigherVersionToolSymlinkDestination = fileManager.toolsFolder
-                .appending(components: tool.name, tool.version, binaryPath)
+                .appending(components: tool.name, tool.version)
+                .appending(path: binaryPath)
             
             let higherVersionToolSymlinkDestination = try fileManager.destinationOfSymbolicLink(atPath: higherVersionToolSymlink.path)
             #expect(higherVersionToolSymlinkDestination == expectedHigherVersionToolSymlinkDestination.path)
@@ -216,7 +217,8 @@ struct InstallerTests {
                 .appending(component: tool.expectedBinaryName)
             
             let expectedLowerVersionToolSymlinkDestination = fileManager.toolsFolder
-                .appending(components: tool.name, tool.version, binaryPath)
+                .appending(components: tool.name, tool.version)
+                .appending(path: binaryPath)
             
             let lowerVersionToolSymlinkDestination = try fileManager.destinationOfSymbolicLink(atPath: lowerVersionToolSymlink.path)
             #expect(lowerVersionToolSymlinkDestination == expectedLowerVersionToolSymlinkDestination.path)

@@ -29,6 +29,10 @@ struct BinaryFinder: BinaryFinding {
     
     func findBinary(atPath path: String) throws -> String {
         let url = URL(filePath: path, directoryHint: .isDirectory)
+        // Normalize the base path with a trailing slash to safely strip the prefix later.
+        // .producesRelativePathURLs is not honoured on Linux, so we compute the relative
+        // path ourselves from the absolute path returned by the enumerator.
+        let normalizedBasePath = url.path.hasSuffix("/") ? url.path : url.path + "/"
         
         guard let directoryEnumerator = fileManager.enumerator(at: url, includingPropertiesForKeys: [.isRegularFileKey, .isExecutableKey], options: [.producesRelativePathURLs, .skipsHiddenFiles]) else {
             throw BinaryFinderError.cannotEnumerateDirectory(path: path)
@@ -51,6 +55,13 @@ struct BinaryFinder: BinaryFinding {
                     // Use loadUnaligned to avoid crashes on platforms with strict alignment (e.g. Linux)
                     let value = magic.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
                     if machOMagics.contains(value.bigEndian) || machOMagics.contains(value.littleEndian) || value.bigEndian == elfMagic {
+                        // Prefer stripping the absolute base path so we always get a
+                        // relative path regardless of whether .producesRelativePathURLs
+                        // is honoured (it is silently ignored on Linux).
+                        let absoluteFilePath = fileURL.path
+                        if absoluteFilePath.hasPrefix(normalizedBasePath) {
+                            return String(absoluteFilePath.dropFirst(normalizedBasePath.count))
+                        }
                         return fileURL.relativePath
                     }
                 }
