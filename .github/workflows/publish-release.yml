@@ -101,6 +101,7 @@ jobs:
         run: swift build --product ${{ env.PRODUCT_NAME }} -c release -Xswiftc -static-stdlib
 
       - name: Zip binary
+        shell: bash
         run: |
           set -euo pipefail
           OUT_DIR=".github/.build"
