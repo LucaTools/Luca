@@ -1,6 +1,9 @@
 //  DataDownloader.swift
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 struct DataDownloader: DataDownloading {
     

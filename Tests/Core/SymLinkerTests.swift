@@ -26,7 +26,7 @@ struct SymLinkerTests {
             .appending(components: tool.name, "1.0.0")
             .appending(path: tool.effectiveBinaryPath)
         try fileManager.createDirectory(at: toolFilePath.deletingLastPathComponent(), withIntermediateDirectories: true)
-        fileManager.createFile(atPath: toolFilePath.path, contents: Data())
+        _ = fileManager.createFile(atPath: toolFilePath.path, contents: Data())
         
         let sut = SymLinker(fileManager: symLinkFileManager)
         
@@ -60,7 +60,7 @@ struct SymLinkerTests {
             .appending(components: tool.name, "1.0.0")
             .appending(component: desiredBinaryName)
         try fileManager.createDirectory(at: toolFilePath.deletingLastPathComponent(), withIntermediateDirectories: true)
-        fileManager.createFile(atPath: toolFilePath.path, contents: Data())
+        _ = fileManager.createFile(atPath: toolFilePath.path, contents: Data())
         
         let sut = SymLinker(fileManager: symLinkFileManager)
         
@@ -93,7 +93,7 @@ struct SymLinkerTests {
             .appending(components: tool.name, "1.0.0")
             .appending(path: tool.effectiveBinaryPath)
         try fileManager.createDirectory(at: toolFilePath.deletingLastPathComponent(), withIntermediateDirectories: true)
-        fileManager.createFile(atPath: toolFilePath.path, contents: Data())
+        _ = fileManager.createFile(atPath: toolFilePath.path, contents: Data())
         
         let sut = SymLinker(fileManager: symLinkFileManager)
         
@@ -127,7 +127,7 @@ struct SymLinkerTests {
         try fileManager.createDirectory(at: toolFolderPath, withIntermediateDirectories: true)
         let toolFilePath = toolFolderPath
             .appending(path: tool.effectiveBinaryPath)
-        fileManager.createFile(atPath: toolFilePath.path, contents: Data())
+        _ = fileManager.createFile(atPath: toolFilePath.path, contents: Data())
         
         let sut = SymLinker(fileManager: symLinkFileManager)
         

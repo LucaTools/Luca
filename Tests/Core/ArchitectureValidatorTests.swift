@@ -6,6 +6,17 @@ import Testing
 
 struct ArchitectureValidatorTests {
     
+    enum ArchitectureValidatorTestsError: Error, LocalizedError, Equatable {
+        case unknownHostArchitecture
+        
+        var errorDescription: String? {
+            switch self {
+            case .unknownHostArchitecture:
+                return "Unable to determine architecture for host"
+            }
+        }
+    }
+    
     private let fileManager = FileManager.default
     
     // MARK: - Architecture Model Tests
@@ -13,12 +24,16 @@ struct ArchitectureValidatorTests {
     @Test
     func hostArchitecture_returnsValidArchitecture() {
         let host = Architecture.host
-        #expect(host == .arm64 || host == .x86_64)
+        #expect(host == .arm64 || host == .aarch64 || host == .x86_64)
     }
     
     @Test
-    func universalArchitecture_isAlwaysCompatible() {
+    func universalArchitecture_isCompatibleOnMacOSAndNotCompatibleOnLinux() {
+        #if os(Linux)
+        #expect(Architecture.universal.isCompatibleWithHost == false)
+        #else
         #expect(Architecture.universal.isCompatibleWithHost == true)
+        #endif
     }
     
     @Test
@@ -37,7 +52,7 @@ struct ArchitectureValidatorTests {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = fileManager.currentDirectoryPath + "/tmp_ArchTest-\(UUID().uuidString)/"
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_ArchTest-\(UUID().uuidString)/"
         defer { try? fileManager.removeItem(atPath: destination) }
         
         let process = Process()
@@ -63,11 +78,23 @@ struct ArchitectureValidatorTests {
         let architectureValidatorFileManager = ArchitectureValidatorFileManagerMock(fileManager: .default)
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
         
+        #if os(Linux)
+        let fixture: Fixture
+        switch Architecture.host {
+        case .aarch64:
+            fixture = Fixture(filename: "MockELF_ARM64_Release", type: "zip")
+        case .x86_64:
+            fixture = Fixture(filename: "MockELF_X86_64_Release", type: "zip")
+        default:
+            throw ArchitectureValidatorTestsError.unknownHostArchitecture
+        }
+        #else
         let fixture = Fixture(filename: "MockRelease", type: "zip")
+        #endif
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = fileManager.currentDirectoryPath + "/tmp_ArchTest-\(UUID().uuidString)/"
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_ArchTest-\(UUID().uuidString)/"
         defer { try? fileManager.removeItem(atPath: destination) }
         
         let process = Process()
@@ -125,15 +152,88 @@ struct ArchitectureValidatorTests {
         }
     }
     
+    // MARK: - ELF Binary Tests
+    
+    @Test
+    func detectArchitecture_syntheticELF_x86_64() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .elfX86_64)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+        
+        let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
+        #expect(architecture == .x86_64)
+    }
+    
+    @Test
+    func detectArchitecture_syntheticELF_aarch64() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .elfAarch64)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+        
+        let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
+        #expect(architecture == .aarch64)
+    }
+    
+    @Test
+    func detectArchitecture_syntheticELF_unknownMachine_throws() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .elfUnknown)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+        
+        #expect(throws: ArchitectureValidator.ArchitectureValidatorError.unknownArchitecture(path: "/fake/path")) {
+            try architectureValidator.detectArchitecture(at: "/fake/path")
+        }
+    }
+    
+    @Test
+    func validate_compatibleELF_succeeds() throws {
+        // ELF is a Linux format; on macOS, an ELF aarch64 binary is not compatible with the arm64 host.
+        #if os(Linux)
+        let format: SyntheticBinaryFileManagerMock.BinaryFormat = {
+            #if arch(arm64)
+            return .elfAarch64
+            #else
+            return .elfX86_64
+            #endif
+        }()
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: format)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+        try architectureValidator.validate(binaryPath: "/fake/path/binary")
+        #endif
+    }
+    
+    @Test
+    func validate_incompatibleELF_throws() throws {
+        let isArmHost = Architecture.host == .arm64 || Architecture.host == .aarch64
+        let incompatibleFormat: SyntheticBinaryFileManagerMock.BinaryFormat = isArmHost ? .elfX86_64 : .elfAarch64
+        let expectedArch: Architecture = isArmHost ? .x86_64 : .aarch64
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: incompatibleFormat)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+        
+        #expect(throws: ArchitectureValidator.ArchitectureValidatorError.incompatibleArchitecture(
+            binary: "binary",
+            binaryArch: expectedArch,
+            hostArch: Architecture.host
+        )) {
+            try architectureValidator.validate(binaryPath: "/fake/path/binary")
+        }
+    }
+    
     // MARK: - Synthetic Binary Tests
     
     @Test
     func detectArchitecture_syntheticArm64Binary() throws {
         let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(architecture: .arm64)
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
-        
+
         let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
         #expect(architecture == .arm64)
+    }
+
+    @Test
+    func detectArchitecture_syntheticAarch64Binary() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .elfAarch64)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+
+        let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
+        #expect(architecture == .aarch64)
     }
     
     @Test
@@ -157,7 +257,12 @@ struct ArchitectureValidatorTests {
     @Test
     func validate_incompatibleArchitecture_throws() throws {
         // Create a mock that returns the opposite architecture of the host
-        let incompatibleArch: Architecture = Architecture.host == .arm64 ? .x86_64 : .arm64
+        let incompatibleArch: Architecture
+        switch Architecture.host {
+        case .arm64, .aarch64: incompatibleArch = .x86_64
+        case .x86_64: incompatibleArch = .arm64
+        case .universal: fatalError("host cannot be universal")
+        }
         let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(architecture: incompatibleArch)
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
         
@@ -173,23 +278,48 @@ struct ArchitectureValidatorTests {
 
 // MARK: - Synthetic Binary File Manager Mock
 
-/// A mock file manager that returns synthetic Mach-O binary data for testing architecture detection.
+/// A mock file manager that returns synthetic Mach-O or ELF binary data for testing architecture detection.
 private struct SyntheticBinaryFileManagerMock: ArchitectureValidatorFileManaging {
     
-    private let architecture: Architecture
+    enum BinaryFormat {
+        case machOArm64
+        case machOX86_64
+        case machOUniversal
+        case elfX86_64
+        case elfAarch64
+        case elfUnknown
+    }
     
+    private let binaryFormat: BinaryFormat
+    
+    /// Legacy convenience initialiser used by existing Mach-O tests.
     init(architecture: Architecture) {
-        self.architecture = architecture
+        switch architecture {
+        case .arm64:     self.binaryFormat = .machOArm64
+        case .aarch64:   self.binaryFormat = .elfAarch64
+        case .x86_64:    self.binaryFormat = .machOX86_64
+        case .universal: self.binaryFormat = .machOUniversal
+        }
+    }
+    
+    init(binaryFormat: BinaryFormat) {
+        self.binaryFormat = binaryFormat
     }
     
     func contents(atPath path: String) -> Data? {
-        switch architecture {
-        case .arm64:
-            return createMachO64Header(cpuType: 0x0100000C) // CPU_TYPE_ARM64
-        case .x86_64:
-            return createMachO64Header(cpuType: 0x01000007) // CPU_TYPE_X86_64
-        case .universal:
-            return createFatHeader(cpuTypes: [0x0100000C, 0x01000007]) // ARM64 + X86_64
+        switch binaryFormat {
+        case .machOArm64:
+            return createMachO64Header(cpuType: 0x0100000C)
+        case .machOX86_64:
+            return createMachO64Header(cpuType: 0x01000007)
+        case .machOUniversal:
+            return createFatHeader(cpuTypes: [0x0100000C, 0x01000007])
+        case .elfX86_64:
+            return createELFHeader(eMachine: 0x3E)   // EM_X86_64
+        case .elfAarch64:
+            return createELFHeader(eMachine: 0xB7)   // EM_AARCH64
+        case .elfUnknown:
+            return createELFHeader(eMachine: 0xFF)   // bogus
         }
     }
     
@@ -238,6 +368,30 @@ private struct SyntheticBinaryFileManagerMock: ArchitectureValidatorFileManaging
             var align: UInt32 = 0
             data.append(Data(bytes: &align, count: 4))
         }
+        return data
+    }
+    
+    /// Creates a minimal ELF header with the given `e_machine` value (little-endian).
+    private func createELFHeader(eMachine: UInt16) -> Data {
+        var data = Data()
+        // ELF magic (4 bytes)
+        data.append(contentsOf: [0x7F, 0x45, 0x4C, 0x46])
+        // EI_CLASS: 64-bit
+        data.append(2)
+        // EI_DATA: little-endian
+        data.append(1)
+        // EI_VERSION
+        data.append(1)
+        // EI_OSABI + padding (9 bytes to reach offset 16)
+        data.append(Data(repeating: 0, count: 9))
+        // e_type (2 bytes): ET_EXEC = 2
+        var eType: UInt16 = 2
+        data.append(Data(bytes: &eType, count: 2))
+        // e_machine (2 bytes) — at offset 18
+        var machine = eMachine
+        data.append(Data(bytes: &machine, count: 2))
+        // Padding to ensure enough data
+        data.append(Data(repeating: 0, count: 12))
         return data
     }
 }

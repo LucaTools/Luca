@@ -61,7 +61,11 @@ struct ToolFactoryTests {
     
     @Test
     func individual_valid() async throws {
+        #if os(Linux)
+        let asset = "ToggleGen-Linux.zip"
+        #else
         let asset = "ToggleGen-macOS.zip"
+        #endif
         
         let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "ToggleGenReleaseInfo", type: "json")))
         let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)

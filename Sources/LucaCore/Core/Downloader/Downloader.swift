@@ -10,7 +10,7 @@ import Foundation
 /// ## Supported File Types
 ///
 /// - `.zip` - ZIP archives
-/// - `.tar.gz` - Gzipped tar archives
+/// - `.tar.gz` / `.tgz` - Gzipped tar archives
 /// - No extension - Treated as executable files
 ///
 /// ## Topics
@@ -33,6 +33,7 @@ struct Downloader: Downloading {
     enum SupportedFileTypes: String, CaseIterable {
         case zip = "zip"
         case targz = "tar.gz"
+        case tgz = "tgz"
     }
     
     private var fileDownloader: FileDownloading

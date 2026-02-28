@@ -17,7 +17,7 @@ struct BinaryFinderTests {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = fileManager.currentDirectoryPath + "/tmp_MockRelease-\(UUID().uuidString)/"
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_MockRelease-\(UUID().uuidString)/"
         
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
@@ -31,6 +31,28 @@ struct BinaryFinderTests {
     }
     
     @Test
+    func findBinary_validELFRelease() throws {
+        let binaryFinderFileManager = BinaryFinderFileManagerMock(fileManager: .default)
+        let binaryFinder = BinaryFinder(fileManager: binaryFinderFileManager)
+        
+        let fixture = Fixture(filename: "MockELF_ARM64_Release", type: "zip")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_MockELF_ARM64_Release-\(UUID().uuidString)/"
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["unzip", "-q", "-o", path, "-d", destination]
+        try process.run()
+        process.waitUntilExit()
+        
+        let binaryPath = try binaryFinder.findBinary(atPath: destination)
+        
+        #expect(binaryPath == "bin/MockELFTool")
+    }
+    
+    @Test
     func findBinary_invalidRelease() throws {
         let binaryFinderFileManager = BinaryFinderFileManagerMock(fileManager: .default)
         let binaryFinder = BinaryFinder(fileManager: binaryFinderFileManager)
@@ -39,7 +61,7 @@ struct BinaryFinderTests {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
-        let destination = fileManager.currentDirectoryPath + "/tmp_MockRelease-\(UUID().uuidString)/"
+        let destination = fileManager.temporaryDirectory.path() + "/tmp_MockRelease-\(UUID().uuidString)/"
         
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")

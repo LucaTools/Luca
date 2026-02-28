@@ -14,7 +14,7 @@ struct UnlinkerTests {
         
         // Create a dummy file to simulate the symlink
         try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
-        fileManager.fileManager.createFile(atPath: symlinkFile.path, contents: nil)
+        _ = fileManager.fileManager.createFile(atPath: symlinkFile.path, contents: nil)
         
         #expect(fileManager.fileExists(atPath: symlinkFile.path))
         

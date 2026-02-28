@@ -76,7 +76,7 @@ struct ToolFactory {
         
         let assetFilename = try await {
             if let asset { return asset }
-            return try await releaseInfoProvider.macOSAsset(for: release).name
+            return try await releaseInfoProvider.platformAsset(for: release).name
         }()
         
         let releaseAssetUrl = try GitHubReleaseURLFactory().makeReleaseAssetURL(
