@@ -179,6 +179,14 @@ tools:
     algorithm: (md5|sha1|sha256|sha512)      # The algorithm used to generate the checksum (optional)
 ```
 
+## Uninstallation
+
+Completely uninstall the tool from the system:
+
+```bash
+curl -fsSL https://luca.tools/uninstall.sh | bash
+```
+
 ## Requirements
 
 - macOS 13.0 or later
