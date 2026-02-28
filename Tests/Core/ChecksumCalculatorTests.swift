@@ -7,16 +7,16 @@ import Testing
 struct ChecksumCalculatorTests {
     
     @Test(arguments: [
-        (ChecksumAlgorithm.md5, "6fb6ef98c6623834c019ae26a8865fd6"),
-        (ChecksumAlgorithm.sha1, "427eea4725eae77913015c0b72bd4cd329160526"),
-        (ChecksumAlgorithm.sha256, "76b801daea0ed90f2871b0c66ebb8c4b9680d14e8011277d971cd74445fdaac5"),
-        (ChecksumAlgorithm.sha512, "59a54e243611746feb9c2506396e5be7acb5fdfcb063de391b1a03476e8ba036488c66a126121818beb8d8e99959d5f16b90824eeb3e7866cbc6a47616751e32")
+        (ChecksumAlgorithm.md5, "6c2378ee7f1ab7d46f90b3a0969f4be8"),
+        (ChecksumAlgorithm.sha1, "a54295ead556697442a7e3e180566ca5df6dce50"),
+        (ChecksumAlgorithm.sha256, "e7184e7a00fe83097dde5b44d3fde0ed8faf1b00573920fb3019498ad1634018"),
+        (ChecksumAlgorithm.sha512, "8b8f4ac67667764840efd8778dd81d871889307d5855f9bac6b4c6337f5a391dc24d80d5d63ae62cdce15122d874beb7c56042ac52f2b6ba225bd0b6ec97765d")
     ])
     func calculateChecksum(algorithm: ChecksumAlgorithm, expectedChecksum: String) throws {
         let checksumValidatorFileManager = ChecksumValidatorFileManagerMock(fileManager: .default)
         let calculator = ChecksumCalculator(fileManager: checksumValidatorFileManager)
-        
-        let fixture = Fixture(filename: "MockRelease", type: "zip")
+
+        let fixture = Fixture(filename: "MockMachO_Universal_Release", type: "zip")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
