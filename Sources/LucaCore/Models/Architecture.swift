@@ -24,7 +24,11 @@ public enum Architecture: String, Codable, Equatable, Sendable {
     public var isCompatibleWithHost: Bool {
         switch self {
         case .universal:
+            #if os(Linux)
+            return false
+            #else
             return true
+            #endif
         case .arm64, .x86_64:
             return self == Architecture.host
         }

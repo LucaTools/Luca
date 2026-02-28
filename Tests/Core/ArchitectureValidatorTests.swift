@@ -6,6 +6,17 @@ import Testing
 
 struct ArchitectureValidatorTests {
     
+    enum ArchitectureValidatorTestsError: Error, LocalizedError, Equatable {
+        case unknownHostArchitecture
+        
+        var errorDescription: String? {
+            switch self {
+            case .unknownHostArchitecture:
+                return "Unable to determine architecture for host"
+            }
+        }
+    }
+    
     private let fileManager = FileManager.default
     
     // MARK: - Architecture Model Tests
@@ -18,7 +29,11 @@ struct ArchitectureValidatorTests {
     
     @Test
     func universalArchitecture_isAlwaysCompatible() {
+        #if os(Linux)
+        #expect(Architecture.universal.isCompatibleWithHost == false)
+        #else
         #expect(Architecture.universal.isCompatibleWithHost == true)
+        #endif
     }
     
     @Test
@@ -63,7 +78,19 @@ struct ArchitectureValidatorTests {
         let architectureValidatorFileManager = ArchitectureValidatorFileManagerMock(fileManager: .default)
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
         
+        #if os(Linux)
+        let fixture: Fixture
+        switch Architecture.host {
+        case .arm64:
+            fixture = Fixture(filename: "MockELF_ARM64_Release", type: "zip")
+        case .x86_64:
+            fixture = Fixture(filename: "MockELF_X86_64_Release", type: "zip")
+        default:
+            throw ArchitectureValidatorTestsError.unknownHostArchitecture
+        }
+        #else
         let fixture = Fixture(filename: "MockRelease", type: "zip")
+        #endif
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
