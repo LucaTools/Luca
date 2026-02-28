@@ -48,27 +48,27 @@ struct ArchitectureValidatorTests {
         let architectureValidatorFileManager = ArchitectureValidatorFileManagerMock(fileManager: .default)
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
         
-        let fixture = Fixture(filename: "MockRelease", type: "zip")
+        let fixture = Fixture(filename: "MockMachO_Universal_Release", type: "zip")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
-        
+
         let destination = fileManager.temporaryDirectory.path() + "/tmp_ArchTest-\(UUID().uuidString)/"
         defer { try? fileManager.removeItem(atPath: destination) }
-        
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = ["unzip", "-q", "-o", path, "-d", destination]
         try process.run()
         process.waitUntilExit()
-        
+
         // Find the binary in the extracted archive
         let binaryFinderFileManager = BinaryFinderFileManagerMock(fileManager: .default)
         let binaryFinder = BinaryFinder(fileManager: binaryFinderFileManager)
         let binaryPath = try binaryFinder.findBinary(atPath: destination)
         let fullBinaryPath = destination + binaryPath
-        
+
         let architecture = try architectureValidator.detectArchitecture(at: fullBinaryPath)
-        
+
         // The binary should be detected as a valid architecture
         #expect(architecture == .arm64 || architecture == .x86_64 || architecture == .universal)
     }
@@ -89,7 +89,15 @@ struct ArchitectureValidatorTests {
             throw ArchitectureValidatorTestsError.unknownHostArchitecture
         }
         #else
-        let fixture = Fixture(filename: "MockRelease", type: "zip")
+        let fixture: Fixture
+        switch Architecture.host {
+        case .arm64:
+            fixture = Fixture(filename: "MockMachO_arm64_Release", type: "zip")
+        case .x86_64:
+            fixture = Fixture(filename: "MockMachO_X86_64_Release", type: "zip")
+        default:
+            throw ArchitectureValidatorTestsError.unknownHostArchitecture
+        }
         #endif
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
@@ -143,10 +151,10 @@ struct ArchitectureValidatorTests {
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
         
         // Use a non-Mach-O file (the zip archive itself)
-        let fixture = Fixture(filename: "MockRelease", type: "zip")
+        let fixture = Fixture(filename: "MockMachO_Universal_Release", type: "zip")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
-        
+
         #expect(throws: ArchitectureValidator.ArchitectureValidatorError.unknownArchitecture(path: path)) {
             try architectureValidator.detectArchitecture(at: path)
         }

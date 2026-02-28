@@ -12,7 +12,7 @@ struct InstallerTests {
     
     init() async throws {
         fileManager = FileManagerWrapperMock()
-        downloader = DownloaderMock(result: .fixture(Fixture(filename: "MockRelease", type: "zip")))
+        downloader = DownloaderMock(result: .fixture(Fixture(filename: "MockMachO_Universal_Release", type: "zip")))
     }
     
     private func makeInstaller(quiet: Bool) -> Installer {
@@ -345,7 +345,7 @@ struct InstallerTests {
         try await installer.install(installationType: .spec(specPath: URL(string: lowVersionPath)!))
         
         // The symlink is created with the binary name from binaryPath
-        let symLink = fileManager.activeFolder.appending(component: "ToggleGen")
+        let symLink = fileManager.activeFolder.appending(component: "MockMachOTool")
         #expect(fileManager.fileExists(atPath: symLink.path))
         
         // Reinstall the same spec - the tool should NOT be unlinked

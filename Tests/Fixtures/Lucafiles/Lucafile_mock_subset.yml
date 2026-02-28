@@ -1,11 +1,11 @@
 ---
 tools:
   - name: MockToolA
-    binaryPath: bin/ToggleGen
+    binaryPath: bin/MockMachOTool
     version: 1.0.0
     url: https://example.com/mock/MockToolA.zip
   - name: MockToolB
-    binaryPath: bin/ToggleGen
+    binaryPath: bin/MockMachOTool
     version: 2.0.0
     url: https://example.com/mock/MockToolB.zip
   

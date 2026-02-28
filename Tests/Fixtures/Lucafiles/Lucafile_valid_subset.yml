@@ -1,9 +1,5 @@
 ---
 tools:
-  - name: FirebaseCLI
-    desiredBinaryName: firebase
-    version: 14.12.1
-    url: https://github.com/firebase/firebase-tools/releases/download/v14.12.1/firebase-tools-macos
   - name: Sourcery
     binaryPath: bin/sourcery
     version: 2.2.7
