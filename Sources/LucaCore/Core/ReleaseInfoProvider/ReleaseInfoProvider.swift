@@ -7,7 +7,15 @@ import FoundationNetworking
 
 struct ReleaseInfoProvider: ReleaseInfoProviding {
     
-    private let macOSKeywords = ["darwin", "macos", "mac", "osx", "x86_64", "amd64", "arm64", "universal", "artifactbundle"]
+    #if os(Linux)
+    private let platformKeywords = ["linux", "x86_64", "amd64", "x86-64", "aarch64", "arm64", "gnu"]
+    private let platformExcludeKeywords = ["macos", "darwin", "osx", "apple", "windows", "win32", "win64"]
+    private let archiveExtensions = [".zip", ".tar.gz", ".tgz"]
+    #else
+    private let platformKeywords = ["darwin", "macos", "mac", "osx", "x86_64", "amd64", "arm64", "universal", "artifactbundle"]
+    private let platformExcludeKeywords = ["linux", "windows", "win32", "win64"]
+    private let archiveExtensions = [".zip"]
+    #endif
     
     enum ReleaseInfoProviderError: Error, LocalizedError, Equatable {
         case apiError(String)
@@ -34,9 +42,9 @@ struct ReleaseInfoProvider: ReleaseInfoProviding {
     
     // MARK: - Internal
     
-    func macOSAsset(for release: Release) async throws -> ReleaseAsset {
+    func platformAsset(for release: Release) async throws -> ReleaseAsset {
         let releaseInfo = try await fetchReleaseInfo(release: release)
-        return try findMacOSAsset(in: releaseInfo.assets)
+        return try findPlatformAsset(in: releaseInfo.assets)
     }
     
     // MARK: - Private
@@ -65,13 +73,21 @@ struct ReleaseInfoProvider: ReleaseInfoProviding {
         return try JSONDecoder().decode(ReleaseInfo.self, from: data)
     }
     
-    private func findMacOSAsset(in assets: [ReleaseAsset]) throws -> ReleaseAsset {
-        let zipAssets = assets.filter { $0.name.lowercased().hasSuffix(".zip") }
-        if let asset = findBestMatch(in: zipAssets) {
+    private func findPlatformAsset(in assets: [ReleaseAsset]) throws -> ReleaseAsset {
+        let eligible = assets.filter { asset in
+            let name = asset.name.lowercased()
+            return !platformExcludeKeywords.contains { name.contains($0) }
+        }
+        
+        let archiveAssets = eligible.filter { asset in
+            let name = asset.name.lowercased()
+            return archiveExtensions.contains { name.hasSuffix($0) }
+        }
+        if let asset = findBestMatch(in: archiveAssets) {
             return asset
         }
         
-        let executableAssets = assets.filter { URL(fileURLWithPath: $0.name).pathExtension.isEmpty }
+        let executableAssets = eligible.filter { URL(fileURLWithPath: $0.name).pathExtension.isEmpty }
         if let asset = findBestMatch(in: executableAssets) {
             return asset
         }
@@ -81,13 +97,13 @@ struct ReleaseInfoProvider: ReleaseInfoProviding {
 
     private func findBestMatch(in assets: [ReleaseAsset]) -> ReleaseAsset? {
         let sortedAssets = assets.sorted { asset1, asset2 in
-            let count1 = macOSKeywords.filter { asset1.name.lowercased().contains($0) }.count
-            let count2 = macOSKeywords.filter { asset2.name.lowercased().contains($0) }.count
+            let count1 = platformKeywords.filter { asset1.name.lowercased().contains($0) }.count
+            let count2 = platformKeywords.filter { asset2.name.lowercased().contains($0) }.count
             return count1 > count2
         }
         
         return sortedAssets.first { asset in
-            macOSKeywords.contains { keyword in
+            platformKeywords.contains { keyword in
                 asset.name.lowercased().contains(keyword)
             }
         }

@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// Represents CPU architectures for Mach-O binaries.
+/// Represents CPU architectures for Mach-O and ELF binaries.
 public enum Architecture: String, Codable, Equatable, Sendable {
     case arm64
     case x86_64

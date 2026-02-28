@@ -1,0 +1,12 @@
+{
+  "assets": [
+    {
+      "name": "macOS-release.zip",
+      "browser_download_url": "https://github.com/organization/repository/releases/download/1.0.0/macOS-release.zip"
+    },
+    {
+      "name": "Windows-release.zip",
+      "browser_download_url": "https://github.com/organization/repository/releases/download/1.0.0/Windows-release.zip"
+    }
+  ]
+}

@@ -20,8 +20,8 @@ Xcode version is pinned in [.xcode-version](.xcode-version). CI builds a univers
 ### Linux (Docker)
 
 ```bash
-docker run --rm -v "$PWD:/workspace" -w /workspace swift:6.0-jammy swift build
-docker run --rm -v "$PWD:/workspace" -w /workspace swift:6.0-jammy swift test
+docker run --rm -v "$PWD:/workspace" -w /workspace swift:6.0-jammy swift build --scratch-path /tmp/.build
+docker run --rm -v "$PWD:/workspace" -w /workspace swift:6.0-jammy swift test --scratch-path /tmp/.build
 ```
 
 CI runs tests on both macOS and Linux (`swift:6.0-jammy` container).

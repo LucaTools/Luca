@@ -3,5 +3,6 @@
 import Foundation
 
 protocol ReleaseInfoProviding {
-    func macOSAsset(for release: Release) async throws -> ReleaseAsset
+    /// Returns the most suitable release asset for the current platform.
+    func platformAsset(for release: Release) async throws -> ReleaseAsset
 }

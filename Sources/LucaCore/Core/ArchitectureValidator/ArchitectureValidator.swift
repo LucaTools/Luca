@@ -45,6 +45,19 @@ struct ArchitectureValidator: ArchitectureValidating {
     /// CPU type for ARM64 (includes CPU_ARCH_ABI64 flag)
     private static let CPU_TYPE_ARM64: UInt32 = 0x0100000C
     
+    // MARK: - ELF Constants
+    
+    /// ELF magic bytes: 0x7F followed by 'E', 'L', 'F'
+    private static let ELF_MAGIC: [UInt8] = [0x7F, 0x45, 0x4C, 0x46]
+    /// ELF data encoding: little-endian
+    private static let ELFDATA2LSB: UInt8 = 1
+    /// ELF data encoding: big-endian
+    private static let ELFDATA2MSB: UInt8 = 2
+    /// ELF e_machine value for x86_64
+    private static let EM_X86_64: UInt16 = 0x3E
+    /// ELF e_machine value for AArch64
+    private static let EM_AARCH64: UInt16 = 0xB7
+    
     private let fileManager: ArchitectureValidatorFileManaging
     
     init(fileManager: ArchitectureValidatorFileManaging) {
@@ -85,6 +98,11 @@ struct ArchitectureValidator: ArchitectureValidating {
         if magic == Self.MH_MAGIC_64 || magic == Self.MH_CIGAM_64 ||
            magic == Self.MH_MAGIC || magic == Self.MH_CIGAM {
             return try detectMachOArchitecture(data: data, magic: magic, path: binaryPath)
+        }
+        
+        // Check if it's an ELF binary
+        if data.count >= 4 && data.prefix(4).elementsEqual(Self.ELF_MAGIC) {
+            return try detectELFArchitecture(data: data, path: binaryPath)
         }
         
         throw ArchitectureValidatorError.unknownArchitecture(path: binaryPath)
@@ -163,6 +181,40 @@ struct ArchitectureValidator: ArchitectureValidating {
             return .arm64
         case Self.CPU_TYPE_X86_64:
             return .x86_64
+        default:
+            throw ArchitectureValidatorError.unknownArchitecture(path: path)
+        }
+    }
+    
+    /// Detects the architecture of an ELF binary.
+    ///
+    /// ELF header layout:
+    /// - Bytes 0–3: magic `\x7fELF`
+    /// - Byte 5: data encoding (1 = little-endian, 2 = big-endian)
+    /// - Bytes 18–19: `e_machine` (in the encoding specified by byte 5)
+    private func detectELFArchitecture(data: Data, path: String) throws -> Architecture {
+        // Need at least 20 bytes: 16-byte ELF ident + 2 (e_type) + 2 (e_machine)
+        guard data.count >= 20 else {
+            throw ArchitectureValidatorError.unableToReadBinary(path: path)
+        }
+        
+        let dataEncoding = data[5]
+        
+        let eMachine: UInt16 = data.withUnsafeBytes { buffer in
+            let raw = buffer.load(fromByteOffset: 18, as: UInt16.self)
+            switch dataEncoding {
+            case Self.ELFDATA2MSB:
+                return UInt16(bigEndian: raw)
+            default: // ELFDATA2LSB or unknown — assume little-endian
+                return UInt16(littleEndian: raw)
+            }
+        }
+        
+        switch eMachine {
+        case Self.EM_X86_64:
+            return .x86_64
+        case Self.EM_AARCH64:
+            return .arm64
         default:
             throw ArchitectureValidatorError.unknownArchitecture(path: path)
         }

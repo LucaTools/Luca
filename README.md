@@ -187,10 +187,8 @@ tools:
 
 ## Requirements
 
-- macOS 13.0 or later, or Linux (x86_64)
+- macOS 13.0 or later, or Linux (x86_64, arm64)
 - Swift 5.7 or later (for building from source)
-
-> **Note:** On Linux, Luca compiles and runs, but some features (e.g., Mach-O architecture detection, macOS-specific asset resolution) are not yet available. Full Linux runtime support is planned for a future release.
 
 ## Contributing
 
