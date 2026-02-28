@@ -4,21 +4,21 @@ import Testing
 @testable import LucaCore
 
 struct ReleaseInfoProviderTests {
-    
+
     @Test
     func fetchReleaseInfo_success() async throws {
-        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "ToggleGenReleaseInfo", type: "json")))
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "ReleaseInfo", type: "json")))
         let sut = ReleaseInfoProvider(dataDownloader: dataDownloader)
-        let release = Release(organization: "TogglesPlatform", repository: "ToggleGen", version: "1.0.0")
+        let release = Release(organization: "organization", repository: "repository", version: "1.0.0")
         let asset = try await sut.platformAsset(for: release)
         #if os(Linux)
-        let targetAsset = ReleaseAsset(name: "ToggleGen-Linux.zip", url: "https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-Linux.zip")
+        let targetAsset = ReleaseAsset(name: "tool-Linux.zip", url: "https://github.com/organization/repository/releases/download/1.0.0/tool-Linux.zip")
         #else
-        let targetAsset = ReleaseAsset(name: "ToggleGen-macOS.zip", url: "https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-macOS.zip")
+        let targetAsset = ReleaseAsset(name: "tool-macOS.zip", url: "https://github.com/organization/repository/releases/download/1.0.0/tool-macOS.zip")
         #endif
         #expect(asset == targetAsset)
     }
-    
+
     @Test
     func fetchReleaseInfo_missingPlatformAsset() async throws {
         #if os(Linux)
@@ -40,7 +40,7 @@ struct ReleaseInfoProviderTests {
             try await sut.platformAsset(for: release)
         }
     }
-    
+
     @Test
     func fetchReleaseInfo_missingRelease() async throws {
         let dataDownloader = DataDownloaderMock(result: .statusCode(404))
@@ -56,27 +56,27 @@ struct ReleaseInfoProviderTests {
     func fetchReleaseInfo_executableAsset() async throws {
         let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "ExecutableAssets", type: "json")))
         let sut = ReleaseInfoProvider(dataDownloader: dataDownloader)
-        let release = Release(organization: "TogglesPlatform", repository: "ToggleGen", version: "1.0.0")
+        let release = Release(organization: "organization", repository: "repository", version: "1.0.0")
         let asset = try await sut.platformAsset(for: release)
         #if os(Linux)
-        let targetAsset = ReleaseAsset(name: "ToggleGen-Linux", url: "https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-Linux")
+        let targetAsset = ReleaseAsset(name: "tool-Linux", url: "https://github.com/organization/repository/releases/download/1.0.0/tool-Linux")
         #else
-        let targetAsset = ReleaseAsset(name: "ToggleGen-macOS", url: "https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-macOS")
+        let targetAsset = ReleaseAsset(name: "tool-macOS", url: "https://github.com/organization/repository/releases/download/1.0.0/tool-macOS")
         #endif
         #expect(asset == targetAsset)
     }
-    
+
     @Test
     func fetchReleaseInfo_mixedAssets_preferArchive() async throws {
         #if os(Linux)
         let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "MixedLinuxAssets", type: "json")))
-        let targetAsset = ReleaseAsset(name: "ToggleGen-linux.tar.gz", url: "https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-linux.tar.gz")
+        let targetAsset = ReleaseAsset(name: "tool-linux.tar.gz", url: "https://github.com/organization/repository/releases/download/1.0.0/tool-linux.tar.gz")
         #else
         let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "MixedAssets", type: "json")))
-        let targetAsset = ReleaseAsset(name: "ToggleGen-macOS.zip", url: "https://github.com/TogglesPlatform/ToggleGen/releases/download/1.0.0/ToggleGen-macOS.zip")
+        let targetAsset = ReleaseAsset(name: "tool-macOS.zip", url: "https://github.com/organization/repository/releases/download/1.0.0/tool-macOS.zip")
         #endif
         let sut = ReleaseInfoProvider(dataDownloader: dataDownloader)
-        let release = Release(organization: "TogglesPlatform", repository: "ToggleGen", version: "1.0.0")
+        let release = Release(organization: "organization", repository: "repository", version: "1.0.0")
         let asset = try await sut.platformAsset(for: release)
         #expect(asset == targetAsset)
     }
