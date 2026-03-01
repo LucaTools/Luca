@@ -12,10 +12,11 @@ struct DataDownloaderMock: DataDownloading {
     enum Result {
         case fixture(Fixture)
         case statusCode(Int)
+        case nonHTTPResponse
     }
-    
+
     var result: Result
-    
+
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         switch result {
         case .fixture(let fixture):
@@ -28,6 +29,9 @@ struct DataDownloaderMock: DataDownloading {
             let data = Data()
             let response = HTTPURLResponse(url: request.url!, statusCode: statusCode, httpVersion: nil, headerFields: nil)!
             return (data, response)
+        case .nonHTTPResponse:
+            let response = URLResponse(url: request.url!, mimeType: nil, expectedContentLength: 0, textEncodingName: nil)
+            return (Data(), response)
         }
     }
 }
