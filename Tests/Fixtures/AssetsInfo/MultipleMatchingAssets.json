@@ -1,0 +1,20 @@
+{
+  "assets": [
+    {
+      "name": "tool-macOS.zip",
+      "browser_download_url": "https://github.com/organization/repository/releases/download/1.0.0/tool-macOS.zip"
+    },
+    {
+      "name": "tool-macOS-arm64.zip",
+      "browser_download_url": "https://github.com/organization/repository/releases/download/1.0.0/tool-macOS-arm64.zip"
+    },
+    {
+      "name": "tool-linux.tar.gz",
+      "browser_download_url": "https://github.com/organization/repository/releases/download/1.0.0/tool-linux.tar.gz"
+    },
+    {
+      "name": "tool-linux-gnu.tar.gz",
+      "browser_download_url": "https://github.com/organization/repository/releases/download/1.0.0/tool-linux-gnu.tar.gz"
+    }
+  ]
+}

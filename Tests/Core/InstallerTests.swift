@@ -396,6 +396,188 @@ struct InstallerTests {
         }
     }
     
+    @Test
+    func test_install_executableAsset() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolName = "TestExecutableTool"
+        let version = "1.0.0"
+        let url = URL(string: "https://example.com/tool")!
+        let desiredBinaryName = "mytool"
+
+        // ELF binary bytes — detected as .executable by FileTypeDetector
+        let executableData = Data([0x7F, 0x45, 0x4C, 0x46,  // ELF magic
+                                   0x02, 0x01, 0x01, 0x00,  // class, encoding, version, OS/ABI
+                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // padding
+                                   0x02, 0x00,              // e_type
+                                   0xB7, 0x00])             // e_machine = EM_AARCH64
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: false,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .tempFile(executableData))
+        )
+
+        let installationType = InstallationType.individualInline(
+            name: toolName,
+            version: version,
+            url: url,
+            binaryPath: nil,
+            desiredBinaryName: desiredBinaryName,
+            checksum: nil,
+            algorithm: nil
+        )
+
+        // First install: covers installExecutable path
+        try await installer.install(installationType: installationType)
+
+        let binaryPath = fileManager.toolsFolder.appending(components: toolName, version, desiredBinaryName)
+        #expect(fileManager.fileExists(atPath: binaryPath.path))
+
+        let symLinkPath = fileManager.activeFolder.appending(component: desiredBinaryName)
+        #expect(fileManager.fileExists(atPath: symLinkPath.path))
+
+        // Second install: covers isToolInstalled desiredBinaryName path → reinstall
+        try await installer.install(installationType: installationType)
+        #expect(fileManager.fileExists(atPath: binaryPath.path))
+        #expect(fileManager.fileExists(atPath: symLinkPath.path))
+    }
+
+    @Test
+    func test_install_archiveNilBinaryPath_usesBinaryFinder() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: false,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockMachO_Universal_Release", type: "zip")))
+        )
+        let toolName = "TestArchiveTool"
+        let version = "1.0.0"
+
+        try await installer.install(installationType: .individualInline(
+            name: toolName,
+            version: version,
+            url: URL(string: "https://example.com/tool.zip")!,
+            binaryPath: nil,        // triggers binaryFinder.findBinary in installArchive
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil
+        ))
+
+        let toolPath = fileManager.toolsFolder.appending(components: toolName, version)
+        #expect(fileManager.fileExists(atPath: toolPath.path))
+        let symLinkPath = fileManager.activeFolder.appending(component: "MockMachOTool")
+        #expect(fileManager.fileExists(atPath: symLinkPath.path))
+    }
+
+    @Test
+    func test_install_executableNilDesiredBinaryName_usesToolName() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolName = "mytoolex"
+
+        // ELF bytes — detected as .executable
+        let executableData = Data([0x7F, 0x45, 0x4C, 0x46,
+                                   0x02, 0x01, 0x01, 0x00,
+                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                   0x02, 0x00, 0xB7, 0x00])
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: false,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .tempFile(executableData))
+        )
+
+        try await installer.install(installationType: .individualInline(
+            name: toolName,
+            version: "1.0.0",
+            url: URL(string: "https://example.com/tool")!,
+            binaryPath: nil,
+            desiredBinaryName: nil,    // triggers `return tool.name` in installExecutable
+            checksum: nil,
+            algorithm: nil
+        ))
+
+        let binaryPath = fileManager.toolsFolder.appending(components: toolName, "1.0.0", toolName)
+        #expect(fileManager.fileExists(atPath: binaryPath.path))
+        let symLinkPath = fileManager.activeFolder.appending(component: toolName)
+        #expect(fileManager.fileExists(atPath: symLinkPath.path))
+    }
+
+    @Test
+    func test_install_unknownFileType_throws() async throws {
+        let fileManager = FileManagerWrapperMock()
+
+        // Unknown magic bytes — FileTypeDetector returns nil → InstallerError.unknownFileType
+        let unknownData = Data([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: false,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .tempFile(unknownData))
+        )
+
+        await #expect(throws: (any Error).self) {
+            try await installer.install(installationType: .individualInline(
+                name: "SomeTool",
+                version: "1.0.0",
+                url: URL(string: "https://example.com/tool")!,
+                binaryPath: nil,
+                desiredBinaryName: nil,
+                checksum: nil,
+                algorithm: nil
+            ))
+        }
+    }
+
+    @Test
+    func test_install_incompatibleArchitecture_throws() async throws {
+        let fileManager = FileManagerWrapperMock()
+
+        // Create an ELF binary that is incompatible with the current host
+        #if arch(arm64) && os(Linux)
+        // Linux aarch64: use x86_64 ELF
+        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,  // ELF magic
+                                     0x02, 0x01, 0x01, 0x00,  // class, encoding, version, OS/ABI
+                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // padding
+                                     0x02, 0x00,              // e_type
+                                     0x3E, 0x00])             // e_machine = EM_X86_64
+        #else
+        // macOS (any arch) or Linux x86_64: use aarch64 ELF
+        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,  // ELF magic
+                                     0x02, 0x01, 0x01, 0x00,  // class, encoding, version, OS/ABI
+                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // padding
+                                     0x02, 0x00,              // e_type
+                                     0xB7, 0x00])             // e_machine = EM_AARCH64
+        #endif
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: false,
+            quiet: false,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .tempFile(incompatibleData))
+        )
+
+        await #expect(throws: (any Error).self) {
+            try await installer.install(installationType: .individualInline(
+                name: "SomeTool",
+                version: "1.0.0",
+                url: URL(string: "https://example.com/tool")!,
+                binaryPath: nil,
+                desiredBinaryName: "sometool",
+                checksum: nil,
+                algorithm: nil
+            ))
+        }
+    }
+
     private func spec(for fixture: Fixture) throws -> Spec {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
