@@ -3,6 +3,7 @@
 [![Swift](https://img.shields.io/badge/Swift-5.7+-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20|%20Linux-blue.svg)](https://swift.org/platform-support)
 [![License](https://img.shields.io/badge/License-Apache%202-green.svg)](LICENSE)
+[![codecov](https://codecov.io/github/LucaTools/Luca/graph/badge.svg)](https://app.codecov.io/github/LucaTools/Luca)
 
 Luca is a lightweight tool manager for macOS and Linux that helps developers install, manage, and activate specific versions of development tools in their projects. It creates project-specific tool environments without polluting your global PATH.
 

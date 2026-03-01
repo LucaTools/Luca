@@ -36,7 +36,27 @@ jobs:
         run: swift package clean
 
       - name: Run package tests
-        run: swift test
+        run: swift test --enable-code-coverage
+
+      - name: Generate LCOV report
+        run: |
+          BIN_PATH="$(swift build --show-bin-path)"
+          XCTEST_PATH="$(find "${BIN_PATH}" -name '*.xctest' | head -1)"
+          f="$(basename "${XCTEST_PATH}" .xctest)"
+          xcrun llvm-cov export \
+            "${XCTEST_PATH}/Contents/MacOS/${f}" \
+            -instr-profile=".build/debug/codecov/default.profdata" \
+            -format="lcov" \
+            -ignore-filename-regex=".build|Tests" \
+            > coverage.lcov
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.lcov
+          flags: macos
+          fail_ci_if_error: true
 
   run-tests-linux:
     name: Run tests (Linux)
@@ -53,4 +73,26 @@ jobs:
         run: swift package clean
 
       - name: Run package tests
-        run: swift test
+        run: swift test --enable-code-coverage
+
+      - name: Generate LCOV report
+        run: |
+          BIN_PATH="$(swift build --show-bin-path)"
+          XCTEST_PATH="$(find "${BIN_PATH}" -name '*.xctest' | head -1)"
+          llvm-cov export \
+            "${XCTEST_PATH}" \
+            -instr-profile=".build/debug/codecov/default.profdata" \
+            -format="lcov" \
+            -ignore-filename-regex=".build|Tests" \
+            > coverage.lcov
+
+      - name: Install curl
+        run: apt-get update && apt-get install -y curl
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.lcov
+          flags: linux
+          fail_ci_if_error: true
