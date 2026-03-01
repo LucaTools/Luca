@@ -86,7 +86,7 @@ struct ArchitectureValidator: ArchitectureValidating {
             throw ArchitectureValidatorError.unableToReadBinary(path: binaryPath)
         }
         
-        let magic = data.withUnsafeBytes { $0.load(as: UInt32.self) }
+        let magic = data.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
         
         // Check if it's a universal (fat) binary
         if magic == Self.FAT_MAGIC || magic == Self.FAT_CIGAM ||
@@ -119,10 +119,10 @@ struct ArchitectureValidator: ArchitectureValidating {
         let needsSwap = (magic == Self.MH_CIGAM_64 || magic == Self.MH_CIGAM)
         
         let cpuType: UInt32 = data.withUnsafeBytes { buffer in
-            let value = buffer.load(fromByteOffset: 4, as: UInt32.self)
+            let value = buffer.loadUnaligned(fromByteOffset: 4, as: UInt32.self)
             return needsSwap ? value.byteSwapped : value
         }
-        
+
         return try architectureFromCPUType(cpuType, path: path)
     }
     
@@ -136,7 +136,7 @@ struct ArchitectureValidator: ArchitectureValidating {
         let is64BitFat = (magic == Self.FAT_MAGIC_64 || magic == Self.FAT_CIGAM_64)
         
         let nfatArch: UInt32 = data.withUnsafeBytes { buffer in
-            let value = buffer.load(fromByteOffset: 4, as: UInt32.self)
+            let value = buffer.loadUnaligned(fromByteOffset: 4, as: UInt32.self)
             return needsSwap ? value.byteSwapped : value
         }
         
@@ -153,7 +153,7 @@ struct ArchitectureValidator: ArchitectureValidating {
             guard data.count >= archOffset + 4 else { continue }
             
             let cpuType: UInt32 = data.withUnsafeBytes { buffer in
-                let value = buffer.load(fromByteOffset: archOffset, as: UInt32.self)
+                let value = buffer.loadUnaligned(fromByteOffset: archOffset, as: UInt32.self)
                 return needsSwap ? value.byteSwapped : value
             }
             
@@ -201,7 +201,7 @@ struct ArchitectureValidator: ArchitectureValidating {
         let dataEncoding = data[5]
         
         let eMachine: UInt16 = data.withUnsafeBytes { buffer in
-            let raw = buffer.load(fromByteOffset: 18, as: UInt16.self)
+            let raw = buffer.loadUnaligned(fromByteOffset: 18, as: UInt16.self)
             switch dataEncoding {
             case Self.ELFDATA2MSB:
                 return UInt16(bigEndian: raw)

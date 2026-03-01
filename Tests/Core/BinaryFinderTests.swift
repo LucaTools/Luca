@@ -56,7 +56,7 @@ struct BinaryFinderTests {
     func findBinary_invalidRelease() throws {
         let binaryFinderFileManager = BinaryFinderFileManagerMock(fileManager: .default)
         let binaryFinder = BinaryFinder(fileManager: binaryFinderFileManager)
-        
+
         let fixture = Fixture(filename: "MockContent", type: "zip")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
@@ -72,5 +72,28 @@ struct BinaryFinderTests {
         #expect(throws: BinaryFinder.BinaryFinderError.missingBinaryFile(location: destination)) {
             try binaryFinder.findBinary(atPath: destination)
         }
+    }
+
+    @Test
+    func findBinary_cannotEnumerateDirectory_throws() throws {
+        let binaryFinder = BinaryFinder(fileManager: NilEnumeratorBinaryFinderMock())
+
+        let path = "/any/path"
+
+        #expect(throws: BinaryFinder.BinaryFinderError.cannotEnumerateDirectory(path: path)) {
+            try binaryFinder.findBinary(atPath: path)
+        }
+    }
+}
+
+// MARK: - NilEnumeratorBinaryFinderMock
+
+private struct NilEnumeratorBinaryFinderMock: BinaryFinderFileManaging {
+    func enumerator(
+        at url: URL,
+        includingPropertiesForKeys keys: [URLResourceKey]?,
+        options mask: FileManager.DirectoryEnumerationOptions
+    ) -> FileManager.DirectoryEnumerator? {
+        nil
     }
 }

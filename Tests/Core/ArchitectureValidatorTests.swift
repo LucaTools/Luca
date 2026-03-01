@@ -257,11 +257,103 @@ struct ArchitectureValidatorTests {
     func detectArchitecture_syntheticUniversalBinary() throws {
         let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(architecture: .universal)
         let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
-        
+
         let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
         #expect(architecture == .universal)
     }
-    
+
+    @Test
+    func detectArchitecture_nilContents_throwsUnableToRead() throws {
+        let architectureValidator = ArchitectureValidator(fileManager: NilContentsArchValidatorMock())
+        let path = "/fake/path"
+        #expect(throws: ArchitectureValidator.ArchitectureValidatorError.unableToReadBinary(path: path)) {
+            try architectureValidator.detectArchitecture(at: path)
+        }
+    }
+
+    @Test
+    func detectArchitecture_shortData_throwsUnableToRead() throws {
+        let architectureValidator = ArchitectureValidator(fileManager: ShortDataArchValidatorMock())
+        let path = "/fake/path"
+        #expect(throws: ArchitectureValidator.ArchitectureValidatorError.unableToReadBinary(path: path)) {
+            try architectureValidator.detectArchitecture(at: path)
+        }
+    }
+
+    @Test
+    func detectArchitecture_syntheticMachOArm64_cigam64() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .machOArm64Cigam64)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+
+        let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
+        #expect(architecture == .arm64)
+    }
+
+    @Test
+    func detectArchitecture_syntheticFatMagicNative_universal() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .fatMagicNativeUniversal)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+
+        let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
+        #expect(architecture == .universal)
+    }
+
+    @Test
+    func detectArchitecture_syntheticFatMagic64_universal() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .fatMagic64Native)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+
+        let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
+        #expect(architecture == .universal)
+    }
+
+    @Test
+    func detectArchitecture_syntheticFatCigam64_universal() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .fatCigam64)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+
+        let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
+        #expect(architecture == .universal)
+    }
+
+    @Test
+    func detectArchitecture_syntheticFatSingleArch_returnsArch() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .fatSingleArchArm64)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+
+        let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
+        #expect(architecture == .arm64)
+    }
+
+    @Test
+    func detectArchitecture_syntheticFatNoKnownArch_throws() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .fatNoKnownArch)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+
+        #expect(throws: ArchitectureValidator.ArchitectureValidatorError.unknownArchitecture(path: "/fake/path")) {
+            try architectureValidator.detectArchitecture(at: "/fake/path")
+        }
+    }
+
+    @Test
+    func detectArchitecture_syntheticELFBigEndian_aarch64() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .elfBigEndianAarch64)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+
+        let architecture = try architectureValidator.detectArchitecture(at: "/fake/path")
+        #expect(architecture == .aarch64)
+    }
+
+    @Test
+    func detectArchitecture_syntheticELFShortData_throwsUnableToRead() throws {
+        let architectureValidatorFileManager = SyntheticBinaryFileManagerMock(binaryFormat: .elfShortData)
+        let architectureValidator = ArchitectureValidator(fileManager: architectureValidatorFileManager)
+
+        #expect(throws: ArchitectureValidator.ArchitectureValidatorError.unableToReadBinary(path: "/fake/path")) {
+            try architectureValidator.detectArchitecture(at: "/fake/path")
+        }
+    }
+
     @Test
     func validate_incompatibleArchitecture_throws() throws {
         // Create a mock that returns the opposite architecture of the host
@@ -284,6 +376,20 @@ struct ArchitectureValidatorTests {
     }
 }
 
+// MARK: - Nil Contents Mock
+
+private struct NilContentsArchValidatorMock: ArchitectureValidatorFileManaging {
+    func fileExists(atPath path: String) -> Bool { true }
+    func contents(atPath path: String) -> Data? { nil }
+}
+
+// MARK: - Short Data Mock
+
+private struct ShortDataArchValidatorMock: ArchitectureValidatorFileManaging {
+    func fileExists(atPath path: String) -> Bool { true }
+    func contents(atPath path: String) -> Data? { Data([0x01, 0x02, 0x03]) }
+}
+
 // MARK: - Synthetic Binary File Manager Mock
 
 /// A mock file manager that returns synthetic Mach-O or ELF binary data for testing architecture detection.
@@ -293,9 +399,17 @@ private struct SyntheticBinaryFileManagerMock: ArchitectureValidatorFileManaging
         case machOArm64
         case machOX86_64
         case machOUniversal
+        case machOArm64Cigam64
+        case fatMagicNativeUniversal
+        case fatMagic64Native
+        case fatCigam64
+        case fatSingleArchArm64
+        case fatNoKnownArch
         case elfX86_64
         case elfAarch64
         case elfUnknown
+        case elfBigEndianAarch64
+        case elfShortData
     }
     
     private let binaryFormat: BinaryFormat
@@ -322,12 +436,29 @@ private struct SyntheticBinaryFileManagerMock: ArchitectureValidatorFileManaging
             return createMachO64Header(cpuType: 0x01000007)
         case .machOUniversal:
             return createFatHeader(cpuTypes: [0x0100000C, 0x01000007])
+        case .machOArm64Cigam64:
+            return createMachOCigam64Header(cpuType: 0x0100000C)
+        case .fatMagicNativeUniversal:
+            return createFatHeaderNative(cpuTypes: [0x0100000C, 0x01000007])
+        case .fatMagic64Native:
+            return createFatHeader64(cpuTypes: [0x0100000C, 0x01000007])
+        case .fatCigam64:
+            return createFatHeaderCigam64(cpuTypes: [0x0100000C, 0x01000007])
+        case .fatSingleArchArm64:
+            return createFatHeader(cpuTypes: [0x0100000C])
+        case .fatNoKnownArch:
+            return createFatHeader(cpuTypes: [0xDEADBEEF])
         case .elfX86_64:
             return createELFHeader(eMachine: 0x3E)   // EM_X86_64
         case .elfAarch64:
             return createELFHeader(eMachine: 0xB7)   // EM_AARCH64
         case .elfUnknown:
             return createELFHeader(eMachine: 0xFF)   // bogus
+        case .elfBigEndianAarch64:
+            return createELFHeaderBigEndian(eMachine: 0xB7)
+        case .elfShortData:
+            // ELF magic + 4 padding bytes = 8 bytes total (passes outer guard >= 8, fails ELF guard >= 20)
+            return Data([0x7F, 0x45, 0x4C, 0x46, 0x02, 0x01, 0x01, 0x00])
         }
     }
     
@@ -379,6 +510,85 @@ private struct SyntheticBinaryFileManagerMock: ArchitectureValidatorFileManaging
         return data
     }
     
+    /// Creates a Mach-O header with MH_CIGAM_64 magic (big-endian / byte-swapped on LE machines).
+    private func createMachOCigam64Header(cpuType: UInt32) -> Data {
+        var data = Data()
+        // MH_CIGAM_64 = 0xCFFAEDFE (loads as this value on a LE machine)
+        var magic: UInt32 = 0xCFFAEDFE
+        data.append(Data(bytes: &magic, count: 4))
+        // CPU type stored big-endian; will be .byteSwapped when read (needsSwap=true)
+        var cpu = cpuType.bigEndian
+        data.append(Data(bytes: &cpu, count: 4))
+        data.append(Data(repeating: 0, count: 24))
+        return data
+    }
+
+    /// Creates a 32-bit fat header with FAT_MAGIC (native / little-endian byte order).
+    private func createFatHeaderNative(cpuTypes: [UInt32]) -> Data {
+        var data = Data()
+        // FAT_MAGIC = 0xCAFEBABE stored natively (loads as FAT_MAGIC on LE, needsSwap=false)
+        var magic: UInt32 = 0xCAFEBABE
+        data.append(Data(bytes: &magic, count: 4))
+        var nfatArch: UInt32 = UInt32(cpuTypes.count)
+        data.append(Data(bytes: &nfatArch, count: 4))
+        for cpuType in cpuTypes {
+            var cpu = cpuType
+            data.append(Data(bytes: &cpu, count: 4))
+            data.append(Data(repeating: 0, count: 16))  // 20 bytes per 32-bit fat_arch entry
+        }
+        return data
+    }
+
+    /// Creates a 64-bit fat header with FAT_MAGIC_64 (native / LE, needsSwap=false, is64BitFat=true).
+    private func createFatHeader64(cpuTypes: [UInt32]) -> Data {
+        var data = Data()
+        // FAT_MAGIC_64 = 0xCAFEBABF stored natively
+        var magic: UInt32 = 0xCAFEBABF
+        data.append(Data(bytes: &magic, count: 4))
+        var nfatArch: UInt32 = UInt32(cpuTypes.count)
+        data.append(Data(bytes: &nfatArch, count: 4))
+        for cpuType in cpuTypes {
+            var cpu = cpuType
+            data.append(Data(bytes: &cpu, count: 4))
+            data.append(Data(repeating: 0, count: 28))  // 32 bytes per 64-bit fat_arch_64 entry
+        }
+        return data
+    }
+
+    /// Creates a 64-bit fat header with FAT_CIGAM_64 (needsSwap=true, is64BitFat=true).
+    private func createFatHeaderCigam64(cpuTypes: [UInt32]) -> Data {
+        var data = Data()
+        // FAT_CIGAM_64 = 0xBFBAFECA, stored natively (loads as FAT_CIGAM_64 on LE)
+        var magic: UInt32 = 0xBFBAFECA
+        data.append(Data(bytes: &magic, count: 4))
+        // nfat_arch stored big-endian; will be .byteSwapped when read (needsSwap=true)
+        var nfatArch: UInt32 = UInt32(cpuTypes.count).bigEndian
+        data.append(Data(bytes: &nfatArch, count: 4))
+        for cpuType in cpuTypes {
+            var cpu = cpuType.bigEndian
+            data.append(Data(bytes: &cpu, count: 4))
+            data.append(Data(repeating: 0, count: 28))  // 32 bytes per 64-bit fat_arch_64 entry
+        }
+        return data
+    }
+
+    /// Creates a minimal ELF header with the given `e_machine` value (big-endian / ELFDATA2MSB).
+    private func createELFHeaderBigEndian(eMachine: UInt16) -> Data {
+        var data = Data()
+        data.append(contentsOf: [0x7F, 0x45, 0x4C, 0x46])  // ELF magic
+        data.append(2)   // EI_CLASS: 64-bit
+        data.append(2)   // EI_DATA: big-endian (ELFDATA2MSB)
+        data.append(1)   // EI_VERSION
+        data.append(Data(repeating: 0, count: 9))  // padding to offset 16
+        var eType: UInt16 = UInt16(2).bigEndian     // ET_EXEC in big-endian
+        data.append(Data(bytes: &eType, count: 2))
+        // e_machine stored big-endian (at offset 18); UInt16(bigEndian:) will recover original value
+        var machine = eMachine.bigEndian
+        data.append(Data(bytes: &machine, count: 2))
+        data.append(Data(repeating: 0, count: 12))
+        return data
+    }
+
     /// Creates a minimal ELF header with the given `e_machine` value (little-endian).
     private func createELFHeader(eMachine: UInt16) -> Data {
         var data = Data()

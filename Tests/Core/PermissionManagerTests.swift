@@ -61,6 +61,31 @@ struct PermissionManagerTests {
         }
     }
 
+    @Test
+    func setExecutablePermission_noPosixPermissions_throws() throws {
+        let fileManager = NoPosixPermissionsFileManagerMock()
+        let sut = PermissionManager(fileManager: fileManager)
+
+        let tool = Tool(
+            name: "MockTool",
+            version: "1.0.0",
+            url: URL(string: "https://example.com")!,
+            binaryPath: "bin/MockTool",
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil
+        )
+
+        let expectedPath = fileManager.toolsFolder
+            .appending(components: tool.name, tool.version)
+            .appending(path: tool.effectiveBinaryPath)
+            .path
+
+        #expect(throws: PermissionManager.PermissionManagerError.unableToRetrievePosixPermissions(expectedPath)) {
+            try sut.setExecutablePermission(for: tool)
+        }
+    }
+
     // MARK: - Private
 
     private func executablePermissionsAreSet(atPath path: String) -> Bool {
@@ -75,4 +100,14 @@ struct PermissionManagerTests {
             return false
         }
     }
+}
+
+// MARK: - NoPosixPermissionsFileManagerMock
+
+private struct NoPosixPermissionsFileManagerMock: PermissionManagerFileManaging {
+    var toolsFolder: URL { URL(fileURLWithPath: "/tmp/luca-test-noperm/.luca/tools") }
+    var activeFolder: URL { URL(fileURLWithPath: "/tmp/luca-test-noperm/.luca/active") }
+    func fileExists(atPath path: String) -> Bool { true }
+    func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] { [:] }
+    func setAttributes(_ attributes: [FileAttributeKey: Any], ofItemAtPath path: String) throws {}
 }

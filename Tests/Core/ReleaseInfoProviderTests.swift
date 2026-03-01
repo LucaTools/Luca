@@ -80,4 +80,38 @@ struct ReleaseInfoProviderTests {
         let asset = try await sut.platformAsset(for: release)
         #expect(asset == targetAsset)
     }
+
+    @Test
+    func fetchReleaseInfo_multipleMatchingAssets_prefersBestMatch() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "MultipleMatchingAssets", type: "json")))
+        let sut = ReleaseInfoProvider(dataDownloader: dataDownloader)
+        let release = Release(organization: "organization", repository: "repository", version: "1.0.0")
+        let asset = try await sut.platformAsset(for: release)
+        #if os(Linux)
+        let targetAsset = ReleaseAsset(name: "tool-linux-gnu.tar.gz", url: "https://github.com/organization/repository/releases/download/1.0.0/tool-linux-gnu.tar.gz")
+        #else
+        let targetAsset = ReleaseAsset(name: "tool-macOS-arm64.zip", url: "https://github.com/organization/repository/releases/download/1.0.0/tool-macOS-arm64.zip")
+        #endif
+        #expect(asset == targetAsset)
+    }
+
+    @Test
+    func fetchReleaseInfo_nonHTTPResponse_throwsApiError() async throws {
+        let dataDownloader = DataDownloaderMock(result: .nonHTTPResponse)
+        let sut = ReleaseInfoProvider(dataDownloader: dataDownloader)
+        let release = Release(organization: "organization", repository: "repository", version: "1.0.0")
+        await #expect(throws: ReleaseInfoProvider.ReleaseInfoProviderError.apiError("Invalid response from GitHub")) {
+            try await sut.platformAsset(for: release)
+        }
+    }
+
+    @Test
+    func fetchReleaseInfo_serverError_throwsApiError() async throws {
+        let dataDownloader = DataDownloaderMock(result: .statusCode(500))
+        let sut = ReleaseInfoProvider(dataDownloader: dataDownloader)
+        let release = Release(organization: "organization", repository: "repository", version: "1.0.0")
+        await #expect(throws: ReleaseInfoProvider.ReleaseInfoProviderError.apiError("HTTP error 500")) {
+            try await sut.platformAsset(for: release)
+        }
+    }
 }

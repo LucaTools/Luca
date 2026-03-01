@@ -19,8 +19,38 @@ struct ChecksumCalculatorTests {
         let fixture = Fixture(filename: "MockMachO_Universal_Release", type: "zip")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
-        
+
         let calculatedChecksum = try calculator.calculateChecksum(for: path, using: algorithm)
         #expect(calculatedChecksum == expectedChecksum)
     }
+
+    @Test
+    func calculateChecksum_missingFile_throws() throws {
+        let checksumValidatorFileManager = ChecksumValidatorFileManagerMock(fileManager: .default)
+        let calculator = ChecksumCalculator(fileManager: checksumValidatorFileManager)
+
+        let path = "/nonexistent/path/to/file.zip"
+
+        #expect(throws: ChecksumCalculator.ChecksumCalculatorError.missingFile(path: path)) {
+            try calculator.calculateChecksum(for: path, using: .sha256)
+        }
+    }
+
+    @Test
+    func calculateChecksum_invalidFile_throws() throws {
+        let calculator = ChecksumCalculator(fileManager: NilContentsChecksumFileManagerMock())
+
+        let path = "/fake/path/to/file.zip"
+
+        #expect(throws: ChecksumCalculator.ChecksumCalculatorError.invalidFile(path: path)) {
+            try calculator.calculateChecksum(for: path, using: .sha256)
+        }
+    }
+}
+
+// MARK: - NilContentsChecksumFileManagerMock
+
+private struct NilContentsChecksumFileManagerMock: ChecksumValidatorFileManaging {
+    func fileExists(atPath path: String) -> Bool { true }
+    func contents(atPath path: String) -> Data? { nil }
 }
