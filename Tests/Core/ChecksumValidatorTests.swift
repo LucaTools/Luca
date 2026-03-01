@@ -21,7 +21,21 @@ struct ChecksumValidatorTests {
         let fixture = Fixture(filename: "MockMachO_Universal_Release", type: "zip")
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
-        
+
         try checksumValidator.validate(checksum: checksum, for: path, using: algorithm)
+    }
+
+    @Test
+    func validateChecksum_invalidChecksum_throws() throws {
+        let checksumValidatorFileManager = ChecksumValidatorFileManagerMock(fileManager: .default)
+        let checksumValidator = ChecksumValidator(fileManager: checksumValidatorFileManager)
+
+        let fixture = Fixture(filename: "MockMachO_Universal_Release", type: "zip")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+
+        #expect(throws: ChecksumValidator.ChecksumValidatorError.invalidChecksum(path: path)) {
+            try checksumValidator.validate(checksum: "invalid_checksum_value", for: path, using: .sha256)
+        }
     }
 }
