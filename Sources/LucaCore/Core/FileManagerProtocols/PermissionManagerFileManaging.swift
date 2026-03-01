@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// File system interface for ``PermissionManager``.
 public protocol PermissionManagerFileManaging {
     var toolsFolder: URL { get }
     var activeFolder: URL { get }

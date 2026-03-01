@@ -2,10 +2,19 @@
 
 import Foundation
 
+/// Determines the file type of a downloaded asset by inspecting its binary header.
+///
+/// `FileTypeDetector` examines the first bytes of a file (magic numbers) to
+/// identify ZIP archives, gzip/tar archives, and executable binaries
+/// (Mach-O, ELF, and PE formats), falling back to the file extension when
+/// the magic bytes are inconclusive.
 struct FileTypeDetector {
-    
+
     let fileManager: FileTypeDetectorFileManaging
-    
+
+    /// Detects the file type of the asset at `filePath`.
+    /// - Parameter filePath: The local URL of the file to inspect.
+    /// - Returns: The detected ``FileType``, or `nil` if the type cannot be determined.
     func detectFileType(at filePath: URL) throws -> FileType? {
         // Check the file signature (magic numbers)
         let fileHandle = try FileHandle(forReadingFrom: filePath)

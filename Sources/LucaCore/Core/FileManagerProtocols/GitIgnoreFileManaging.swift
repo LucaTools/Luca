@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// File system interface for ``GitIgnoreManager``.
 public protocol GitIgnoreFileManaging {
     var currentDirectoryPath: String { get }
     func fileExists(atPath: String) -> Bool

@@ -1,6 +1,6 @@
 # ``LucaCore``
 
-A lightweight tool manager for macOS that helps developers install, manage, and activate specific versions of development tools.
+A lightweight tool manager for macOS and Linux that helps developers install, manage, and activate specific versions of development tools.
 
 ## Overview
 

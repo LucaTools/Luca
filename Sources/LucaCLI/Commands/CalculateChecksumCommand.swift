@@ -4,6 +4,7 @@ import ArgumentParser
 import Foundation
 import LucaCore
 
+/// Computes a checksum hash for a file, useful for generating Lucafile entries.
 struct CalculateChecksumCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(

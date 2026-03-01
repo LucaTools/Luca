@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// The full file-system interface used by components that require access to multiple file manager capabilities.
 public protocol FileManaging:
     ArchitectureValidatorFileManaging,
     BinaryFinderFileManaging,

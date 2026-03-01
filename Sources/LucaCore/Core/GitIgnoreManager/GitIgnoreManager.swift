@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// Ensures the project's `.gitignore` contains an entry for the `.luca/active/` folder.
 public struct GitIgnoreManager {
     
     private let fileManager: GitIgnoreFileManaging
@@ -12,6 +13,7 @@ public struct GitIgnoreManager {
         self.printer = printer
     }
     
+    /// Appends or creates a `.gitignore` entry for the active folder in the current project.
     public func ensureGitIgnoreIncludesActiveFolder() throws {
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         let gitDirectory = currentDirectory.appending(component: ".git")

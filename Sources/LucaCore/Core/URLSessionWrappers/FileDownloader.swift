@@ -5,6 +5,7 @@ import Foundation
 import FoundationNetworking
 #endif
 
+/// ``FileDownloading`` implementation backed by `URLSession`.
 struct FileDownloader: FileDownloading {
     
     private var session: URLSession

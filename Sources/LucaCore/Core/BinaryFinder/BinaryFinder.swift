@@ -2,8 +2,12 @@
 
 import Foundation
 
+/// Locates the executable binary inside an extracted tool directory.
+///
+/// `BinaryFinder` walks the directory tree and identifies the first file
+/// whose header magic matches a Mach-O or ELF binary.
 struct BinaryFinder: BinaryFinding {
-    
+
     enum BinaryFinderError: Error, LocalizedError, Equatable {
         case cannotConstructUrl(path: String)
         case cannotEnumerateDirectory(path: String)
@@ -27,6 +31,9 @@ struct BinaryFinder: BinaryFinding {
         self.fileManager = fileManager
     }
     
+    /// Searches the directory tree at `path` for the first Mach-O or ELF binary.
+    /// - Parameter path: The root directory to search.
+    /// - Returns: A relative path to the binary within the directory.
     func findBinary(atPath path: String) throws -> String {
         let url = URL(filePath: path, directoryHint: .isDirectory)
         // Normalize the base path with a trailing slash to safely strip the prefix later.

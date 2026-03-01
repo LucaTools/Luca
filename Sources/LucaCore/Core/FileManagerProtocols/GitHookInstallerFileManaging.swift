@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// File system interface for ``GitHookInstaller``.
 public protocol GitHookInstallerFileManaging {
     var currentDirectoryPath: String { get }
     var homeDirectoryForCurrentUser: URL { get }

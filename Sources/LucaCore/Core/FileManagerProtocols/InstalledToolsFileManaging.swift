@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// File system interface for ``InstalledToolsLister``.
 public protocol InstalledToolsFileManaging {
     var toolsFolder: URL { get }
     func fileExists(atPath: String) -> Bool

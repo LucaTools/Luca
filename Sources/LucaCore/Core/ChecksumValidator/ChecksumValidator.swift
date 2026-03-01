@@ -3,8 +3,9 @@
 import Foundation
 import Crypto
 
+/// Validates a file's integrity by comparing its computed hash against an expected checksum string.
 struct ChecksumValidator: ChecksumValidating {
-    
+
     enum ChecksumValidatorError: Error, LocalizedError, Equatable {
         case invalidChecksum(path: String)
         
@@ -22,6 +23,7 @@ struct ChecksumValidator: ChecksumValidating {
         self.calculator = ChecksumCalculator(fileManager: fileManager)
     }
     
+    /// Computes the checksum of the file at `filePath` and compares it with `checksum`.
     func validate(checksum: String, for filePath: String, using algorithm: ChecksumAlgorithm) throws {
         let calculatedChecksum = try calculator.calculateChecksum(for: filePath, using: algorithm)
         guard calculatedChecksum.lowercased() == checksum.lowercased() else {
