@@ -1,0 +1,35 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
+
+ignore:
+  - "Tests/**"
+  - ".build/**"
+  - "Sources/LucaCLI/**"
+
+flags:
+  macos:
+    paths:
+      - Sources/
+    carryforward: true
+  linux:
+    paths:
+      - Sources/
+    carryforward: true
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: true
