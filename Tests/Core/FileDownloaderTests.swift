@@ -7,6 +7,10 @@ import FoundationNetworking
 import Testing
 @testable import LucaCore
 
+// URLSession.download(from:) on Linux's FoundationNetworking does not support URLProtocol
+// interception: urlProtocolDidFinishLoading crashes because no real temp file is ever written.
+// These tests are macOS-only; FileDownloader is covered via integration paths on Linux.
+#if canImport(Darwin)
 @Suite(.serialized)
 struct FileDownloaderTests {
 
@@ -67,3 +71,4 @@ private final class MockFileURLProtocol: URLProtocol {
 
     override func stopLoading() {}
 }
+#endif
