@@ -25,10 +25,10 @@ struct GitHubReleaseURLFactoryTests {
         // Given
         let sut = GitHubReleaseURLFactory()
         let release = Release(organization: "testorg", repository: "testrepo", version: "1.0.0")
-        
+
         // When
         let url = try sut.makeApiReleaseURL(release: release)
-        
+
         // Then
         #expect(url.absoluteString == "https://api.github.com/repos/testorg/testrepo/releases/tags/1.0.0")
     }
