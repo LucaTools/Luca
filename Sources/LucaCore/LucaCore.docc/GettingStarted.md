@@ -4,7 +4,7 @@ Learn how to install Luca and set up your first project with managed tools.
 
 ## Overview
 
-Luca is a lightweight tool manager for macOS that helps developers install, manage, and activate specific versions of development tools in their projects. It creates project-specific tool environments without polluting your global PATH.
+Luca is a lightweight tool manager for macOS and Linux that helps developers install, manage, and activate specific versions of development tools in their projects. It creates project-specific tool environments without polluting your global PATH.
 
 ## Installation
 

@@ -4,6 +4,7 @@ import ArgumentParser
 import Foundation
 import LucaCore
 
+/// Lists all tools and their cached versions in the local Luca cache.
 struct InstalledCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(

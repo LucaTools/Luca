@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// Installs a post-checkout Git hook into the current repository.
 public struct GitHookInstaller {
     
     private let fileManager: GitHookInstallerFileManaging
@@ -12,6 +13,7 @@ public struct GitHookInstaller {
         self.printer = printer
     }
     
+    /// Copies the Luca post-checkout hook into `.git/hooks/`, if not already present.
     public func installPostCheckoutHook() throws {
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         let gitDirectory = currentDirectory.appending(component: ".git")

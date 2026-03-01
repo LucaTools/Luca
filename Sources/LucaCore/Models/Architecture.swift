@@ -8,7 +8,9 @@ public enum Architecture: String, Codable, Equatable, Sendable {
     case arm64
     /// AArch64 as used in ELF binaries (Linux).
     case aarch64
+    /// x86-64 (Intel 64-bit).
     case x86_64
+    /// A universal binary containing both ARM64 and x86-64 slices (macOS only).
     case universal
 
     /// The architecture of the current host machine.

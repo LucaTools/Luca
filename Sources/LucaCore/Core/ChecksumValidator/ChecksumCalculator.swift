@@ -3,8 +3,9 @@
 import Foundation
 import Crypto
 
+/// Computes a hex-encoded cryptographic hash for a file on disk.
 public struct ChecksumCalculator {
-    
+
     public enum ChecksumCalculatorError: Error, LocalizedError, Equatable {
         case invalidFile(path: String)
         case missingFile(path: String)
@@ -25,6 +26,11 @@ public struct ChecksumCalculator {
         self.fileManager = fileManager
     }
     
+    /// Calculates the checksum for the file at `filePath` using the specified algorithm.
+    /// - Parameters:
+    ///   - filePath: The path to the file.
+    ///   - algorithm: The hashing algorithm to apply.
+    /// - Returns: A lowercase hex-encoded hash string.
     public func calculateChecksum(for filePath: String, using algorithm: ChecksumAlgorithm) throws(ChecksumCalculatorError) -> String {
         guard fileManager.fileExists(atPath: filePath) else {
             throw ChecksumCalculatorError.missingFile(path: filePath)

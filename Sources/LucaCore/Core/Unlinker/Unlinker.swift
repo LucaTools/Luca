@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// Removes a symlink from the project's `.luca/active/` directory.
 public struct Unlinker {
 
     public enum UnlinkerError: Error, LocalizedError, Equatable {
@@ -23,6 +24,8 @@ public struct Unlinker {
         self.printer = printer
     }
 
+    /// Removes the symlink named `symlink` from the active folder.
+    /// - Parameter symlink: The binary name of the symlink to remove.
     public func unlink(symlink: String) throws {
         let symlinkFile = fileManager.activeFolder.appending(component: symlink)
         if fileManager.fileExists(atPath: symlinkFile.path) {

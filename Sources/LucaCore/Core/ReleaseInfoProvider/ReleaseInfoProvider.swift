@@ -5,6 +5,7 @@ import Foundation
 import FoundationNetworking
 #endif
 
+/// Fetches GitHub release metadata and selects the best download asset for the current platform.
 struct ReleaseInfoProvider: ReleaseInfoProviding {
     
     #if os(Linux)
@@ -42,6 +43,7 @@ struct ReleaseInfoProvider: ReleaseInfoProviding {
     
     // MARK: - Internal
     
+    /// Returns the release asset whose name best matches the current platform keywords.
     func platformAsset(for release: Release) async throws -> ReleaseAsset {
         let releaseInfo = try await fetchReleaseInfo(release: release)
         return try findPlatformAsset(in: releaseInfo.assets)

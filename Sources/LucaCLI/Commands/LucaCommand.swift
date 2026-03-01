@@ -3,6 +3,7 @@
 import ArgumentParser
 import Foundation
 
+/// The root command for the `luca` CLI tool.
 @main
 struct LucaCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(

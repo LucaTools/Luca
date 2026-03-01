@@ -4,6 +4,7 @@ import ArgumentParser
 import Foundation
 import LucaCore
 
+/// Lists tools currently symlinked in the active folder of the current project.
 struct LinkedCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(

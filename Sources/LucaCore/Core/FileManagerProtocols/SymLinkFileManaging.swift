@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// File system interface for ``SymLinker``.
 public protocol SymLinkFileManaging {
     var toolsFolder: URL { get }
     var activeFolder: URL { get }

@@ -2,8 +2,9 @@
 
 import Foundation
 
+/// Creates ``Tool`` instances from various installation type descriptions.
 struct ToolFactory {
-    
+
     enum ToolFactoryError: Error, LocalizedError, Equatable {
         case invalidIdentifierFormat(String)
         case invalidRepositoryFormat(String)
@@ -28,6 +29,8 @@ struct ToolFactory {
     
     // MARK: - Internal
     
+    /// Returns the list of tools to install for the given installation type.
+    /// - Parameter installationType: Specifies whether to read from a spec file or install a single tool directly.
     func toolsForInstallationType(_ installationType: InstallationType) async throws -> [Tool] {
         switch installationType {
         case .spec(let specPath):

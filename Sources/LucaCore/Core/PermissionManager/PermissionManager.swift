@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// Applies executable permission bits to installed tool binaries.
 struct PermissionManager: PermissionManaging {
 
     enum PermissionManagerError: Error, LocalizedError, Equatable {
@@ -24,6 +25,7 @@ struct PermissionManager: PermissionManaging {
         self.fileManager = fileManager
     }
     
+    /// Adds the execute bits (`0o111`) to the binary associated with `tool`.
     func setExecutablePermission(for tool: Tool) throws {
         let destinationFile = fileManager.toolsFolder
             .appending(components: tool.name, tool.version)

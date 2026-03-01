@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// Removes a specific version of a tool from the local cache.
 public struct Uninstaller {
 
     public enum UninstallerError: Error, LocalizedError, Equatable {
@@ -23,6 +24,10 @@ public struct Uninstaller {
         self.printer = printer
     }
 
+    /// Deletes the cached version directory for `tool` and removes the parent directory if empty.
+    /// - Parameters:
+    ///   - tool: The name of the tool to uninstall.
+    ///   - version: The version string to remove.
     public func uninstall(tool: String, version: String) throws {
         let versionFolder = fileManager.toolsFolder
             .appending(component: tool)

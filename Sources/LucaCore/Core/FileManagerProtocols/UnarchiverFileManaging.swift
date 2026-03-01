@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// File system interface for ``Unarchiver``.
 public protocol UnarchiverFileManaging {
     var toolsFolder: URL { get }
     var homeDirectoryForCurrentUser: URL { get }

@@ -63,6 +63,18 @@ CI runs tests on both macOS and Linux (`swift:6.0-jammy` container).
 - No force-unwraps in library code
 - CLI `@Option`/`@Argument` always include `ArgumentHelp` with `discussion:` and `valueName:`
 
+## Documentation
+
+The `.docc` catalog (`Sources/LucaCore/LucaCore.docc/`) contains hand-written articles that must be committed. The generated HTML output (`docs/`) is produced by CI and must **not** be committed.
+
+All new types, methods, protocols, and enums require `///` DocC comments. Follow this style:
+
+- **Type-level**: one-sentence summary on the first `///` line; add a short paragraph if the role needs clarification.
+- **Methods**: add `- Parameter x:` and `- Returns:` only when non-obvious.
+- **`*FileManaging` protocols**: single-line doc only (e.g. `/// File system interface for ``BinaryFinder``.`).
+
+See `Installer.swift`, `Tool.swift`, and `Spec.swift` as style exemplars.
+
 ## Testing
 
 Uses **Swift Testing** (not XCTest).
