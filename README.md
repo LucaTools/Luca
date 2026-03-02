@@ -47,6 +47,13 @@ On Linux, you can build a portable binary that doesn't require the Swift runtime
 swift build -c release -Xswiftc -static-stdlib
 ```
 
+## GitHub Actions
+
+Two companion repositories make it easy to use Luca in CI:
+
+- **[setup-luca](https://github.com/LucaTools/setup-luca)** — a GitHub Action (also on the [Marketplace](https://github.com/marketplace/actions/setup-luca)) that installs Luca and optionally install tools as part of your workflow.
+- **[LucaWorkflows](https://github.com/LucaTools/LucaWorkflows)** — ready-to-use workflow templates to build, package, and publish Luca-compatible releases from Swift, Go, Rust, Python, C#, and Zig projects.
+
 ## Usage
 
 ### Installing tools using a Lucafile
