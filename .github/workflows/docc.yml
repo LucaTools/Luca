@@ -30,7 +30,7 @@ jobs:
         uses: actions/configure-pages@v4
 
       - name: Select Xcode
-        uses: ./.github/actions/select-xcode
+        uses: LucaTools/select-xcode@v1
 
       - name: Build DocC
         run: |

@@ -30,7 +30,7 @@ jobs:
           fetch-depth: 0 # Full history and tags
 
       - name: Select Xcode
-        uses: ./.github/actions/select-xcode
+        uses: LucaTools/select-xcode@v1
 
       - name: Delete build artifacts
         run: swift package clean
