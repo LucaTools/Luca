@@ -5,7 +5,7 @@ import Foundation
 /// Creates and manages symbolic links for installed tools.
 ///
 /// The `SymLinker` is responsible for creating symbolic links in the project's
-/// `.luca/active/` directory that point to the actual tool binaries stored
+/// `.luca/tools/` directory that point to the actual tool binaries stored
 /// in `~/.luca/tools/`.
 ///
 /// This allows projects to reference tools via a consistent path while

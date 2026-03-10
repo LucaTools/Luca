@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// Lists tools that are currently symlinked into the project's `.luca/active/` directory.
+/// Lists tools that are currently symlinked into the project's `.luca/tools/` directory.
 public struct LinkedToolsLister {
 
     /// A tool that is currently symlinked into the active folder.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Luca is a macOS & Linux CLI tool manager. It reads a YAML `Lucafile`, downloads versioned dev tools from remote URLs (GitHub Releases or direct links), validates checksums and binary architecture, and symlinks active tools into `.luca/active/` inside the project directory. Tools are cached at `~/.luca/tools/{ToolName}/{version}/`.
+Luca is a macOS & Linux CLI tool manager. It reads a YAML `Lucafile`, downloads versioned dev tools from remote URLs (GitHub Releases or direct links), validates checksums and binary architecture, and symlinks active tools into `.luca/tools/` inside the project directory. Tools are cached at `~/.luca/tools/{ToolName}/{version}/`.
 
 Two targets: `LucaCore` (library, all business logic) and `LucaCLI` (executable, thin command layer).
 

@@ -72,8 +72,8 @@
             }
             
             @Step {
-                Luca downloads the tool, extracts it, and creates a symlink in 
-                `.luca/active/`. You can now use the tool directly.
+                Luca downloads the tool, extracts it, and creates a symlink in
+                `.luca/tools/`. You can now use the tool directly.
                 
                 @Code(name: "Terminal", file: "use-swiftlint.sh")
             }

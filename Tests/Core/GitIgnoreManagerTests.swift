@@ -47,7 +47,7 @@ final class GitIgnoreManagerTests: XCTestCase {
         let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
         XCTAssertTrue(fileManager.fileExists(atPath: gitIgnoreFile.path))
         let content = try fileManager.readString(at: gitIgnoreFile)
-        XCTAssertEqual(content, ".luca/active\n")
+        XCTAssertEqual(content, ".luca/tools\n")
     }
     
     func test_ensureGitIgnoreIncludesActiveFolder_whenGitRepoAndGitIgnoreExistsWithoutEntry_appendsEntry() throws {
@@ -64,7 +64,7 @@ final class GitIgnoreManagerTests: XCTestCase {
         
         // Then
         let content = try fileManager.readString(at: gitIgnoreFile)
-        XCTAssertEqual(content, "existing\n.luca/active\n")
+        XCTAssertEqual(content, "existing\n.luca/tools\n")
     }
     
     func test_ensureGitIgnoreIncludesActiveFolder_whenGitRepoAndGitIgnoreExistsWithEntry_doesNothing() throws {
@@ -74,14 +74,14 @@ final class GitIgnoreManagerTests: XCTestCase {
         let gitDirectory = currentDirectory.appending(component: ".git")
         try fileManager.createDirectory(at: gitDirectory, withIntermediateDirectories: true)
         let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
-        try fileManager.writeString(".luca/active\n", to: gitIgnoreFile)
+        try fileManager.writeString(".luca/tools\n", to: gitIgnoreFile)
         
         // When
         try sut.ensureGitIgnoreIncludesActiveFolder()
         
         // Then
         let content = try fileManager.readString(at: gitIgnoreFile)
-        XCTAssertEqual(content, ".luca/active\n")
+        XCTAssertEqual(content, ".luca/tools\n")
     }
     
     func test_ensureGitIgnoreIncludesActiveFolder_whenGitRepoAndGitIgnoreExistsWithoutNewline_appendsNewlineAndEntry() throws {
@@ -98,6 +98,6 @@ final class GitIgnoreManagerTests: XCTestCase {
         
         // Then
         let content = try fileManager.readString(at: gitIgnoreFile)
-        XCTAssertEqual(content, "existing\n.luca/active\n")
+        XCTAssertEqual(content, "existing\n.luca/tools\n")
     }
 }
