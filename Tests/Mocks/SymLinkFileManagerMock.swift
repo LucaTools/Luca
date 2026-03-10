@@ -15,9 +15,9 @@ class SymLinkFileManagerMock: SymLinkFileManaging {
             .appending(components: Constants.toolFolder, Constants.toolsFolder)
     }
 
-    var activeFolder: URL {
+    var symlinksFolder: URL {
         URL(fileURLWithPath: currentDirectoryPath)
-            .appending(components: Constants.toolFolder, Constants.activeFolder)
+            .appending(components: Constants.toolFolder, Constants.symlinksFolder)
     }
     
     init(fileManager: FileManager = .default) {

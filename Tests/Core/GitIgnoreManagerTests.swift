@@ -20,20 +20,20 @@ final class GitIgnoreManagerTests: XCTestCase {
         super.tearDown()
     }
     
-    func test_ensureGitIgnoreIncludesActiveFolder_whenNotGitRepo_doesNothing() throws {
+    func test_ensureGitIgnoreIncludesSymlinksFolder_whenNotGitRepo_doesNothing() throws {
         // Given
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
         
         // When
-        try sut.ensureGitIgnoreIncludesActiveFolder()
+        try sut.ensureGitIgnoreIncludesSymlinksFolder()
         
         // Then
         let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
         XCTAssertFalse(fileManager.fileExists(atPath: gitIgnoreFile.path))
     }
     
-    func test_ensureGitIgnoreIncludesActiveFolder_whenGitRepoAndNoGitIgnore_createsGitIgnore() throws {
+    func test_ensureGitIgnoreIncludesSymlinksFolder_whenGitRepoAndNoGitIgnore_createsGitIgnore() throws {
         // Given
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
@@ -41,7 +41,7 @@ final class GitIgnoreManagerTests: XCTestCase {
         try fileManager.createDirectory(at: gitDirectory, withIntermediateDirectories: true)
         
         // When
-        try sut.ensureGitIgnoreIncludesActiveFolder()
+        try sut.ensureGitIgnoreIncludesSymlinksFolder()
         
         // Then
         let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
@@ -50,7 +50,7 @@ final class GitIgnoreManagerTests: XCTestCase {
         XCTAssertEqual(content, ".luca/tools\n")
     }
     
-    func test_ensureGitIgnoreIncludesActiveFolder_whenGitRepoAndGitIgnoreExistsWithoutEntry_appendsEntry() throws {
+    func test_ensureGitIgnoreIncludesSymlinksFolder_whenGitRepoAndGitIgnoreExistsWithoutEntry_appendsEntry() throws {
         // Given
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
@@ -60,14 +60,14 @@ final class GitIgnoreManagerTests: XCTestCase {
         try fileManager.writeString("existing\n", to: gitIgnoreFile)
         
         // When
-        try sut.ensureGitIgnoreIncludesActiveFolder()
+        try sut.ensureGitIgnoreIncludesSymlinksFolder()
         
         // Then
         let content = try fileManager.readString(at: gitIgnoreFile)
         XCTAssertEqual(content, "existing\n.luca/tools\n")
     }
     
-    func test_ensureGitIgnoreIncludesActiveFolder_whenGitRepoAndGitIgnoreExistsWithEntry_doesNothing() throws {
+    func test_ensureGitIgnoreIncludesSymlinksFolder_whenGitRepoAndGitIgnoreExistsWithEntry_doesNothing() throws {
         // Given
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
@@ -77,14 +77,14 @@ final class GitIgnoreManagerTests: XCTestCase {
         try fileManager.writeString(".luca/tools\n", to: gitIgnoreFile)
         
         // When
-        try sut.ensureGitIgnoreIncludesActiveFolder()
+        try sut.ensureGitIgnoreIncludesSymlinksFolder()
         
         // Then
         let content = try fileManager.readString(at: gitIgnoreFile)
         XCTAssertEqual(content, ".luca/tools\n")
     }
     
-    func test_ensureGitIgnoreIncludesActiveFolder_whenGitRepoAndGitIgnoreExistsWithoutNewline_appendsNewlineAndEntry() throws {
+    func test_ensureGitIgnoreIncludesSymlinksFolder_whenGitRepoAndGitIgnoreExistsWithoutNewline_appendsNewlineAndEntry() throws {
         // Given
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
@@ -94,7 +94,7 @@ final class GitIgnoreManagerTests: XCTestCase {
         try fileManager.writeString("existing", to: gitIgnoreFile)
         
         // When
-        try sut.ensureGitIgnoreIncludesActiveFolder()
+        try sut.ensureGitIgnoreIncludesSymlinksFolder()
         
         // Then
         let content = try fileManager.readString(at: gitIgnoreFile)

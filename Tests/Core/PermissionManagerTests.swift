@@ -106,7 +106,7 @@ struct PermissionManagerTests {
 
 private struct NoPosixPermissionsFileManagerMock: PermissionManagerFileManaging {
     var toolsFolder: URL { URL(fileURLWithPath: "/tmp/luca-test-noperm/.luca/tools") }
-    var activeFolder: URL { URL(fileURLWithPath: "/tmp/luca-test-noperm/.luca/tools") }
+    var symlinksFolder: URL { URL(fileURLWithPath: "/tmp/luca-test-noperm/.luca/tools") }
     func fileExists(atPath path: String) -> Bool { true }
     func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] { [:] }
     func setAttributes(_ attributes: [FileAttributeKey: Any], ofItemAtPath path: String) throws {}

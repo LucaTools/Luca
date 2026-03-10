@@ -16,7 +16,7 @@ public protocol FileManaging:
     SymLinkFileManaging,
     UnarchiverFileManaging {
     var toolsFolder: URL { get }
-    var activeFolder: URL { get }
+    var symlinksFolder: URL { get }
     var homeDirectoryForCurrentUser: URL { get }
     var currentDirectoryPath: String { get }
     func fileExists(atPath: String) -> Bool

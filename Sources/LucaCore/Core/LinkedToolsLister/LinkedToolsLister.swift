@@ -5,13 +5,13 @@ import Foundation
 /// Lists tools that are currently symlinked into the project's `.luca/tools/` directory.
 public struct LinkedToolsLister {
 
-    /// A tool that is currently symlinked into the active folder.
+    /// A tool that is currently symlinked into the tools folder.
     public struct LinkedTool {
         /// The tool's logical name.
         public let name: String
         /// The installed version of the tool.
         public let version: String
-        /// The name of the symlink binary in the active folder.
+        /// The name of the symlink binary in the tools folder.
         public let binaryName: String
         /// The resolved destination path of the symlink.
         public let path: String
@@ -23,15 +23,15 @@ public struct LinkedToolsLister {
         self.fileManager = fileManager
     }
 
-    /// Returns all tools currently symlinked in the project's active folder.
+    /// Returns all tools currently symlinked in the project's tools folder.
     public func linkedTools() throws -> [LinkedTool] {
-        let activeFolder = fileManager.activeFolder
+        let symlinksFolder = fileManager.symlinksFolder
 
-        guard fileManager.fileExists(atPath: activeFolder.path) else {
+        guard fileManager.fileExists(atPath: symlinksFolder.path) else {
             return []
         }
 
-        let activeToolURLs = try fileManager.contentsOfDirectory(at: activeFolder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+        let activeToolURLs = try fileManager.contentsOfDirectory(at: symlinksFolder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
 
         var linkedTools: [LinkedTool] = []
         let toolsFolderPath = fileManager.toolsFolder.path

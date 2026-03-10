@@ -18,9 +18,9 @@ public struct FileManagerWrapper: FileManaging {
     }
 
     /// Folder containing symlinks to currently active binaries (per working directory).
-    public var activeFolder: URL {
+    public var symlinksFolder: URL {
         URL(fileURLWithPath: currentDirectoryPath)
-            .appending(components: Constants.toolFolder, Constants.activeFolder)
+            .appending(components: Constants.toolFolder, Constants.symlinksFolder)
     }
     
     public var homeDirectoryForCurrentUser: URL {

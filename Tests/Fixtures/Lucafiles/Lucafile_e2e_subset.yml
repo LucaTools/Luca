@@ -1,0 +1,12 @@
+---
+tools:
+  - name: MockToolB
+    desiredBinaryName: mock-tool-b
+    version: 2.0.0
+    url: https://example.com/mock/MockToolB
+  - name: MockToolC
+    desiredBinaryName: mock-tool-c
+    version: 3.0.0
+    url: https://example.com/mock/MockToolC
+
+version: 0.0.1

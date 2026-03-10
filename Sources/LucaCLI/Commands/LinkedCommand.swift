@@ -4,14 +4,14 @@ import ArgumentParser
 import Foundation
 import LucaCore
 
-/// Lists tools currently symlinked in the active folder of the current project.
+/// Lists tools currently symlinked in the tools folder of the current project.
 struct LinkedCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(
         commandName: "linked",
         abstract: "List tools linked in the current project.",
         discussion: """
-        Shows all symlinks in the active folder with their versions and paths.
+        Shows all symlinks in the tools folder with their versions and paths.
         Use 'luca installed' to see all available tool versions.
         """
     )
