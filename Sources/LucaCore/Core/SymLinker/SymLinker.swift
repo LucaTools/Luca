@@ -44,7 +44,7 @@ struct SymLinker: SymLinking {
     ///   if the binary file doesn't exist at the expected location.
     @discardableResult
     func setSymLink(for tool: Tool) throws -> URL {
-        let symLinkFile = fileManager.activeFolder
+        let symLinkFile = fileManager.symlinksFolder
             .appending(component: tool.expectedBinaryName)
 
         let destinationFile = fileManager.toolsFolder
@@ -57,7 +57,7 @@ struct SymLinker: SymLinking {
         if symLinkExists(atPath: symLinkFile.path) {
             try fileManager.removeItem(at: symLinkFile)
         }
-        try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: fileManager.symlinksFolder, withIntermediateDirectories: true)
         try fileManager.createSymbolicLink(at: symLinkFile, withDestinationURL: destinationFile)
         
         return symLinkFile

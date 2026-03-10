@@ -7,7 +7,7 @@ import Testing
 struct LinkedToolsListerTests {
     
     @Test
-    func listLinkedTools_noActiveFolder() throws {
+    func listLinkedTools_noSymlinksFolder() throws {
         let fileManager = FileManagerWrapperMock()
         let lister = LinkedToolsLister(fileManager: fileManager)
         
@@ -16,11 +16,11 @@ struct LinkedToolsListerTests {
     }
     
     @Test
-    func listLinkedTools_emptyActiveFolder() throws {
+    func listLinkedTools_emptySymlinksFolder() throws {
         let fileManager = FileManagerWrapperMock()
         let lister = LinkedToolsLister(fileManager: fileManager)
         
-        try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: fileManager.symlinksFolder, withIntermediateDirectories: true)
         
         let linkedTools = try lister.linkedTools()
         #expect(linkedTools.isEmpty)
@@ -43,8 +43,8 @@ struct LinkedToolsListerTests {
         _ = fileManager.fileManager.createFile(atPath: binaryURL.path, contents: nil)
         
         // Setup tools folder and symlink
-        try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
-        let symlinkURL = fileManager.activeFolder.appending(component: binaryName)
+        try fileManager.createDirectory(at: fileManager.symlinksFolder, withIntermediateDirectories: true)
+        let symlinkURL = fileManager.symlinksFolder.appending(component: binaryName)
         
         try fileManager.createSymbolicLink(at: symlinkURL, withDestinationURL: binaryURL)
         
@@ -63,8 +63,8 @@ struct LinkedToolsListerTests {
         let fileManager = FileManagerWrapperMock()
         let lister = LinkedToolsLister(fileManager: fileManager)
         
-        try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
-        let fileURL = fileManager.activeFolder.appending(component: "regularFile")
+        try fileManager.createDirectory(at: fileManager.symlinksFolder, withIntermediateDirectories: true)
+        let fileURL = fileManager.symlinksFolder.appending(component: "regularFile")
         _ = fileManager.fileManager.createFile(atPath: fileURL.path, contents: nil)
         
         let linkedTools = try lister.linkedTools()
@@ -76,12 +76,12 @@ struct LinkedToolsListerTests {
         let fileManager = FileManagerWrapperMock()
         let lister = LinkedToolsLister(fileManager: fileManager)
         
-        try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: fileManager.symlinksFolder, withIntermediateDirectories: true)
         
         let externalFile = fileManager.fileManager.temporaryDirectory.appending(component: "external")
         _ = fileManager.fileManager.createFile(atPath: externalFile.path, contents: nil)
         
-        let symlinkURL = fileManager.activeFolder.appending(component: "externalLink")
+        let symlinkURL = fileManager.symlinksFolder.appending(component: "externalLink")
         try fileManager.createSymbolicLink(at: symlinkURL, withDestinationURL: externalFile)
         
         let linkedTools = try lister.linkedTools()

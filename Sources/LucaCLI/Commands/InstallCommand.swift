@@ -192,7 +192,7 @@ struct InstallCommand: AsyncParsableCommand {
         let installationType = try installationType(for: arguments, fileManager: fileManager)
         
         let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
-        try gitIgnoreManager.ensureGitIgnoreIncludesActiveFolder()
+        try gitIgnoreManager.ensureGitIgnoreIncludesSymlinksFolder()
         
         if installPostCheckoutGitHook {
             let gitHookInstaller = GitHookInstaller(fileManager: fileManager, printer: printer)

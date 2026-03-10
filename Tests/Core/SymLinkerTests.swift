@@ -30,7 +30,7 @@ struct SymLinkerTests {
 
         let sut = SymLinker(fileManager: symLinkFileManager)
 
-        let symLinkPath = symLinkFileManager.activeFolder
+        let symLinkPath = symLinkFileManager.symlinksFolder
             .appending(component: tool.expectedBinaryName)
             .path
 
@@ -64,7 +64,7 @@ struct SymLinkerTests {
 
         let sut = SymLinker(fileManager: symLinkFileManager)
 
-        let symLinkPath = symLinkFileManager.activeFolder
+        let symLinkPath = symLinkFileManager.symlinksFolder
             .appending(component: tool.expectedBinaryName)
             .path
 
@@ -97,7 +97,7 @@ struct SymLinkerTests {
 
         let sut = SymLinker(fileManager: symLinkFileManager)
 
-        let symLinkPath = symLinkFileManager.activeFolder
+        let symLinkPath = symLinkFileManager.symlinksFolder
             .appending(component: tool.expectedBinaryName)
             .path
 
@@ -131,7 +131,7 @@ struct SymLinkerTests {
 
         let sut = SymLinker(fileManager: symLinkFileManager)
 
-        let symLinkPath = symLinkFileManager.activeFolder
+        let symLinkPath = symLinkFileManager.symlinksFolder
             .appending(component: tool.expectedBinaryName)
             .path
 
@@ -157,7 +157,7 @@ struct SymLinkerTests {
 
         let sut = SymLinker(fileManager: symLinkFileManager)
 
-        let symLinkPath = symLinkFileManager.activeFolder
+        let symLinkPath = symLinkFileManager.symlinksFolder
             .appending(component: tool.expectedBinaryName)
             .path
 

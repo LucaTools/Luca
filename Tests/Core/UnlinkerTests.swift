@@ -10,10 +10,10 @@ struct UnlinkerTests {
         let unlinker = Unlinker(fileManager: fileManager, printer: PrinterMock())
         
         let symlinkName = "mytool"
-        let symlinkFile = fileManager.activeFolder.appending(component: symlinkName)
+        let symlinkFile = fileManager.symlinksFolder.appending(component: symlinkName)
         
         // Create a dummy file to simulate the symlink
-        try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: fileManager.symlinksFolder, withIntermediateDirectories: true)
         _ = fileManager.fileManager.createFile(atPath: symlinkFile.path, contents: nil)
         
         #expect(fileManager.fileExists(atPath: symlinkFile.path))

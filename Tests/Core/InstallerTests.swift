@@ -39,7 +39,7 @@ struct InstallerTests {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
-            let toolSymLink = fileManager.activeFolder
+            let toolSymLink = fileManager.symlinksFolder
                 .appending(component: tool.expectedBinaryName)
 
             #expect(!fileManager.fileExists(atPath: toolPath.path))
@@ -105,7 +105,7 @@ struct InstallerTests {
         }
         
         // Verify symlink exists for the last installed tool (all tools share same binaryPath basename)
-        let toolSymLink = fileManager.activeFolder
+        let toolSymLink = fileManager.symlinksFolder
             .appending(component: spec.tools.first!.expectedBinaryName)
         #expect(fileManager.fileExists(atPath: toolSymLink.path))
     }
@@ -178,7 +178,7 @@ struct InstallerTests {
             let binaryFinder = BinaryFinder(fileManager: fileManager)
             let binaryPath = try binaryFinder.findBinary(atPath: toolPath.path)
             
-            let higherVersionToolSymlink = fileManager.activeFolder
+            let higherVersionToolSymlink = fileManager.symlinksFolder
                 .appending(component: tool.expectedBinaryName)
             
             let expectedHigherVersionToolSymlinkDestination = fileManager.toolsFolder
@@ -213,7 +213,7 @@ struct InstallerTests {
             let binaryFinder = BinaryFinder(fileManager: fileManager)
             let binaryPath = try binaryFinder.findBinary(atPath: toolPath.path)
             
-            let lowerVersionToolSymlink = fileManager.activeFolder
+            let lowerVersionToolSymlink = fileManager.symlinksFolder
                 .appending(component: tool.expectedBinaryName)
             
             let expectedLowerVersionToolSymlinkDestination = fileManager.toolsFolder
@@ -345,7 +345,7 @@ struct InstallerTests {
         try await installer.install(installationType: .spec(specPath: URL(string: lowVersionPath)!))
         
         // The symlink is created with the binary name from binaryPath
-        let symLink = fileManager.activeFolder.appending(component: "MockMachOTool")
+        let symLink = fileManager.symlinksFolder.appending(component: "MockMachOTool")
         #expect(fileManager.fileExists(atPath: symLink.path))
         
         // Reinstall the same spec - the tool should NOT be unlinked
@@ -435,7 +435,7 @@ struct InstallerTests {
         let binaryPath = fileManager.toolsFolder.appending(components: toolName, version, desiredBinaryName)
         #expect(fileManager.fileExists(atPath: binaryPath.path))
 
-        let symLinkPath = fileManager.activeFolder.appending(component: desiredBinaryName)
+        let symLinkPath = fileManager.symlinksFolder.appending(component: desiredBinaryName)
         #expect(fileManager.fileExists(atPath: symLinkPath.path))
 
         // Second install: covers isToolInstalled desiredBinaryName path → reinstall
@@ -469,7 +469,7 @@ struct InstallerTests {
 
         let toolPath = fileManager.toolsFolder.appending(components: toolName, version)
         #expect(fileManager.fileExists(atPath: toolPath.path))
-        let symLinkPath = fileManager.activeFolder.appending(component: "MockMachOTool")
+        let symLinkPath = fileManager.symlinksFolder.appending(component: "MockMachOTool")
         #expect(fileManager.fileExists(atPath: symLinkPath.path))
     }
 
@@ -504,7 +504,7 @@ struct InstallerTests {
 
         let binaryPath = fileManager.toolsFolder.appending(components: toolName, "1.0.0", toolName)
         #expect(fileManager.fileExists(atPath: binaryPath.path))
-        let symLinkPath = fileManager.activeFolder.appending(component: toolName)
+        let symLinkPath = fileManager.symlinksFolder.appending(component: toolName)
         #expect(fileManager.fileExists(atPath: symLinkPath.path))
     }
 

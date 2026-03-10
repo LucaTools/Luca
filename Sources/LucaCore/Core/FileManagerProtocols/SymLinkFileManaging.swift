@@ -5,7 +5,7 @@ import Foundation
 /// File system interface for ``SymLinker``.
 public protocol SymLinkFileManaging {
     var toolsFolder: URL { get }
-    var activeFolder: URL { get }
+    var symlinksFolder: URL { get }
     var homeDirectoryForCurrentUser: URL { get }
     var currentDirectoryPath: String { get }
     func fileExists(atPath: String) -> Bool

@@ -14,7 +14,7 @@ public struct GitIgnoreManager {
     }
     
     /// Appends or creates a `.gitignore` entry for the tools folder in the current project.
-    public func ensureGitIgnoreIncludesActiveFolder() throws {
+    public func ensureGitIgnoreIncludesSymlinksFolder() throws {
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         let gitDirectory = currentDirectory.appending(component: ".git")
         
@@ -23,7 +23,7 @@ public struct GitIgnoreManager {
         }
         
         let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
-        let entryToAdd = "\(Constants.toolFolder)/\(Constants.activeFolder)"
+        let entryToAdd = "\(Constants.toolFolder)/\(Constants.symlinksFolder)"
         
         if fileManager.fileExists(atPath: gitIgnoreFile.path) {
             let content = try fileManager.readString(at: gitIgnoreFile)

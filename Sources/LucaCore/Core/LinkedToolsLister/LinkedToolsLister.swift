@@ -25,13 +25,13 @@ public struct LinkedToolsLister {
 
     /// Returns all tools currently symlinked in the project's tools folder.
     public func linkedTools() throws -> [LinkedTool] {
-        let activeFolder = fileManager.activeFolder
+        let symlinksFolder = fileManager.symlinksFolder
 
-        guard fileManager.fileExists(atPath: activeFolder.path) else {
+        guard fileManager.fileExists(atPath: symlinksFolder.path) else {
             return []
         }
 
-        let activeToolURLs = try fileManager.contentsOfDirectory(at: activeFolder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+        let activeToolURLs = try fileManager.contentsOfDirectory(at: symlinksFolder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
 
         var linkedTools: [LinkedTool] = []
         let toolsFolderPath = fileManager.toolsFolder.path
