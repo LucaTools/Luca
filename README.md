@@ -96,7 +96,7 @@ Specify the name of the release asset if the naming is not clear enough for Luca
 luca install krzysztofzablocki/sourcery@2.2.7 --asset sourcery-2.2.7.zip
 ```
 
-Symlinks will be created in the current directory at `.luca/active`.
+Symlinks will be created in the current directory at `.luca/tools`.
 
 3. Use your tools:
 
@@ -161,7 +161,7 @@ tuist:
 
 ### Unlinking tools
 
-Remove a symlink from the current project's `.luca/active` directory:
+Remove a symlink from the current project's `.luca/tools` directory:
 
 ```bash
 luca unlink swiftlint
@@ -174,8 +174,8 @@ Luca performs the following steps:
 1. Reads the tool specifications from your Lucafile
 2. Downloads the specified zip files if they're not already installed
 3. Extracts the binaries to `~/.luca/tools/{tool-name}/{version}/`
-4. Creates symlinks in `.luca/active/` in your current directory
-5. Tools can then be accessed via `.luca/active/{binary-name}`
+4. Creates symlinks in `.luca/tools/` in your current directory
+5. Tools can then be accessed via `.luca/tools/{binary-name}`
 
 ## Lucafile Format
 

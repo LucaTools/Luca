@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// Removes a symlink from the project's `.luca/active/` directory.
+/// Removes a symlink from the project's `.luca/tools/` directory.
 public struct Unlinker {
 
     public enum UnlinkerError: Error, LocalizedError, Equatable {

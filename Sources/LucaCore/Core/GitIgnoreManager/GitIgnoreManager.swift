@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// Ensures the project's `.gitignore` contains an entry for the `.luca/active/` folder.
+/// Ensures the project's `.gitignore` contains an entry for the `.luca/tools/` folder.
 public struct GitIgnoreManager {
     
     private let fileManager: GitIgnoreFileManaging

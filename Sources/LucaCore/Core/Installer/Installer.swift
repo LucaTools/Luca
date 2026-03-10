@@ -11,7 +11,7 @@ import Noora
 /// 3. Extracts archives or handles executables
 /// 4. Validates architecture compatibility
 /// 5. Sets executable permissions
-/// 6. Creates symlinks in the project's `.luca/active/` directory
+/// 6. Creates symlinks in the project's `.luca/tools/` directory
 ///
 /// ## Usage
 ///

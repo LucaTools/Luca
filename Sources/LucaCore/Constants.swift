@@ -4,8 +4,8 @@ import Foundation
 
 /// Names and values used across the Luca tool for folder / file conventions.
 public struct Constants {
-    /// Folder containing the active (symlinked) binaries inside `toolFolder` in the current working directory.
-    public static let activeFolder = "active"
+    /// Folder containing the symlinked binaries inside `toolFolder` in the current working directory.
+    public static let activeFolder = "tools"
     /// Supported spec file extension.
     public static let ymlExtension = "yml"
     /// Default spec file name expected in the current working directory.

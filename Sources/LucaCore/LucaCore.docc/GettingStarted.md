@@ -65,10 +65,10 @@ luca install
 
 ### 3. Use Your Tools
 
-Tools are symlinked to `.luca/active/` in your project directory:
+Tools are symlinked to `.luca/tools/` in your project directory:
 
 ```bash
-.luca/active/swiftlint --version
+.luca/tools/swiftlint --version
 ```
 
 ## Installing from GitHub Directly

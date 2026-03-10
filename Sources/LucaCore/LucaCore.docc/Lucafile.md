@@ -127,7 +127,7 @@ When you run `luca install`, Luca:
 2. Verifies checksums (if provided)
 3. Extracts archives (if applicable)
 4. Stores binaries in `~/.luca/tools/{name}/{version}/`
-5. Creates symlinks in `.luca/active/` in your project
+5. Creates symlinks in `.luca/tools/` in your project
 
 ## Best Practices
 
@@ -141,7 +141,7 @@ Use checksums for critical tools to verify integrity and protect against tamperi
 
 ### Git Integration
 
-Add `.luca/active/` to your `.gitignore` file. Luca can manage this automatically with the `--install-git-hook` flag.
+Add `.luca/tools/` to your `.gitignore` file. Luca can manage this automatically with the `--install-git-hook` flag.
 
 ## Related
 
