@@ -4,12 +4,12 @@ import ArgumentParser
 import Foundation
 import LucaCore
 
-/// Removes a specific symlink from the active folder.
+/// Removes a specific symlink from the tools folder.
 struct UnlinkCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(
         commandName: "unlink",
-        abstract: "Remove a symlink from the active folder.",
+        abstract: "Remove a symlink from the tools folder.",
         discussion: """
         Removes the symlink without uninstalling the underlying tool.
         The tool remains available for re-linking to a different version.

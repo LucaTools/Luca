@@ -42,7 +42,7 @@ struct LinkedToolsListerTests {
         try fileManager.createDirectory(at: binaryURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         _ = fileManager.fileManager.createFile(atPath: binaryURL.path, contents: nil)
         
-        // Setup active folder and symlink
+        // Setup tools folder and symlink
         try fileManager.createDirectory(at: fileManager.activeFolder, withIntermediateDirectories: true)
         let symlinkURL = fileManager.activeFolder.appending(component: binaryName)
         

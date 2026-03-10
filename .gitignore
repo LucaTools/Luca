@@ -26,3 +26,4 @@ xcuserdata/
 .build/
 .luca
 docs/
+.luca/tools

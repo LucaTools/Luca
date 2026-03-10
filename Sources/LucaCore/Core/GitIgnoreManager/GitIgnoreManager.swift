@@ -13,7 +13,7 @@ public struct GitIgnoreManager {
         self.printer = printer
     }
     
-    /// Appends or creates a `.gitignore` entry for the active folder in the current project.
+    /// Appends or creates a `.gitignore` entry for the tools folder in the current project.
     public func ensureGitIgnoreIncludesActiveFolder() throws {
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         let gitDirectory = currentDirectory.appending(component: ".git")

@@ -24,7 +24,7 @@ public struct Unlinker {
         self.printer = printer
     }
 
-    /// Removes the symlink named `symlink` from the active folder.
+    /// Removes the symlink named `symlink` from the tools folder.
     /// - Parameter symlink: The binary name of the symlink to remove.
     public func unlink(symlink: String) throws {
         let symlinkFile = fileManager.activeFolder.appending(component: symlink)
