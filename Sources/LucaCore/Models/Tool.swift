@@ -30,6 +30,7 @@ import Foundation
 /// - ``desiredBinaryName``
 /// - ``checksum``
 /// - ``algorithm``
+/// - ``ignoreArchCheck``
 ///
 /// ### Computed Properties
 /// - ``expectedBinaryName``
@@ -49,6 +50,9 @@ struct Tool: Codable {
     let checksum: String?
     /// The algorithm used to generate the checksum.
     let algorithm: ChecksumAlgorithm?
+    /// Per-tool override for architecture validation.
+    /// `true` always skips; `false` always validates; `nil` falls back to the CLI `--ignore-arch-check` flag.
+    let ignoreArchCheck: Bool?
 }
 
 extension Tool {
