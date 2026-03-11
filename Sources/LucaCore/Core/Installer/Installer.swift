@@ -170,7 +170,8 @@ public struct Installer {
             binaryPath: binaryPath,
             desiredBinaryName: tool.desiredBinaryName,
             checksum: tool.checksum,
-            algorithm: tool.algorithm
+            algorithm: tool.algorithm,
+            ignoreArchCheck: tool.ignoreArchCheck
         )
         try permissionManager.setExecutablePermission(for: resolvedTool)
         let symLink = try symLinker.setSymLink(for: resolvedTool)
@@ -234,16 +235,17 @@ public struct Installer {
             binaryPath: binaryPath,
             desiredBinaryName: nil,
             checksum: tool.checksum,
-            algorithm: tool.algorithm
+            algorithm: tool.algorithm,
+            ignoreArchCheck: nil
         )
         try permissionManager.setExecutablePermission(for: resolvedTool)
-        
+
         printer.printFormatted("\(.raw("💾 Installed \(tool.name) version \(tool.version) at \(installationDestination.path)"))")
-        
+
         let symLink = try symLinker.setSymLink(for: resolvedTool)
         printer.printFormatted("\(.raw("🔗 Created symlink to \(symLink.path)"))")
     }
-    
+
     private func installExecutable(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
         try fileManager.createDirectory(at: installationDestination, withIntermediateDirectories: true)
         let binaryName: String = {
@@ -267,7 +269,8 @@ public struct Installer {
             binaryPath: binaryName,
             desiredBinaryName: binaryName,
             checksum: nil,
-            algorithm: nil
+            algorithm: nil,
+            ignoreArchCheck: nil
         )
         try permissionManager.setExecutablePermission(for: resolvedTool)
         
@@ -295,7 +298,8 @@ public struct Installer {
     }
 
     private func validateArchitectureIfNeeded(tool: Tool, binaryPath: String, installationDestination: URL) throws {
-        if ignoreArchitectureCheck {
+        let effectiveIgnore = tool.ignoreArchCheck ?? ignoreArchitectureCheck
+        if effectiveIgnore {
             printer.printFormatted("\(.raw("🔍 Skipping architecture validation for \(tool.name) version \(tool.version)..."))")
         } else {
             printer.printFormatted("\(.raw("🔍 Validating architecture for \(tool.name) version \(tool.version)..."))")

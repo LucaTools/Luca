@@ -9,7 +9,8 @@ struct ToolTests {
     private func makeTool(
         name: String = "ToolName",
         binaryPath: String? = nil,
-        desiredBinaryName: String? = nil
+        desiredBinaryName: String? = nil,
+        ignoreArchCheck: Bool? = nil
     ) -> Tool {
         Tool(
             name: name,
@@ -18,7 +19,8 @@ struct ToolTests {
             binaryPath: binaryPath,
             desiredBinaryName: desiredBinaryName,
             checksum: nil,
-            algorithm: nil
+            algorithm: nil,
+            ignoreArchCheck: ignoreArchCheck
         )
     }
 

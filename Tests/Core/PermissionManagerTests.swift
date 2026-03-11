@@ -20,7 +20,8 @@ struct PermissionManagerTests {
             binaryPath: "bin/MockTool",
             desiredBinaryName: nil,
             checksum: nil,
-            algorithm: nil
+            algorithm: nil,
+            ignoreArchCheck: nil
         )
 
         let binaryPath = permissionManagerFileManager.toolsFolder
@@ -48,7 +49,8 @@ struct PermissionManagerTests {
             binaryPath: "bin/MockTool",
             desiredBinaryName: nil,
             checksum: nil,
-            algorithm: nil
+            algorithm: nil,
+            ignoreArchCheck: nil
         )
 
         let filePath = permissionManagerFileManager.toolsFolder
@@ -73,7 +75,8 @@ struct PermissionManagerTests {
             binaryPath: "bin/MockTool",
             desiredBinaryName: nil,
             checksum: nil,
-            algorithm: nil
+            algorithm: nil,
+            ignoreArchCheck: nil
         )
 
         let expectedPath = fileManager.toolsFolder

@@ -414,7 +414,7 @@ struct InstallerTests {
         let installer = Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: true,
-            quiet: false,
+            quiet: true,
             printer: PrinterMock(),
             downloader: DownloaderMock(result: .tempFile(executableData))
         )
@@ -450,7 +450,7 @@ struct InstallerTests {
         let installer = Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: true,
-            quiet: false,
+            quiet: true,
             printer: PrinterMock(),
             downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockMachO_Universal_Release", type: "zip")))
         )
@@ -487,7 +487,7 @@ struct InstallerTests {
         let installer = Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: true,
-            quiet: false,
+            quiet: true,
             printer: PrinterMock(),
             downloader: DownloaderMock(result: .tempFile(executableData))
         )
@@ -518,7 +518,7 @@ struct InstallerTests {
         let installer = Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: true,
-            quiet: false,
+            quiet: true,
             printer: PrinterMock(),
             downloader: DownloaderMock(result: .tempFile(unknownData))
         )
@@ -560,7 +560,7 @@ struct InstallerTests {
         let installer = Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: false,
-            quiet: false,
+            quiet: true,
             printer: PrinterMock(),
             downloader: DownloaderMock(result: .tempFile(incompatibleData))
         )
@@ -575,6 +575,146 @@ struct InstallerTests {
                 checksum: nil,
                 algorithm: nil
             ))
+        }
+    }
+
+    @Test
+    func test_install_perToolIgnoreArchCheck_true_overridesGlobalFalse() async throws {
+        // Per-tool ignoreArchCheck: true must skip arch check even when the installer flag is false
+        let fileManager = FileManagerWrapperMock()
+
+        #if arch(arm64) && os(Linux)
+        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
+                                     0x02, 0x01, 0x01, 0x00,
+                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                     0x02, 0x00,
+                                     0x3E, 0x00])  // EM_X86_64
+        #else
+        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
+                                     0x02, 0x01, 0x01, 0x00,
+                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                     0x02, 0x00,
+                                     0xB7, 0x00])  // EM_AARCH64
+        #endif
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: false,
+            quiet: true,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .tempFile(incompatibleData))
+        )
+
+        let fixture = Fixture(filename: "Lucafile_mock_ignoreArchCheck_true", type: "yml")
+        let path = try #require(Bundle.module.path(forResource: fixture.filename, ofType: fixture.type))
+
+        // Should NOT throw: per-tool true overrides global false
+        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+    }
+
+    @Test
+    func test_install_perToolIgnoreArchCheck_false_overridesGlobalTrue() async throws {
+        // Per-tool ignoreArchCheck: false must run arch check even when the installer flag is true
+        let fileManager = FileManagerWrapperMock()
+
+        #if arch(arm64) && os(Linux)
+        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
+                                     0x02, 0x01, 0x01, 0x00,
+                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                     0x02, 0x00,
+                                     0x3E, 0x00])  // EM_X86_64
+        #else
+        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
+                                     0x02, 0x01, 0x01, 0x00,
+                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                     0x02, 0x00,
+                                     0xB7, 0x00])  // EM_AARCH64
+        #endif
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: true,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .tempFile(incompatibleData))
+        )
+
+        let fixture = Fixture(filename: "Lucafile_mock_ignoreArchCheck_false", type: "yml")
+        let path = try #require(Bundle.module.path(forResource: fixture.filename, ofType: fixture.type))
+
+        // Should throw: per-tool false overrides global true
+        await #expect(throws: (any Error).self) {
+            try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+        }
+    }
+
+    @Test
+    func test_install_perToolIgnoreArchCheck_nil_fallsBackToGlobal_skips() async throws {
+        // Per-tool ignoreArchCheck: nil falls back to global flag — global true → skip check
+        let fileManager = FileManagerWrapperMock()
+
+        #if arch(arm64) && os(Linux)
+        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
+                                     0x02, 0x01, 0x01, 0x00,
+                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                     0x02, 0x00,
+                                     0x3E, 0x00])  // EM_X86_64
+        #else
+        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
+                                     0x02, 0x01, 0x01, 0x00,
+                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                     0x02, 0x00,
+                                     0xB7, 0x00])  // EM_AARCH64
+        #endif
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: true,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .tempFile(incompatibleData))
+        )
+
+        let fixture = Fixture(filename: "Lucafile_mock_ignoreArchCheck_nil", type: "yml")
+        let path = try #require(Bundle.module.path(forResource: fixture.filename, ofType: fixture.type))
+
+        // Should NOT throw: nil falls back to global true
+        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+    }
+
+    @Test
+    func test_install_perToolIgnoreArchCheck_nil_fallsBackToGlobal_validates() async throws {
+        // Per-tool ignoreArchCheck: nil falls back to global flag — global false → run check
+        let fileManager = FileManagerWrapperMock()
+
+        #if arch(arm64) && os(Linux)
+        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
+                                     0x02, 0x01, 0x01, 0x00,
+                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                     0x02, 0x00,
+                                     0x3E, 0x00])  // EM_X86_64
+        #else
+        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
+                                     0x02, 0x01, 0x01, 0x00,
+                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                     0x02, 0x00,
+                                     0xB7, 0x00])  // EM_AARCH64
+        #endif
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: false,
+            quiet: true,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .tempFile(incompatibleData))
+        )
+
+        let fixture = Fixture(filename: "Lucafile_mock_ignoreArchCheck_nil", type: "yml")
+        let path = try #require(Bundle.module.path(forResource: fixture.filename, ofType: fixture.type))
+
+        // Should throw: nil falls back to global false
+        await #expect(throws: (any Error).self) {
+            try await installer.install(installationType: .spec(specPath: URL(string: path)!))
         }
     }
 

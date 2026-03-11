@@ -1,0 +1,8 @@
+---
+tools:
+  - name: MockTool
+    binaryPath: MockMachOTool
+    version: 1.0.0
+    url: https://example.com/mock/MockToolIgnoreNil
+
+version: 0.0.1

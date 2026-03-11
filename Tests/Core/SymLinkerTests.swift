@@ -17,7 +17,8 @@ struct SymLinkerTests {
             binaryPath: "MockTool",
             desiredBinaryName: nil,
             checksum: nil,
-            algorithm: nil
+            algorithm: nil,
+            ignoreArchCheck: nil
         )
 
         let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)
@@ -51,7 +52,8 @@ struct SymLinkerTests {
             binaryPath: "MockTool",
             desiredBinaryName: desiredBinaryName,
             checksum: nil,
-            algorithm: nil
+            algorithm: nil,
+            ignoreArchCheck: nil
         )
 
         let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)
@@ -84,7 +86,8 @@ struct SymLinkerTests {
             binaryPath: "bin/MockTool",
             desiredBinaryName: nil,
             checksum: nil,
-            algorithm: nil
+            algorithm: nil,
+            ignoreArchCheck: nil
         )
 
         let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)
@@ -117,7 +120,8 @@ struct SymLinkerTests {
             binaryPath: "MockTool",
             desiredBinaryName: nil,
             checksum: nil,
-            algorithm: nil
+            algorithm: nil,
+            ignoreArchCheck: nil
         )
 
         let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)
@@ -150,7 +154,8 @@ struct SymLinkerTests {
             binaryPath: "bin/MockTool",
             desiredBinaryName: nil,
             checksum: nil,
-            algorithm: nil
+            algorithm: nil,
+            ignoreArchCheck: nil
         )
 
         let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)

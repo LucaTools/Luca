@@ -53,7 +53,8 @@ struct ToolFactory {
                 binaryPath: binaryPath,
                 desiredBinaryName: desiredBinaryName,
                 checksum: checksum,
-                algorithm: algorithm
+                algorithm: algorithm,
+                ignoreArchCheck: nil
             )]
         }
     }
@@ -94,7 +95,8 @@ struct ToolFactory {
             binaryPath: binaryPath,
             desiredBinaryName: desiredBinaryName,
             checksum: checksum,
-            algorithm: algorithm
+            algorithm: algorithm,
+            ignoreArchCheck: nil
         )
     }
 }
