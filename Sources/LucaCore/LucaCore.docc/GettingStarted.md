@@ -13,7 +13,7 @@ Luca is a lightweight tool manager for macOS and Linux that helps developers ins
 Install the latest stable version with a single command:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/LucaTools/LucaScripts/HEAD/install.sh)"
+curl -fsSL https://luca.tools/install.sh | bash
 ```
 
 #### Pinning a Specific Version
