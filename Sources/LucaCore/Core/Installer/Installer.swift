@@ -35,11 +35,14 @@ public struct Installer {
     
     enum InstallerError: Error, LocalizedError, Equatable {
         case unknownFileType(String)
-        
+        case skillsRequireSpecInstallationType
+
         var errorDescription: String? {
             switch self {
             case .unknownFileType(let file):
                 return "Unknown file type for file \(file)."
+            case .skillsRequireSpecInstallationType:
+                return "Skills can only be installed when using a spec file (Lucafile). Use 'luca install' or 'luca install --spec <path>'."
             }
         }
     }
@@ -57,14 +60,18 @@ public struct Installer {
     private let ignoreArchitectureCheck: Bool
     private let quiet: Bool
     private let noora: Noorable
-    
+    private let skillInstaller: SkillInstalling
+    private let specLoader: SpecLoading
+    private let installMode: InstallMode
+
     public init(
         fileManager: FileManaging,
         ignoreArchitectureCheck: Bool,
         quiet: Bool = false,
         printer: Printing,
         downloader: Downloading? = nil,
-        noora: Noorable = Noora()
+        noora: Noorable = Noora(),
+        installMode: InstallMode = .all
     ) {
         self.fileManager = fileManager
         self.printer = printer
@@ -79,6 +86,38 @@ public struct Installer {
         self.ignoreArchitectureCheck = ignoreArchitectureCheck
         self.quiet = quiet
         self.noora = noora
+        self.skillInstaller = SkillInstaller()
+        self.specLoader = SpecLoader(fileManager: .default)
+        self.installMode = installMode
+    }
+
+    init(
+        fileManager: FileManaging,
+        ignoreArchitectureCheck: Bool,
+        quiet: Bool = false,
+        printer: Printing,
+        downloader: Downloading? = nil,
+        noora: Noorable = Noora(),
+        installMode: InstallMode = .all,
+        skillInstaller: SkillInstalling,
+        specLoader: SpecLoading
+    ) {
+        self.fileManager = fileManager
+        self.printer = printer
+        self.binaryFinder = BinaryFinder(fileManager: fileManager)
+        self.checksumValidator = ChecksumValidator(fileManager: fileManager)
+        self.architectureValidator = ArchitectureValidator(fileManager: fileManager)
+        self.downloader = downloader ?? Downloader(fileDownloader: FileDownloader(session: .shared))
+        self.permissionManager = PermissionManager(fileManager: fileManager)
+        self.symLinker = SymLinker(fileManager: fileManager)
+        self.linkedToolsLister = LinkedToolsLister(fileManager: fileManager)
+        self.unlinker = Unlinker(fileManager: fileManager, printer: printer)
+        self.ignoreArchitectureCheck = ignoreArchitectureCheck
+        self.quiet = quiet
+        self.noora = noora
+        self.skillInstaller = skillInstaller
+        self.specLoader = specLoader
+        self.installMode = installMode
     }
     
     /// Installs tools based on the specified installation type.
@@ -106,55 +145,85 @@ public struct Installer {
         ) { updateMessage in
             let dataDownloader = DataDownloader(session: .shared)
             let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
-            let specLoader = SpecLoader(fileManager: .default)
             let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
-            
-            updateMessage("Detecting tools to install")
+
+            if installMode != .skillsOnly {
+                updateMessage("Detecting tools to install")
+                let tools = try await toolFactory.toolsForInstallationType(installationType)
+
+                // Unlink orphaned tools only when installing from a spec
+                if case .spec = installationType {
+                    try unlinkOrphanedTools(specTools: tools)
+                }
+
+                for tool in tools {
+                    updateMessage("Installing \(tool.name) \(tool.version)")
+                    if isToolInstalled(tool) {
+                        try reinstall(tool)
+                    } else {
+                        try await install(tool)
+                    }
+                }
+            }
+
+            if installMode != .toolsOnly {
+                if case .spec(let specPath) = installationType {
+                    let skills = (try specLoader.loadSpec(at: specPath)).skills ?? []
+                    for skill in skills {
+                        updateMessage("Installing skill \(skill.name)")
+                        try await install(skill)
+                    }
+                } else if installMode == .skillsOnly {
+                    throw InstallerError.skillsRequireSpecInstallationType
+                }
+            }
+        }
+    }
+
+    private func installVerbose(installationType: InstallationType) async throws {
+        let dataDownloader = DataDownloader(session: .shared)
+        let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
+        let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
+
+        if installMode != .skillsOnly {
+            printer.printFormatted("\(.info("🧠 Detecting tools to install..."))")
+
             let tools = try await toolFactory.toolsForInstallationType(installationType)
-            
+
             // Unlink orphaned tools only when installing from a spec
             if case .spec = installationType {
                 try unlinkOrphanedTools(specTools: tools)
             }
-            
+
+            printer.printFormatted("\(.info("🏃‍♂️ Installing tools for the current project."))")
+            printer.printFormatted("")
+
             for tool in tools {
-                updateMessage("Installing \(tool.name) \(tool.version)")
                 if isToolInstalled(tool) {
                     try reinstall(tool)
                 } else {
                     try await install(tool)
                 }
+                printer.printFormatted("")
             }
         }
-    }
-    
-    private func installVerbose(installationType: InstallationType) async throws {
-        let dataDownloader = DataDownloader(session: .shared)
-        let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
-        let specLoader = SpecLoader(fileManager: .default)
-        let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
-        
-        printer.printFormatted("\(.info("🧠 Detecting tools to install..."))")
-        
-        let tools = try await toolFactory.toolsForInstallationType(installationType)
-        
-        // Unlink orphaned tools only when installing from a spec
-        if case .spec = installationType {
-            try unlinkOrphanedTools(specTools: tools)
-        }
-        
-        printer.printFormatted("\(.info("🏃‍♂️ Installing tools for the current project."))")
-        printer.printFormatted("")
 
-        for tool in tools {
-            if isToolInstalled(tool) {
-                try reinstall(tool)
-            } else {
-                try await install(tool)
+        if installMode != .toolsOnly {
+            if case .spec(let specPath) = installationType {
+                let skills = (try specLoader.loadSpec(at: specPath)).skills ?? []
+                if !skills.isEmpty {
+                    printer.printFormatted("\(.info("🧠 Installing skills for the current project."))")
+                    printer.printFormatted("")
+                    for skill in skills {
+                        try await install(skill)
+                        printer.printFormatted("")
+                    }
+                }
+            } else if installMode == .skillsOnly {
+                throw InstallerError.skillsRequireSpecInstallationType
             }
-            printer.printFormatted("")
         }
-        
+
         printer.printFormatted("\(.success("🚀 Tools have been installed for the current project."))")
     }
 
@@ -211,6 +280,12 @@ public struct Installer {
         printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
     }
     
+    private func install(_ skill: Skill) async throws {
+        printer.printFormatted("\(.raw("🧩 Installing skill \(skill.name)..."))")
+        try await skillInstaller.install(skill: skill)
+        printer.printFormatted("\(.primary("🙌 Skill \(skill.name) installed."))")
+    }
+
     private func installArchive(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
         printer.printFormatted("\(.raw("📦 Unarchiving \(tool.name) version \(tool.version)..."))")
         

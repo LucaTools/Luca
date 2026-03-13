@@ -18,6 +18,12 @@ tools:
   - name: ToolName
     version: 1.2.3
     url: https://example.com/tool-1.2.3.zip
+
+skills:
+  - name: my-agent-skill
+    repository: some-org/agent-skills
+    skills:
+      - frontend-design
 ```
 
 ## Configuration Fields
@@ -143,8 +149,54 @@ Use checksums for critical tools to verify integrity and protect against tamperi
 
 Add `.luca/tools/` to your `.gitignore` file. Luca can manage this automatically with the `--install-git-hook` flag.
 
+## Skills
+
+The optional `skills:` key installs agentic skills from Git repositories via `npx skills add`.
+
+### Skills Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Human-readable label for the skill set |
+| `repository` | Yes | `owner/repo` shorthand or a full HTTPS URL |
+| `skills` | No | List of individual skill names to install; omit to install all |
+
+### Skills Examples
+
+Install specific skills from a GitHub repository:
+
+```yaml
+skills:
+  - name: vercel-labs-agent-skills
+    repository: vercel-labs/agent-skills
+    skills:
+      - frontend-design
+      - skill-creator
+```
+
+Install all skills from a custom Git host:
+
+```yaml
+skills:
+  - name: internal-ai-skills
+    repository: https://github.example.com/ai-platform/skills.git
+```
+
+### Selective Installation
+
+Use the `--only-tools` or `--only-skills` flags with `luca install` to control what gets installed:
+
+```
+luca install --only-tools     # skip skills
+luca install --only-skills    # skip binary tools
+```
+
+> Note: `--only-tools` and `--only-skills` are mutually exclusive. Skills require a Lucafile (`luca install --only-skills` does not work with individual tool installs).
+
 ## Related
 
 - <doc:GettingStarted>
 - ``Spec``
+- ``Skill``
+- ``SkillInstaller``
 - ``SpecLoader``

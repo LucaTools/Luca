@@ -167,7 +167,44 @@ struct InstallCommand: AsyncParsableCommand {
     ))
     var quiet: Bool = false
 
+    @Flag(help: ArgumentHelp(
+        "Install only binary tools; skip skills.",
+        discussion: """
+        Cannot be combined with --only-skills.
+        Example:
+          luca install --only-tools
+        """
+    ))
+    var onlyTools: Bool = false
+
+    @Flag(help: ArgumentHelp(
+        "Install only skills; skip binary tools.",
+        discussion: """
+        Cannot be combined with --only-tools.
+        Example:
+          luca install --only-skills
+        """
+    ))
+    var onlySkills: Bool = false
+
     func run() async throws {
+        guard !(onlyTools && onlySkills) else {
+            throw InstallCommandError.invalidCombinationOfArguments(Arguments(
+                spec: spec,
+                identifier: identifier,
+                asset: asset,
+                name: name,
+                version: version,
+                url: try toolUrl(for: url),
+                binaryPath: binaryPath,
+                desiredBinaryName: desiredBinaryName,
+                checksum: checksum,
+                algorithm: algorithm
+            ))
+        }
+
+        let installMode: InstallMode = onlyTools ? .toolsOnly : onlySkills ? .skillsOnly : .all
+
         let printer: Printing = quiet ? QuietPrinter() : Printer()
         Header(printer: printer).printHeader()
 
@@ -176,7 +213,8 @@ struct InstallCommand: AsyncParsableCommand {
             fileManager: fileManager,
             ignoreArchitectureCheck: ignoreArchCheck,
             quiet: quiet,
-            printer: printer
+            printer: printer,
+            installMode: installMode
         )
         let arguments = Arguments(
             spec: spec,

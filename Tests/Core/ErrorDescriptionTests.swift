@@ -42,6 +42,18 @@ struct ErrorDescriptionTests {
     @Test
     func installerError_errorDescription() {
         #expect(Installer.InstallerError.unknownFileType("/some/file").errorDescription != nil)
+        #expect(Installer.InstallerError.skillsRequireSpecInstallationType.errorDescription != nil)
+    }
+
+    @Test
+    func skillInstallerError_errorDescription() {
+        #expect(SkillInstaller.SkillInstallerError.npxNotAvailable.errorDescription != nil)
+        #expect(SkillInstaller.SkillInstallerError.installationFailed("my-skill", 1).errorDescription != nil)
+    }
+
+    @Test
+    func skillRepositoryResolverError_errorDescription() {
+        #expect(SkillRepositoryResolver.SkillRepositoryResolverError.invalidRepositoryFormat("bad").errorDescription != nil)
     }
 
     @Test

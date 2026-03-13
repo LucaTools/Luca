@@ -24,7 +24,7 @@ struct ToolFactoryTests {
         let spec = Spec(tools: [
             Tool(name: "MockTool", version: "1.0.0", url: mockToolUrl, binaryPath: nil, desiredBinaryName: nil, checksum: nil, algorithm: nil, ignoreArchCheck: nil),
             Tool(name: "Sourcery", version: "2.2.7", url: sourceryUrl, binaryPath: "bin/sourcery", desiredBinaryName: nil, checksum: nil, algorithm: nil, ignoreArchCheck: nil)
-        ])
+        ], skills: nil)
 
         let specString = try YAMLEncoder().encode(spec)
         let specPath = fileManager.temporaryDirectory.appending(component: UUID().uuidString).appending(component: filename)

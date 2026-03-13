@@ -18,17 +18,28 @@ import Foundation
 ///   - name: Tuist
 ///     version: 4.80.0
 ///     url: https://github.com/tuist/tuist/releases/...
+///
+/// skills:
+///   - name: vercel-labs-agent-skills
+///     repository: vercel-labs/agent-skills
+///     skills:
+///       - frontend-design
+///       - skill-creator
 /// ```
 ///
 /// ## Topics
 ///
 /// ### Properties
 /// - ``tools``
+/// - ``skills``
 ///
 /// ### Related Types
 /// - ``Tool``
+/// - ``Skill``
 /// - ``SpecLoader``
 struct Spec: Codable {
     /// The list of tools defined in the specification.
     let tools: [Tool]
+    /// The list of agentic skills defined in the specification. `nil` when the `skills:` key is absent.
+    let skills: [Skill]?
 }

@@ -829,10 +829,136 @@ struct InstallerTests {
         }
     }
 
+    // MARK: - Skills
+
+    @Test(arguments: [true, false])
+    func test_installSpec_withSkills_allMode_installsSkills(quiet: Bool) async throws {
+        let skillInstaller = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            downloader: downloader,
+            installMode: .all,
+            skillInstaller: skillInstaller,
+            specLoader: specLoader
+        )
+
+        try await installer.install(installationType: .spec(specPath: URL(fileURLWithPath: path)))
+
+        #expect(skillInstaller.installedSkills.count == 2)
+        #expect(skillInstaller.installedSkills[0].name == "vercel-labs-agent-skills")
+        #expect(skillInstaller.installedSkills[1].name == "ai-platform-skills")
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSpec_toolsOnlyMode_skipsSkills(quiet: Bool) async throws {
+        let skillInstaller = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            downloader: downloader,
+            installMode: .toolsOnly,
+            skillInstaller: skillInstaller,
+            specLoader: specLoader
+        )
+
+        try await installer.install(installationType: .spec(specPath: URL(fileURLWithPath: path)))
+
+        #expect(skillInstaller.installedSkills.isEmpty)
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSpec_skillsOnlyMode_skipsTools(quiet: Bool) async throws {
+        let skillInstaller = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            downloader: downloader,
+            installMode: .skillsOnly,
+            skillInstaller: skillInstaller,
+            specLoader: specLoader
+        )
+
+        try await installer.install(installationType: .spec(specPath: URL(fileURLWithPath: path)))
+
+        #expect(skillInstaller.installedSkills.count == 2)
+        // No tools installed in tools folder (skillsOnly skips tool loop)
+        let spec = try self.spec(for: fixture)
+        for tool in spec.tools {
+            let toolPath = fileManager.toolsFolder
+                .appending(component: tool.name)
+                .appending(components: tool.version)
+            #expect(!fileManager.fileExists(atPath: toolPath.path))
+        }
+    }
+
+    @Test(arguments: [true, false])
+    func test_install_skillsMode_nonSpecInstallType_throws(quiet: Bool) async throws {
+        let skillInstaller = SkillInstallerMock()
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            downloader: downloader,
+            installMode: .skillsOnly,
+            skillInstaller: skillInstaller,
+            specLoader: FixtureSpecLoader(fixture: Fixture(filename: "Lucafile_mock", type: "yml"))
+        )
+
+        await #expect(throws: Installer.InstallerError.skillsRequireSpecInstallationType) {
+            try await installer.install(installationType: .individualInline(
+                name: "SomeTool",
+                version: "1.0.0",
+                url: URL(string: "https://example.com/tool.zip")!,
+                binaryPath: nil,
+                desiredBinaryName: nil,
+                checksum: nil,
+                algorithm: nil
+            ))
+        }
+    }
+
     private func spec(for fixture: Fixture) throws -> Spec {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
+        return try YAMLDecoder().decode(Spec.self, from: data)
+    }
+}
+
+// MARK: - Private mocks
+
+private struct FixtureSpecLoader: SpecLoading {
+    let fixture: Fixture
+
+    func loadSpec(at path: URL) throws -> Spec {
+        let bundle = Bundle.module
+        guard let filePath = bundle.path(forResource: fixture.filename, ofType: fixture.type) else {
+            throw SpecLoader.SpecLoaderError.missingSpec(path.path)
+        }
+        let data = try Data(contentsOf: URL(fileURLWithPath: filePath))
         return try YAMLDecoder().decode(Spec.self, from: data)
     }
 }

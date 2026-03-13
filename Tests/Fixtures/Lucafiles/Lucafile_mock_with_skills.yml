@@ -1,0 +1,17 @@
+---
+tools:
+  - name: MockToolA
+    binaryPath: bin/MockMachOTool
+    version: 1.0.0
+    url: https://example.com/mock/MockToolA.zip
+
+skills:
+  - name: vercel-labs-agent-skills
+    repository: vercel-labs/agent-skills
+    skills:
+      - frontend-design
+      - skill-creator
+  - name: ai-platform-skills
+    repository: https://github.je-labs.com/ai-platform/skills.git
+
+version: 0.0.1
