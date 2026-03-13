@@ -41,10 +41,11 @@ struct InstallCommand: AsyncParsableCommand {
     @Option(name: .long, help: ArgumentHelp(
         "Path to the spec file.",
         discussion: """
-        Defaults to './Lucafile' in the current directory if not specified.
+        Defaults to './Lucafile' or './Lucafile.yml' in the current directory if not specified.
         Examples:
           luca install
           luca install --spec ./config/Lucafile
+          luca install --spec ./config/Lucafile.yml
         """,
         valueName: "path"
     ))
@@ -202,8 +203,8 @@ struct InstallCommand: AsyncParsableCommand {
         try await installer.install(installationType: installationType)
     }
     
-    /// Path to the spec file: either explicit via `--spec` or default to `Constants.specFile` in current directory.
-    /// When no exact `Lucafile` exists, discovers files with the `Lucafile` prefix and prompts the user to pick one.
+    /// Path to the spec file: either explicit via `--spec` or default to `Constants.specFile` (or `Lucafile.yml`) in current directory.
+    /// When no exact `Lucafile` or `Lucafile.yml` exists, discovers files with the `Lucafile` prefix and prompts the user to pick one.
     private func specPath(providedSpec: String?, fileManager: FileManaging) throws -> URL {
         if let providedSpec {
             return URL(fileURLWithPath: providedSpec)
@@ -212,9 +213,15 @@ struct InstallCommand: AsyncParsableCommand {
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         let defaultPath = currentDirectory.appending(component: Constants.specFile)
 
-        // If exact Lucafile exists, use it directly.
+        // If Lucafile exists, use it as the default.
         if fileManager.fileExists(atPath: defaultPath.path) {
             return defaultPath
+        }
+
+        // If Lucafile.yml exists, use it as the default.
+        let ymlPath = currentDirectory.appending(component: "\(Constants.specFile).\(Constants.ymlExtension)")
+        if fileManager.fileExists(atPath: ymlPath.path) {
+            return ymlPath
         }
 
         // Auto-discover files with the Lucafile prefix.

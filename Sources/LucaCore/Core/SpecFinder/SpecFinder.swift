@@ -5,7 +5,7 @@ import Foundation
 /// Discovers Lucafile spec files in a directory.
 ///
 /// Scans for files whose name starts with the `Lucafile` prefix
-/// (e.g. `Lucafile`, `Lucafile-dev`, `Lucafile-production`).
+/// (e.g. `Lucafile`, `Lucafile.yml`, `Lucafile-dev`, `Lucafile-production`).
 public struct SpecFinder: SpecFinding {
 
     private let fileManager: SpecFinderFileManaging
