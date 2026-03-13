@@ -11,7 +11,7 @@ class SubprocessRunnerMock: SubprocessRunning, @unchecked Sendable {
 
     private var callCount = 0
 
-    func run(executableURL: URL, arguments: [String]) throws -> Int32 {
+    func run(executableURL: URL, arguments: [String]) async throws -> Int32 {
         recordedArguments.append(arguments)
         let code = exitCodes.indices.contains(callCount) ? exitCodes[callCount] : exitCodes[exitCodes.count - 1]
         callCount += 1

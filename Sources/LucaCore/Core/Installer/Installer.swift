@@ -137,17 +137,17 @@ public struct Installer {
     // MARK: - Private
     
     private func installQuietly(installationType: InstallationType) async throws {
-        try await noora.progressStep(
-            message: "Installing tools",
-            successMessage: "Tools have been installed for the current project",
-            errorMessage: "Failed to install tools",
-            showSpinner: true
-        ) { updateMessage in
-            let dataDownloader = DataDownloader(session: .shared)
-            let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
-            let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
+        if installMode != .skillsOnly {
+            try await noora.progressStep(
+                message: "Installing tools",
+                successMessage: "Tools have been installed for the current project",
+                errorMessage: "Failed to install tools",
+                showSpinner: true
+            ) { updateMessage in
+                let dataDownloader = DataDownloader(session: .shared)
+                let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
+                let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
 
-            if installMode != .skillsOnly {
                 updateMessage("Detecting tools to install")
                 let tools = try await toolFactory.toolsForInstallationType(installationType)
 
@@ -165,17 +165,20 @@ public struct Installer {
                     }
                 }
             }
+        }
 
-            if installMode != .toolsOnly {
-                if case .spec(let specPath) = installationType {
-                    let skills = (try specLoader.loadSpec(at: specPath)).skills ?? []
-                    for skill in skills {
-                        updateMessage("Installing skill \(skill.name)")
-                        try await install(skill)
-                    }
-                } else if installMode == .skillsOnly {
-                    throw InstallerError.skillsRequireSpecInstallationType
+        // Skills are installed outside progressStep: npx needs a normal terminal
+        // (cooked mode stdin) and must not run while Noora's spinner owns the tty.
+        if installMode != .toolsOnly {
+            if case .spec(let specPath) = installationType {
+                let spec = try specLoader.loadSpec(at: specPath)
+                let skills = spec.skills ?? []
+                let agents = spec.agents
+                for skill in skills {
+                    try await install(skill, agents: agents)
                 }
+            } else if installMode == .skillsOnly {
+                throw InstallerError.skillsRequireSpecInstallationType
             }
         }
     }
@@ -210,12 +213,14 @@ public struct Installer {
 
         if installMode != .toolsOnly {
             if case .spec(let specPath) = installationType {
-                let skills = (try specLoader.loadSpec(at: specPath)).skills ?? []
+                let spec = try specLoader.loadSpec(at: specPath)
+                let skills = spec.skills ?? []
+                let agents = spec.agents
                 if !skills.isEmpty {
                     printer.printFormatted("\(.info("🧠 Installing skills for the current project."))")
                     printer.printFormatted("")
                     for skill in skills {
-                        try await install(skill)
+                        try await install(skill, agents: agents)
                         printer.printFormatted("")
                     }
                 }
@@ -280,9 +285,9 @@ public struct Installer {
         printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
     }
     
-    private func install(_ skill: Skill) async throws {
+    private func install(_ skill: Skill, agents: [String]?) async throws {
         printer.printFormatted("\(.raw("🧩 Installing skill \(skill.name)..."))")
-        try await skillInstaller.install(skill: skill)
+        try await skillInstaller.install(skill: skill, agents: agents)
         printer.printFormatted("\(.primary("🙌 Skill \(skill.name) installed."))")
     }
 

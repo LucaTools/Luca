@@ -10,5 +10,5 @@ protocol SubprocessRunning {
     ///   - executableURL: The URL of the executable to run (e.g. `/usr/bin/env`).
     ///   - arguments: The command-line arguments to pass.
     /// - Returns: The process termination status.
-    func run(executableURL: URL, arguments: [String]) throws -> Int32
+    func run(executableURL: URL, arguments: [String]) async throws -> Int32
 }

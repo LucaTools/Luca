@@ -852,9 +852,11 @@ struct InstallerTests {
 
         try await installer.install(installationType: .spec(specPath: URL(fileURLWithPath: path)))
 
-        #expect(skillInstaller.installedSkills.count == 2)
-        #expect(skillInstaller.installedSkills[0].name == "vercel-labs-agent-skills")
-        #expect(skillInstaller.installedSkills[1].name == "ai-platform-skills")
+        #expect(skillInstaller.calls.count == 2)
+        #expect(skillInstaller.calls[0].skill.name == "vercel-labs-agent-skills")
+        #expect(skillInstaller.calls[1].skill.name == "ai-platform-skills")
+        #expect(skillInstaller.calls[0].agents == ["claude-code", "github-copilot", "opencode"])
+        #expect(skillInstaller.calls[1].agents == ["claude-code", "github-copilot", "opencode"])
     }
 
     @Test(arguments: [true, false])
@@ -878,7 +880,7 @@ struct InstallerTests {
 
         try await installer.install(installationType: .spec(specPath: URL(fileURLWithPath: path)))
 
-        #expect(skillInstaller.installedSkills.isEmpty)
+        #expect(skillInstaller.calls.isEmpty)
     }
 
     @Test(arguments: [true, false])
@@ -902,7 +904,7 @@ struct InstallerTests {
 
         try await installer.install(installationType: .spec(specPath: URL(fileURLWithPath: path)))
 
-        #expect(skillInstaller.installedSkills.count == 2)
+        #expect(skillInstaller.calls.count == 2)
         // No tools installed in tools folder (skillsOnly skips tool loop)
         let spec = try self.spec(for: fixture)
         for tool in spec.tools {

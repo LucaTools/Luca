@@ -4,9 +4,8 @@ import Foundation
 
 /// Installs agentic skills by delegating to `npx skills add`.
 ///
-/// `SkillInstaller` builds the `npx skills add <repository> [--skill name...]`
-/// command and runs it via a ``SubprocessRunning`` instance. It validates the
-/// repository reference using ``SkillRepositoryResolver`` before invoking `npx`.
+/// `SkillInstaller` builds the `npx skills add <repository> --yes [--skill name...] [--agent name...]`
+/// command and runs it via a ``SubprocessRunning`` instance.
 struct SkillInstaller: SkillInstalling {
 
     enum SkillInstallerError: Error, LocalizedError, Equatable {
@@ -35,21 +34,28 @@ struct SkillInstaller: SkillInstalling {
 
     /// Installs the given skill via `npx skills add`.
     ///
-    /// - Parameter skill: The ``Skill`` to install.
-    func install(skill: Skill) async throws {
-        let repository = try resolver.resolve(skill.repository)
+    /// - Parameters:
+    ///   - skill: The ``Skill`` to install.
+    ///   - agents: Agent identifiers passed as `--agent` flags. `nil` installs for all supported agents.
+    func install(skill: Skill, agents: [String]?) async throws {
+        let repository = resolver.resolve(skill.repository)
 
-        var arguments = ["npx", "skills", "add", repository]
+        var arguments = ["npx", "skills", "add", repository, "--yes"]
         if let skillNames = skill.skills {
             for skillName in skillNames {
                 arguments += ["--skill", skillName]
+            }
+        }
+        if let agentNames = agents {
+            for agentName in agentNames {
+                arguments += ["--agent", agentName]
             }
         }
 
         let envURL = URL(fileURLWithPath: "/usr/bin/env")
 
         // Verify npx is available
-        let whichStatus = try subprocessRunner.run(
+        let whichStatus = try await subprocessRunner.run(
             executableURL: envURL,
             arguments: ["which", "npx"]
         )
@@ -57,7 +63,7 @@ struct SkillInstaller: SkillInstalling {
             throw SkillInstallerError.npxNotAvailable
         }
 
-        let status = try subprocessRunner.run(executableURL: envURL, arguments: arguments)
+        let status = try await subprocessRunner.run(executableURL: envURL, arguments: arguments)
         guard status == 0 else {
             throw SkillInstallerError.installationFailed(skill.name, status)
         }

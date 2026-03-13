@@ -32,6 +32,7 @@ import Foundation
 /// ### Properties
 /// - ``tools``
 /// - ``skills``
+/// - ``agents``
 ///
 /// ### Related Types
 /// - ``Tool``
@@ -42,4 +43,7 @@ struct Spec: Codable {
     let tools: [Tool]
     /// The list of agentic skills defined in the specification. `nil` when the `skills:` key is absent.
     let skills: [Skill]?
+    /// The list of agent identifiers to target when installing skills (e.g. `claude-code`, `github-copilot`).
+    /// `nil` when the `agents:` key is absent, meaning skills are installed for all supported agents.
+    let agents: [String]?
 }

@@ -6,6 +6,8 @@ import Foundation
 protocol SkillInstalling {
     /// Installs the given skill.
     ///
-    /// - Parameter skill: The ``Skill`` to install.
-    func install(skill: Skill) async throws
+    /// - Parameters:
+    ///   - skill: The ``Skill`` to install.
+    ///   - agents: Agent identifiers to pass via `--agent` flags. `nil` installs for all supported agents.
+    func install(skill: Skill, agents: [String]?) async throws
 }

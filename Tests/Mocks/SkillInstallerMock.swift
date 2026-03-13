@@ -5,13 +5,20 @@ import Foundation
 
 class SkillInstallerMock: SkillInstalling, @unchecked Sendable {
 
-    var installedSkills: [Skill] = []
+    struct Call {
+        let skill: Skill
+        let agents: [String]?
+    }
+
+    var calls: [Call] = []
     var errorToThrow: Error?
 
-    func install(skill: Skill) async throws {
+    var installedSkills: [Skill] { calls.map(\.skill) }
+
+    func install(skill: Skill, agents: [String]?) async throws {
         if let error = errorToThrow {
             throw error
         }
-        installedSkills.append(skill)
+        calls.append(Call(skill: skill, agents: agents))
     }
 }

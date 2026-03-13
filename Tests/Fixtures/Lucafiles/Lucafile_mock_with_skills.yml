@@ -14,4 +14,9 @@ skills:
   - name: ai-platform-skills
     repository: https://github.je-labs.com/ai-platform/skills.git
 
+agents:
+  - claude-code
+  - github-copilot
+  - opencode
+
 version: 0.0.1

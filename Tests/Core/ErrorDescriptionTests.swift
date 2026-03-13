@@ -51,10 +51,6 @@ struct ErrorDescriptionTests {
         #expect(SkillInstaller.SkillInstallerError.installationFailed("my-skill", 1).errorDescription != nil)
     }
 
-    @Test
-    func skillRepositoryResolverError_errorDescription() {
-        #expect(SkillRepositoryResolver.SkillRepositoryResolverError.invalidRepositoryFormat("bad").errorDescription != nil)
-    }
 
     @Test
     func permissionManagerError_errorDescription() {
