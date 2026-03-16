@@ -508,6 +508,59 @@ struct InstallerTests {
         #expect(fileManager.fileExists(atPath: symLinkPath.path))
     }
 
+    /// Regression test: when a direct-binary tool has `binaryPath` set but no `desiredBinaryName`
+    /// (e.g. `name: "FirebaseCLI"`, `binaryPath: "firebase"`), the binary must be stored under
+    /// the `binaryPath` name so that `isToolInstalled` can find it and avoids re-downloading
+    /// on every run.
+    @Test
+    func test_install_executableWithBinaryPath_storesBinaryUnderBinaryPathName() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolName = "FirebaseCLI"
+        let binaryPathName = "firebase"
+        let version = "14.12.1"
+
+        let executableData = Data([0x7F, 0x45, 0x4C, 0x46,
+                                   0x02, 0x01, 0x01, 0x00,
+                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                   0x02, 0x00, 0xB7, 0x00])
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: true,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .tempFile(executableData))
+        )
+
+        let installationType = InstallationType.individualInline(
+            name: toolName,
+            version: version,
+            url: URL(string: "https://example.com/firebase-tools-macos")!,
+            binaryPath: binaryPathName,
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil
+        )
+
+        try await installer.install(installationType: installationType)
+
+        // Binary must be stored as "firebase", not "FirebaseCLI"
+        let binaryPath = fileManager.toolsFolder.appending(components: toolName, version, binaryPathName)
+        #expect(fileManager.fileExists(atPath: binaryPath.path))
+
+        // Symlink must be named "firebase"
+        let symLinkPath = fileManager.symlinksFolder.appending(component: binaryPathName)
+        #expect(fileManager.fileExists(atPath: symLinkPath.path))
+
+        // isToolInstalled checks versionFolder/binaryPath — must find it, avoiding re-download
+        let wrongPath = fileManager.toolsFolder.appending(components: toolName, version, toolName)
+        #expect(!fileManager.fileExists(atPath: wrongPath.path), "Binary must NOT be stored under tool name")
+
+        // Second install must not throw (isToolInstalled returns true, skips download)
+        try await installer.install(installationType: installationType)
+        #expect(fileManager.fileExists(atPath: binaryPath.path))
+    }
+
     @Test
     func test_install_unknownFileType_throws() async throws {
         let fileManager = FileManagerWrapperMock()
