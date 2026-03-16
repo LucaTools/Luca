@@ -248,10 +248,7 @@ public struct Installer {
 
     private func installExecutable(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
         try fileManager.createDirectory(at: installationDestination, withIntermediateDirectories: true)
-        let binaryName: String = {
-            if let binaryName = tool.desiredBinaryName { return binaryName }
-            return tool.name
-        }()
+        let binaryName = tool.effectiveBinaryPath
         let destinationFile = installationDestination
             .appending(components: binaryName)
         try fileManager.moveItem(at: downloadedFile, to: destinationFile)
