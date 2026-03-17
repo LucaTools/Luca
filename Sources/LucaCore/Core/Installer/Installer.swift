@@ -162,7 +162,10 @@ public struct Installer {
         printer.printFormatted("\(.raw("👀 Tool \(tool.name) version \(tool.version) is already installed."))")
         let installationDestination = fileManager.toolsFolder
             .appending(components: tool.name, tool.version)
-        let binaryPath = try binaryFinder.findBinary(atPath: installationDestination.path)
+        let binaryPath: String = try {
+            if let binaryPath = tool.binaryPath { return binaryPath }
+            return try binaryFinder.findBinary(atPath: installationDestination.path)
+        }()
         let resolvedTool = Tool(
             name: tool.name,
             version: tool.version,
