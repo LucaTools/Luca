@@ -366,6 +366,64 @@ struct ToolInstallerTests {
         try await toolInstaller.install(tool: tool)
     }
 
+    /// Regression test: when a tool's `binaryPath` points to a shell-script wrapper
+    /// (not an ELF/Mach-O binary), `reinstall` must honour `binaryPath` for the symlink
+    /// rather than falling back to `BinaryFinder`, which would skip the script and pick
+    /// the first real binary it finds in the tool directory instead
+    /// (e.g. `jre/bin/java` in SonarScannerCLI's case).
+    @Test
+    func test_reinstall_archiveToolWithBinaryPath_respectsBinaryPath() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolName = "SonarScannerCLI"
+        let version = "7.0.0"
+        let binaryPathValue = "sonar-scanner"
+
+        // Manually build the "already installed" state to simulate a tool whose archive
+        // ships a shell-script launcher alongside a real JVM binary.
+        let installPath = fileManager.toolsFolder.appending(components: toolName, version)
+        try FileManager.default.createDirectory(atPath: installPath.path, withIntermediateDirectories: true)
+
+        // sonar-scanner: a shell script (not Mach-O/ELF). isToolInstalled finds it via
+        // binaryPath, but BinaryFinder rejects it because it lacks binary magic bytes.
+        let scriptPath = installPath.appending(component: binaryPathValue)
+        _ = FileManager.default.createFile(atPath: scriptPath.path,
+                                            contents: "#!/bin/bash\nexec java \"$@\"".data(using: .utf8))
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptPath.path)
+
+        // java: a real Mach-O binary that BinaryFinder would find instead of the script.
+        let javaPath = installPath.appending(component: "java")
+        _ = FileManager.default.createFile(atPath: javaPath.path,
+                                            contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00, 0x00, 0x00, 0x00]))
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: javaPath.path)
+
+        let toolInstaller = makeToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            downloader: DownloaderMock(result: .tempFile(Data()))
+        )
+
+        let tool = Tool(
+            name: toolName,
+            version: version,
+            url: URL(string: "https://example.com/sonar-scanner-cli.zip")!,
+            binaryPath: binaryPathValue,
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil,
+            ignoreArchCheck: nil
+        )
+
+        try toolInstaller.reinstall(tool: tool)
+
+        // Symlink must be named "sonar-scanner" (binaryPath), NOT "java" (BinaryFinder result)
+        let correctSymLink = fileManager.symlinksFolder.appending(component: "sonar-scanner")
+        #expect(fileManager.fileExists(atPath: correctSymLink.path))
+
+        let wrongSymLink = fileManager.symlinksFolder.appending(component: "java")
+        #expect(!fileManager.fileExists(atPath: wrongSymLink.path),
+                "reinstall must not use BinaryFinder when binaryPath is configured")
+    }
+
     @Test
     func test_install_perToolIgnoreArchCheck_nil_fallsBackToGlobal_validates() async throws {
         // Per-tool ignoreArchCheck: nil falls back to global flag — global false → run check

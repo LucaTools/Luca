@@ -8,9 +8,8 @@ import Noora
 /// The `Installer` coordinates the complete installation process:
 /// 1. Loads the tool or skill spec (Lucafile or inline parameters)
 /// 2. Unlinks orphaned tools no longer present in the spec
-/// 3. Delegates per-tool download and installation to ``ToolInstalling``
+/// 3. Delegates per-tool download, installation, and reinstallation to ``ToolInstalling``
 /// 4. Delegates skill installation to ``SkillInstalling``
-/// 5. Recreates symlinks for already-installed tool versions
 ///
 /// ## Usage
 ///
@@ -34,9 +33,6 @@ public struct Installer {
 
     private let fileManager: FileManaging
     private let printer: Printing
-    private let binaryFinder: BinaryFinding
-    private let permissionManager: PermissionManaging
-    private let symLinker: SymLinking
     private let linkedToolsLister: LinkedToolsLister
     private let unlinker: Unlinker
     private let ignoreArchitectureCheck: Bool
@@ -77,9 +73,6 @@ public struct Installer {
     ) {
         self.fileManager = fileManager
         self.printer = printer
-        self.binaryFinder = BinaryFinder(fileManager: fileManager)
-        self.permissionManager = PermissionManager(fileManager: fileManager)
-        self.symLinker = SymLinker(fileManager: fileManager)
         self.linkedToolsLister = LinkedToolsLister(fileManager: fileManager)
         self.unlinker = Unlinker(fileManager: fileManager, printer: printer)
         self.ignoreArchitectureCheck = ignoreArchitectureCheck
@@ -145,19 +138,11 @@ public struct Installer {
             for tool in tools {
                 updateMessage("Installing \(tool.name) \(tool.version)")
                 if isToolInstalled(tool) {
-                    try reinstall(tool)
+                    try toolInstaller.reinstall(tool: tool)
                 } else {
                     try await toolInstaller.install(tool: tool)
                 }
             }
-        }
-    }
-
-    private func installQuietly(installationType: SkillInstallationType) async throws {
-        let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
-        let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
-        for skillSet in skillsInfo.skillSets {
-            try await install(skillSet, agents: skillsInfo.agents)
         }
     }
 
@@ -181,7 +166,7 @@ public struct Installer {
             
             for tool in tools {
                 if isToolInstalled(tool) {
-                    try reinstall(tool)
+                    try toolInstaller.reinstall(tool: tool)
                 } else {
                     try await toolInstaller.install(tool: tool)
                 }
@@ -190,6 +175,14 @@ public struct Installer {
             printer.printFormatted("\(.success("🚀 Tools have been installed for the current project."))")
         } else {
             printer.printFormatted("\(.muted("🫥 No tools have been installed for the current project."))")
+        }
+    }
+    
+    private func installQuietly(installationType: SkillInstallationType) async throws {
+        let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
+        let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
+        for skillSet in skillsInfo.skillSets {
+            try await install(skillSet, agents: skillsInfo.agents)
         }
     }
     
@@ -212,31 +205,6 @@ public struct Installer {
         }
     }
 
-    private func reinstall(_ tool: Tool) throws {
-        printer.printFormatted("\(.raw("👀 Tool \(tool.name) version \(tool.version) is already installed."))")
-        let installationDestination = fileManager.toolsFolder
-            .appending(components: tool.name, tool.version)
-        let binaryPath: String = try {
-            if let binaryPath = tool.binaryPath { return binaryPath }
-            return try binaryFinder.findBinary(atPath: installationDestination.path)
-        }()
-        let resolvedTool = Tool(
-            name: tool.name,
-            version: tool.version,
-            url: tool.url,
-            binaryPath: binaryPath,
-            desiredBinaryName: tool.desiredBinaryName,
-            checksum: tool.checksum,
-            algorithm: tool.algorithm,
-            ignoreArchCheck: tool.ignoreArchCheck
-        )
-        try permissionManager.setExecutablePermission(for: resolvedTool)
-        let symLink = try symLinker.setSymLink(for: resolvedTool)
-        printer.printFormatted("\(.raw("🔗 Recreated symlink at \(symLink.path)"))")
-        
-        printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
-    }
-    
     private func install(_ skillSet: SkillSet, agents: [String]?) async throws {
         printer.printFormatted("\(.raw("🧩 Installing skills from \(skillSet.repository)..."))")
         try await skillInstaller.install(skillSet: skillSet, agents: agents)

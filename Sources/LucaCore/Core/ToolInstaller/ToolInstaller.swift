@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// Downloads, validates, and installs a single development tool from its remote URL.
+/// Downloads, validates, installs, and reinstalls a single development tool.
 ///
 /// `ToolInstaller` handles the complete per-tool installation pipeline:
 /// 1. Downloads the release archive or executable from the tool's URL
@@ -10,6 +10,7 @@ import Foundation
 /// 3. Detects the file type and routes to archive or executable installation
 /// 4. Validates binary architecture compatibility
 /// 5. Sets executable permissions and creates a symlink
+/// 6. Reinstalls already-downloaded tools by recreating permissions and symlinks
 struct ToolInstaller: ToolInstalling {
 
     enum ToolInstallerError: Error, LocalizedError, Equatable {
@@ -80,6 +81,33 @@ struct ToolInstaller: ToolInstalling {
         case .executable: try installExecutable(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
         }
 
+        printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
+    }
+
+    /// Reinstalls an already-downloaded tool by setting permissions and recreating its symlink.
+    ///
+    /// - Parameter tool: The ``Tool`` to reinstall.
+    func reinstall(tool: Tool) throws {
+        printer.printFormatted("\(.raw("👀 Tool \(tool.name) version \(tool.version) is already installed."))")
+        let installationDestination = fileManager.toolsFolder
+            .appending(components: tool.name, tool.version)
+        let binaryPath: String = try {
+            if let binaryPath = tool.binaryPath { return binaryPath }
+            return try binaryFinder.findBinary(atPath: installationDestination.path)
+        }()
+        let resolvedTool = Tool(
+            name: tool.name,
+            version: tool.version,
+            url: tool.url,
+            binaryPath: binaryPath,
+            desiredBinaryName: tool.desiredBinaryName,
+            checksum: tool.checksum,
+            algorithm: tool.algorithm,
+            ignoreArchCheck: tool.ignoreArchCheck
+        )
+        try permissionManager.setExecutablePermission(for: resolvedTool)
+        let symLink = try symLinker.setSymLink(for: resolvedTool)
+        printer.printFormatted("\(.raw("🔗 Recreated symlink at \(symLink.path)"))")
         printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
     }
 
