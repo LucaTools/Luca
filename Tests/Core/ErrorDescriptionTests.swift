@@ -40,8 +40,8 @@ struct ErrorDescriptionTests {
     }
 
     @Test
-    func installerError_errorDescription() {
-        #expect(Installer.InstallerError.unknownFileType("/some/file").errorDescription != nil)
+    func toolInstallerError_errorDescription() {
+        #expect(ToolInstaller.ToolInstallerError.unknownFileType("/some/file").errorDescription != nil)
     }
 
     @Test

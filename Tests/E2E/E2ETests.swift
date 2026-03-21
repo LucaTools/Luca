@@ -23,13 +23,18 @@ struct E2ETests {
 
     init() async throws {
         fileManager = FileManagerWrapperMock()
-        let downloader = DownloaderMock(result: .tempFile(Self.mockExecutableData))
+        let toolInstaller = ToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .tempFile(Self.mockExecutableData))
+        )
         installer = Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: true,
             quiet: true,
             printer: PrinterMock(),
-            downloader: downloader
+            toolInstaller: toolInstaller
         )
         uninstaller = Uninstaller(fileManager: fileManager, printer: PrinterMock())
         unlinker = Unlinker(fileManager: fileManager, printer: PrinterMock())

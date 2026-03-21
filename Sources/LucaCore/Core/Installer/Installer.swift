@@ -3,15 +3,14 @@
 import Foundation
 import Noora
 
-/// Downloads, verifies, and installs tools from remote URLs.
+/// Orchestrates tool and skill installation for a project.
 ///
-/// The `Installer` orchestrates the complete installation process for development tools:
-/// 1. Downloads the release archive or executable from the specified URL
-/// 2. Validates the checksum (if provided)
-/// 3. Extracts archives or handles executables
-/// 4. Validates architecture compatibility
-/// 5. Sets executable permissions
-/// 6. Creates symlinks in the project's `.luca/tools/` directory
+/// The `Installer` coordinates the complete installation process:
+/// 1. Loads the tool or skill spec (Lucafile or inline parameters)
+/// 2. Unlinks orphaned tools no longer present in the spec
+/// 3. Delegates per-tool download and installation to ``ToolInstalling``
+/// 4. Delegates skill installation to ``SkillInstalling``
+/// 5. Recreates symlinks for already-installed tool versions
 ///
 /// ## Usage
 ///
@@ -32,24 +31,10 @@ import Noora
 /// ### Installation Types
 /// - ``InstallationType``
 public struct Installer {
-    
-    enum InstallerError: Error, LocalizedError, Equatable {
-        case unknownFileType(String)
 
-        var errorDescription: String? {
-            switch self {
-            case .unknownFileType(let file):
-                return "Unknown file type for file \(file)."
-            }
-        }
-    }
-    
     private let fileManager: FileManaging
     private let printer: Printing
     private let binaryFinder: BinaryFinding
-    private let checksumValidator: ChecksumValidating
-    private let architectureValidator: ArchitectureValidating
-    private let downloader: Downloading
     private let permissionManager: PermissionManaging
     private let symLinker: SymLinking
     private let linkedToolsLister: LinkedToolsLister
@@ -57,6 +42,7 @@ public struct Installer {
     private let ignoreArchitectureCheck: Bool
     private let quiet: Bool
     private let noora: Noorable
+    private let toolInstaller: ToolInstalling
     private let skillInstaller: SkillInstalling
     private let specLoader: SpecLoading
 
@@ -73,9 +59,9 @@ public struct Installer {
             quiet: quiet,
             printer: printer,
             noora: noora,
-            downloader: Downloader(fileDownloader: FileDownloader(session: .shared)),
-            skillInstaller: SkillInstaller(),
-            specLoader: SpecLoader(fileManager: .default)
+            toolInstaller: nil,
+            skillInstaller: nil,
+            specLoader: nil
         )
     }
 
@@ -85,15 +71,13 @@ public struct Installer {
         quiet: Bool = false,
         printer: Printing,
         noora: Noorable = Noora(),
-        downloader: Downloading? = nil,
+        toolInstaller: ToolInstalling? = nil,
         skillInstaller: SkillInstalling? = nil,
         specLoader: SpecLoading? = nil
     ) {
         self.fileManager = fileManager
         self.printer = printer
         self.binaryFinder = BinaryFinder(fileManager: fileManager)
-        self.checksumValidator = ChecksumValidator(fileManager: fileManager)
-        self.architectureValidator = ArchitectureValidator(fileManager: fileManager)
         self.permissionManager = PermissionManager(fileManager: fileManager)
         self.symLinker = SymLinker(fileManager: fileManager)
         self.linkedToolsLister = LinkedToolsLister(fileManager: fileManager)
@@ -101,7 +85,11 @@ public struct Installer {
         self.ignoreArchitectureCheck = ignoreArchitectureCheck
         self.quiet = quiet
         self.noora = noora
-        self.downloader = downloader ?? Downloader(fileDownloader: FileDownloader(session: .shared))
+        self.toolInstaller = toolInstaller ?? ToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: ignoreArchitectureCheck,
+            printer: printer
+        )
         self.skillInstaller = skillInstaller ?? SkillInstaller()
         self.specLoader = specLoader ?? SpecLoader(fileManager: .default)
     }
@@ -159,7 +147,7 @@ public struct Installer {
                 if isToolInstalled(tool) {
                     try reinstall(tool)
                 } else {
-                    try await install(tool)
+                    try await toolInstaller.install(tool: tool)
                 }
             }
         }
@@ -195,7 +183,7 @@ public struct Installer {
                 if isToolInstalled(tool) {
                     try reinstall(tool)
                 } else {
-                    try await install(tool)
+                    try await toolInstaller.install(tool: tool)
                 }
                 printer.printFormatted("")
             }
@@ -249,107 +237,10 @@ public struct Installer {
         printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
     }
     
-    private func install(_ tool: Tool) async throws {
-        printer.printFormatted("\(.raw("⬇️ Downloading \(tool.name) version \(tool.version)..."))")
-        
-        let downloadedFile = try await downloader.downloadRelease(at: tool.url)
-
-        if let checksum = tool.checksum {
-            printer.printFormatted("\(.raw("📋 Validating checksum for \(tool.name) version \(tool.version)..."))")
-            try checksumValidator.validate(checksum: checksum, for: downloadedFile.path, using: tool.algorithm ?? .sha256)
-        } else {
-            printer.printFormatted("\(.raw("📋 Skipping checksum validation for \(tool.name) version \(tool.version)..."))")
-        }
-
-        let fileTypeDetector = FileTypeDetector(fileManager: fileManager)
-        guard let fileType = try fileTypeDetector.detectFileType(at: downloadedFile) else {
-            throw InstallerError.unknownFileType(downloadedFile.path)
-        }
-        
-        let installationDestination = fileManager.toolsFolder
-            .appending(components: tool.name, tool.version)
-        
-        switch fileType {
-        case .zip, .targz: try installArchive(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
-        case .executable: try installExecutable(tool: tool, downloadedFile: downloadedFile, installationDestination: installationDestination)
-        }
-        
-        printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
-    }
-    
     private func install(_ skillSet: SkillSet, agents: [String]?) async throws {
         printer.printFormatted("\(.raw("🧩 Installing skills from \(skillSet.repository)..."))")
         try await skillInstaller.install(skillSet: skillSet, agents: agents)
-        printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed."))")
-    }
-
-    private func installArchive(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
-        printer.printFormatted("\(.raw("📦 Unarchiving \(tool.name) version \(tool.version)..."))")
-        
-        let fileTypeDetector = FileTypeDetector(fileManager: fileManager)
-        
-        let unarchiver = Unarchiver(fileManager: fileManager, fileTypeDetector: fileTypeDetector)
-        try unarchiver.unarchive(filePath: downloadedFile, installationDestination: installationDestination)
-        
-        let binaryPath: String = try {
-            if let binaryPath = tool.binaryPath { return binaryPath }
-            return try binaryFinder.findBinary(atPath: installationDestination.path)
-        }()
-        
-        let fullBinaryPath = installationDestination.appending(path: binaryPath).path
-        try validateArchitectureIfNeeded(
-            tool: tool,
-            binaryPath: fullBinaryPath,
-            installationDestination: installationDestination
-        )
-        
-        let resolvedTool = Tool(
-            name: tool.name,
-            version: tool.version,
-            url: tool.url,
-            binaryPath: binaryPath,
-            desiredBinaryName: nil,
-            checksum: tool.checksum,
-            algorithm: tool.algorithm,
-            ignoreArchCheck: nil
-        )
-        try permissionManager.setExecutablePermission(for: resolvedTool)
-
-        printer.printFormatted("\(.raw("💾 Installed \(tool.name) version \(tool.version) at \(installationDestination.path)"))")
-
-        let symLink = try symLinker.setSymLink(for: resolvedTool)
-        printer.printFormatted("\(.raw("🔗 Created symlink to \(symLink.path)"))")
-    }
-
-    private func installExecutable(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {
-        try fileManager.createDirectory(at: installationDestination, withIntermediateDirectories: true)
-        let binaryName = tool.effectiveBinaryPath
-        let destinationFile = installationDestination
-            .appending(components: binaryName)
-        try fileManager.moveItem(at: downloadedFile, to: destinationFile)
-        
-        try validateArchitectureIfNeeded(
-            tool: tool,
-            binaryPath: destinationFile.path,
-            installationDestination: installationDestination
-        )
-
-        let resolvedTool = Tool(
-            name: tool.name,
-            version: tool.version,
-            url: tool.url,
-            binaryPath: binaryName,
-            desiredBinaryName: binaryName,
-            checksum: nil,
-            algorithm: nil,
-            ignoreArchCheck: nil
-        )
-        try permissionManager.setExecutablePermission(for: resolvedTool)
-        
-        printer.printFormatted("\(.raw("💾 Installed \(tool.name) version \(tool.version) at \(installationDestination.path)"))")
-        
-        let symLink = try symLinker.setSymLink(for: resolvedTool)
-        printer.printFormatted("\(.raw("🔗 Created symlink to \(symLink.path)"))")
+        printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed for the current project."))")
     }
 
     private func isToolInstalled(_ tool: Tool) -> Bool {
@@ -369,22 +260,6 @@ public struct Installer {
         return fileManager.fileExists(atPath: expectedBinaryLocation.path)
     }
 
-    private func validateArchitectureIfNeeded(tool: Tool, binaryPath: String, installationDestination: URL) throws {
-        let effectiveIgnore = tool.ignoreArchCheck ?? ignoreArchitectureCheck
-        if effectiveIgnore {
-            printer.printFormatted("\(.raw("🔍 Skipping architecture validation for \(tool.name) version \(tool.version)..."))")
-        } else {
-            printer.printFormatted("\(.raw("🔍 Validating architecture for \(tool.name) version \(tool.version)..."))")
-            do {
-                try architectureValidator.validate(binaryPath: binaryPath)
-            } catch {
-                printer.printFormatted("\(.raw("🗑️ Cleaning up incompatible tool \(tool.name) version \(tool.version)..."))")
-                try? fileManager.removeItem(at: installationDestination)
-                throw error
-            }
-        }
-    }
-    
     private func unlinkOrphanedTools(specTools: [Tool]) throws {
         let linkedTools = try linkedToolsLister.linkedTools()
         
