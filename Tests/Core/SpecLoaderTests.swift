@@ -14,12 +14,13 @@ struct SpecLoaderTests {
         let path = try #require(bundle.url(forResource: "Lucafile_valid", withExtension: "yml"))
 
         let spec = try sut.loadSpec(at: path)
+        let tools = try #require(spec.tools)
 
-        #expect(spec.tools.count == 4)
-        #expect(spec.tools[0].name == "FirebaseCLI")
-        #expect(spec.tools[1].name == "PackageGenerator")
-        #expect(spec.tools[2].name == "Sourcery")
-        #expect(spec.tools[3].name == "ToggleGen")
+        #expect(tools.count == 4)
+        #expect(tools[0].name == "FirebaseCLI")
+        #expect(tools[1].name == "PackageGenerator")
+        #expect(tools[2].name == "Sourcery")
+        #expect(tools[3].name == "ToggleGen")
     }
 
     @Test

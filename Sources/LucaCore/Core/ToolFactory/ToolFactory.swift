@@ -31,10 +31,10 @@ struct ToolFactory {
     
     /// Returns the list of tools to install for the given installation type.
     /// - Parameter installationType: Specifies whether to read from a spec file or install a single tool directly.
-    func toolsForInstallationType(_ installationType: InstallationType) async throws -> [Tool] {
+    func toolsForInstallationType(_ installationType: ToolInstallationType) async throws -> [Tool] {
         switch installationType {
         case .spec(let specPath):
-            return try specLoader.loadSpec(at: specPath).tools
+            return try specLoader.loadSpec(at: specPath).tools ?? []
         case .individual(let identifier, let asset, let binaryPath, let desiredBinaryName, let checksum, let algorithm):
             let tool = try await toolForIdentifier(
                 identifier,

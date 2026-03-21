@@ -22,8 +22,10 @@ tools:
 skills:
   - name: my-agent-skill
     repository: some-org/agent-skills
-    skills:
-      - frontend-design
+
+agents:
+  - claude-code
+  - opencode
 ```
 
 ## Configuration Fields
@@ -157,9 +159,8 @@ The optional `skills:` key installs agentic skills from Git repositories via `np
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `name` | Yes | Human-readable label for the skill set |
+| `name` | Yes | Name of the skill to install; omit to install all |
 | `repository` | Yes | `owner/repo` shorthand or a full HTTPS URL |
-| `skills` | No | List of individual skill names to install; omit to install all |
 
 ### Skills Examples
 
@@ -167,19 +168,20 @@ Install specific skills from a GitHub repository:
 
 ```yaml
 skills:
-  - name: vercel-labs-agent-skills
+  - name: frontend-design
     repository: vercel-labs/agent-skills
-    skills:
-      - frontend-design
-      - skill-creator
+  - name: skill-creator
+    repository: vercel-labs/agent-skills
+  - name: swift-testing-expert
+    repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill
 ```
 
 Install all skills from a custom Git host:
 
 ```yaml
 skills:
-  - name: internal-ai-skills
-    repository: https://github.example.com/ai-platform/skills.git
+  - name: swift-testing-expert
+    repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill
 ```
 
 ### Selective Installation

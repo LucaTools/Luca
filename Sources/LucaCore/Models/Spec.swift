@@ -2,6 +2,8 @@
 
 import Foundation
 
+typealias Agent = String
+
 /// A specification defining the tools required for a project.
 ///
 /// A `Spec` represents the parsed contents of a Lucafile. It contains
@@ -20,11 +22,12 @@ import Foundation
 ///     url: https://github.com/tuist/tuist/releases/...
 ///
 /// skills:
-///   - name: vercel-labs-agent-skills
+///   - name: frontend-design
 ///     repository: vercel-labs/agent-skills
-///     skills:
-///       - frontend-design
-///       - skill-creator
+///   - name: skill-creator
+///     repository: vercel-labs/agent-skills
+///   - name: swift-testing-expert
+///     repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill
 /// ```
 ///
 /// ## Topics
@@ -40,10 +43,10 @@ import Foundation
 /// - ``SpecLoader``
 struct Spec: Codable {
     /// The list of tools defined in the specification.
-    let tools: [Tool]
-    /// The list of agentic skills defined in the specification. `nil` when the `skills:` key is absent.
+    let tools: [Tool]?
+    /// The list of agentic skills defined in the specification.
     let skills: [Skill]?
     /// The list of agent identifiers to target when installing skills (e.g. `claude-code`, `github-copilot`).
-    /// `nil` when the `agents:` key is absent, meaning skills are installed for all supported agents.
-    let agents: [String]?
+    /// When `nil`, skills are installed for all supported agents.
+    let agents: [Agent]?
 }

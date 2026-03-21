@@ -6,13 +6,12 @@ tools:
     url: https://example.com/mock/MockToolA.zip
 
 skills:
-  - name: vercel-labs-agent-skills
+  - name: frontend-design
     repository: vercel-labs/agent-skills
-    skills:
-      - frontend-design
-      - skill-creator
-  - name: ai-platform-skills
-    repository: https://github.je-labs.com/ai-platform/skills.git
+  - name: skill-creator
+    repository: vercel-labs/agent-skills
+  - name: swift-testing-expert
+    repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill
 
 agents:
   - claude-code

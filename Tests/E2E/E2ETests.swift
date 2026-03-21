@@ -55,7 +55,7 @@ struct E2ETests {
 
     private func installFullSpec() async throws {
         let path = try specPath(fixture: Fixture(filename: "Lucafile_e2e_full", type: "yml"))
-        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: path)!))
     }
 
     // MARK: - Tests
@@ -148,7 +148,7 @@ struct E2ETests {
 
         // Install subset spec (MockToolB + MockToolC only)
         let subsetPath = try specPath(fixture: Fixture(filename: "Lucafile_e2e_subset", type: "yml"))
-        try await installer.install(installationType: .spec(specPath: URL(string: subsetPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: subsetPath)!))
 
         let linkedTools = try linkedToolsLister.linkedTools()
         #expect(linkedTools.count == 2)

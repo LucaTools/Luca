@@ -42,7 +42,6 @@ Luca helps you manage command-line tools by downloading, verifying, and installi
 ### Skills
 
 - ``SkillInstaller``
-- ``SkillRepositoryResolver``
 
 ### Downloading and Extraction
 

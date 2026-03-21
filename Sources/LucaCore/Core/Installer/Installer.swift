@@ -35,14 +35,11 @@ public struct Installer {
     
     enum InstallerError: Error, LocalizedError, Equatable {
         case unknownFileType(String)
-        case skillsRequireSpecInstallationType
 
         var errorDescription: String? {
             switch self {
             case .unknownFileType(let file):
                 return "Unknown file type for file \(file)."
-            case .skillsRequireSpecInstallationType:
-                return "Skills can only be installed when using a spec file (Lucafile). Use 'luca install' or 'luca install --spec <path>'."
             }
         }
     }
@@ -62,33 +59,24 @@ public struct Installer {
     private let noora: Noorable
     private let skillInstaller: SkillInstalling
     private let specLoader: SpecLoading
-    private let installMode: InstallMode
 
     public init(
         fileManager: FileManaging,
         ignoreArchitectureCheck: Bool,
         quiet: Bool = false,
         printer: Printing,
-        downloader: Downloading? = nil,
-        noora: Noorable = Noora(),
-        installMode: InstallMode = .all
+        noora: Noorable = Noora()
     ) {
-        self.fileManager = fileManager
-        self.printer = printer
-        self.binaryFinder = BinaryFinder(fileManager: fileManager)
-        self.checksumValidator = ChecksumValidator(fileManager: fileManager)
-        self.architectureValidator = ArchitectureValidator(fileManager: fileManager)
-        self.downloader = downloader ?? Downloader(fileDownloader: FileDownloader(session: .shared))
-        self.permissionManager = PermissionManager(fileManager: fileManager)
-        self.symLinker = SymLinker(fileManager: fileManager)
-        self.linkedToolsLister = LinkedToolsLister(fileManager: fileManager)
-        self.unlinker = Unlinker(fileManager: fileManager, printer: printer)
-        self.ignoreArchitectureCheck = ignoreArchitectureCheck
-        self.quiet = quiet
-        self.noora = noora
-        self.skillInstaller = SkillInstaller()
-        self.specLoader = SpecLoader(fileManager: .default)
-        self.installMode = installMode
+        self.init(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: ignoreArchitectureCheck,
+            quiet: quiet,
+            printer: printer,
+            noora: noora,
+            downloader: Downloader(fileDownloader: FileDownloader(session: .shared)),
+            skillInstaller: SkillInstaller(),
+            specLoader: SpecLoader(fileManager: .default)
+        )
     }
 
     init(
@@ -96,18 +84,16 @@ public struct Installer {
         ignoreArchitectureCheck: Bool,
         quiet: Bool = false,
         printer: Printing,
-        downloader: Downloading? = nil,
         noora: Noorable = Noora(),
-        installMode: InstallMode = .all,
-        skillInstaller: SkillInstalling,
-        specLoader: SpecLoading
+        downloader: Downloading? = nil,
+        skillInstaller: SkillInstalling? = nil,
+        specLoader: SpecLoading? = nil
     ) {
         self.fileManager = fileManager
         self.printer = printer
         self.binaryFinder = BinaryFinder(fileManager: fileManager)
         self.checksumValidator = ChecksumValidator(fileManager: fileManager)
         self.architectureValidator = ArchitectureValidator(fileManager: fileManager)
-        self.downloader = downloader ?? Downloader(fileDownloader: FileDownloader(session: .shared))
         self.permissionManager = PermissionManager(fileManager: fileManager)
         self.symLinker = SymLinker(fileManager: fileManager)
         self.linkedToolsLister = LinkedToolsLister(fileManager: fileManager)
@@ -115,18 +101,31 @@ public struct Installer {
         self.ignoreArchitectureCheck = ignoreArchitectureCheck
         self.quiet = quiet
         self.noora = noora
-        self.skillInstaller = skillInstaller
-        self.specLoader = specLoader
-        self.installMode = installMode
+        self.downloader = downloader ?? Downloader(fileDownloader: FileDownloader(session: .shared))
+        self.skillInstaller = skillInstaller ?? SkillInstaller()
+        self.specLoader = specLoader ?? SpecLoader(fileManager: .default)
     }
-    
+
     /// Installs tools based on the specified installation type.
     ///
     /// - Parameter installationType: Specifies how to determine which tools to install.
-    ///   Can be either `.spec` to read from a Lucafile, or `.github` to install directly
-    ///   from a GitHub release.
+    ///   Can be either `.spec` to read from a Lucafile, or `.individual`/`.individualInline`
+    ///   to install directly from a GitHub release.
     /// - Throws: An error if downloading, extracting, or linking fails.
-    public func install(installationType: InstallationType) async throws {
+    public func install(installationType: ToolInstallationType) async throws {
+        if quiet {
+            try await installQuietly(installationType: installationType)
+        } else {
+            try await installVerbose(installationType: installationType)
+        }
+    }
+    
+    /// Installs skills based on the specified installation type.
+    ///
+    /// - Parameter installationType: Specifies how to determine which skills to install.
+    ///   Can be `.spec` to read from a Lucafile.
+    /// - Throws: An error if downloading, extracting, or linking fails.
+    public func install(installationType: SkillInstallationType) async throws {
         if quiet {
             try await installQuietly(installationType: installationType)
         } else {
@@ -136,71 +135,62 @@ public struct Installer {
     
     // MARK: - Private
     
-    private func installQuietly(installationType: InstallationType) async throws {
-        if installMode != .skillsOnly {
-            try await noora.progressStep(
-                message: "Installing tools",
-                successMessage: "Tools have been installed for the current project",
-                errorMessage: "Failed to install tools",
-                showSpinner: true
-            ) { updateMessage in
-                let dataDownloader = DataDownloader(session: .shared)
-                let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
-                let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
-
-                updateMessage("Detecting tools to install")
-                let tools = try await toolFactory.toolsForInstallationType(installationType)
-
-                // Unlink orphaned tools only when installing from a spec
-                if case .spec = installationType {
-                    try unlinkOrphanedTools(specTools: tools)
-                }
-
-                for tool in tools {
-                    updateMessage("Installing \(tool.name) \(tool.version)")
-                    if isToolInstalled(tool) {
-                        try reinstall(tool)
-                    } else {
-                        try await install(tool)
-                    }
-                }
-            }
-        }
-
-        // Skills are installed outside progressStep: npx needs a normal terminal
-        // (cooked mode stdin) and must not run while Noora's spinner owns the tty.
-        if installMode != .toolsOnly {
-            if case .spec(let specPath) = installationType {
-                let spec = try specLoader.loadSpec(at: specPath)
-                let skills = spec.skills ?? []
-                let agents = spec.agents
-                for skill in skills {
-                    try await install(skill, agents: agents)
-                }
-            } else if installMode == .skillsOnly {
-                throw InstallerError.skillsRequireSpecInstallationType
-            }
-        }
-    }
-
-    private func installVerbose(installationType: InstallationType) async throws {
-        let dataDownloader = DataDownloader(session: .shared)
-        let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
-        let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
-
-        if installMode != .skillsOnly {
-            printer.printFormatted("\(.info("🧠 Detecting tools to install..."))")
-
+    private func installQuietly(installationType: ToolInstallationType) async throws {
+        try await noora.progressStep(
+            message: "Installing tools",
+            successMessage: "Tools have been installed for the current project",
+            errorMessage: "Failed to install tools",
+            showSpinner: true
+        ) { updateMessage in
+            let dataDownloader = DataDownloader(session: .shared)
+            let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
+            let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
+            
+            updateMessage("Detecting tools to install")
             let tools = try await toolFactory.toolsForInstallationType(installationType)
-
+            
             // Unlink orphaned tools only when installing from a spec
             if case .spec = installationType {
                 try unlinkOrphanedTools(specTools: tools)
             }
+            
+            for tool in tools {
+                updateMessage("Installing \(tool.name) \(tool.version)")
+                if isToolInstalled(tool) {
+                    try reinstall(tool)
+                } else {
+                    try await install(tool)
+                }
+            }
+        }
+    }
 
+    private func installQuietly(installationType: SkillInstallationType) async throws {
+        let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
+        let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
+        for skillSet in skillsInfo.skillSets {
+            try await install(skillSet, agents: skillsInfo.agents)
+        }
+    }
+
+    private func installVerbose(installationType: ToolInstallationType) async throws {
+        let dataDownloader = DataDownloader(session: .shared)
+        let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
+        let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
+        
+        printer.printFormatted("\(.info("🧠 Detecting tools to install..."))")
+        
+        let tools = try await toolFactory.toolsForInstallationType(installationType)
+        
+        // Unlink orphaned tools only when installing from a spec
+        if case .spec = installationType {
+            try unlinkOrphanedTools(specTools: tools)
+        }
+        
+        if !tools.isEmpty {
             printer.printFormatted("\(.info("🏃‍♂️ Installing tools for the current project."))")
             printer.printFormatted("")
-
+            
             for tool in tools {
                 if isToolInstalled(tool) {
                     try reinstall(tool)
@@ -209,27 +199,29 @@ public struct Installer {
                 }
                 printer.printFormatted("")
             }
+            printer.printFormatted("\(.success("🚀 Tools have been installed for the current project."))")
+        } else {
+            printer.printFormatted("\(.muted("🫥 No tools have been installed for the current project."))")
         }
-
-        if installMode != .toolsOnly {
-            if case .spec(let specPath) = installationType {
-                let spec = try specLoader.loadSpec(at: specPath)
-                let skills = spec.skills ?? []
-                let agents = spec.agents
-                if !skills.isEmpty {
-                    printer.printFormatted("\(.info("🧠 Installing skills for the current project."))")
-                    printer.printFormatted("")
-                    for skill in skills {
-                        try await install(skill, agents: agents)
-                        printer.printFormatted("")
-                    }
-                }
-            } else if installMode == .skillsOnly {
-                throw InstallerError.skillsRequireSpecInstallationType
+    }
+    
+    private func installVerbose(installationType: SkillInstallationType) async throws {
+        let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
+        
+        printer.printFormatted("\(.info("🧠 Detecting skills to install..."))")
+        
+        let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
+        if !skillsInfo.skillSets.isEmpty {
+            printer.printFormatted("\(.info("🧠 Installing skills for the current project."))")
+            printer.printFormatted("")
+            for skillSet in skillsInfo.skillSets {
+                try await install(skillSet, agents: skillsInfo.agents)
+                printer.printFormatted("")
             }
+            printer.printFormatted("\(.success("🚀 Skills have been installed for the current project."))")
+        } else {
+            printer.printFormatted("\(.muted("🫥 No skills have been installed for the current project."))")
         }
-
-        printer.printFormatted("\(.success("🚀 Tools have been installed for the current project."))")
     }
 
     private func reinstall(_ tool: Tool) throws {
@@ -285,10 +277,10 @@ public struct Installer {
         printer.printFormatted("\(.primary("🙌 Tool \(tool.name) version \(tool.version) installed for the current project."))")
     }
     
-    private func install(_ skill: Skill, agents: [String]?) async throws {
-        printer.printFormatted("\(.raw("🧩 Installing skill \(skill.name)..."))")
-        try await skillInstaller.install(skill: skill, agents: agents)
-        printer.printFormatted("\(.primary("🙌 Skill \(skill.name) installed."))")
+    private func install(_ skillSet: SkillSet, agents: [String]?) async throws {
+        printer.printFormatted("\(.raw("🧩 Installing skills from \(skillSet.repository)..."))")
+        try await skillInstaller.install(skillSet: skillSet, agents: agents)
+        printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed."))")
     }
 
     private func installArchive(tool: Tool, downloadedFile: URL, installationDestination: URL) throws {

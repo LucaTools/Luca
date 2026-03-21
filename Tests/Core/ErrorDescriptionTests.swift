@@ -42,7 +42,6 @@ struct ErrorDescriptionTests {
     @Test
     func installerError_errorDescription() {
         #expect(Installer.InstallerError.unknownFileType("/some/file").errorDescription != nil)
-        #expect(Installer.InstallerError.skillsRequireSpecInstallationType.errorDescription != nil)
     }
 
     @Test

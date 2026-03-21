@@ -17,7 +17,7 @@ struct SkillInstaller: SkillInstalling {
         var errorDescription: String? {
             switch self {
             case .npxNotAvailable:
-                return "npx is not available. Please install Node.js and npm to install skills."
+                return "To install skills, Luca is currently relying on npx which is not available. Please install Node.js and npm to install skills."
             case .installationFailed(let name, let exitCode):
                 return "Failed to install skill '\(name)' (exit code \(exitCode))."
             }
@@ -25,30 +25,24 @@ struct SkillInstaller: SkillInstalling {
     }
 
     private let subprocessRunner: SubprocessRunning
-    private let resolver: SkillRepositoryResolver
-
+    
     init(subprocessRunner: SubprocessRunning = SubprocessRunner()) {
         self.subprocessRunner = subprocessRunner
-        self.resolver = SkillRepositoryResolver()
     }
 
     /// Installs the given skill via `npx skills add`.
     ///
     /// - Parameters:
-    ///   - skill: The ``Skill`` to install.
+    ///   - skillSet: The ``SkillSet`` to install.
     ///   - agents: Agent identifiers passed as `--agent` flags. `nil` installs for all supported agents.
-    func install(skill: Skill, agents: [String]?) async throws {
-        let repository = resolver.resolve(skill.repository)
-
-        var arguments = ["npx", "skills", "add", repository, "--yes"]
-        if let skillNames = skill.skills {
-            for skillName in skillNames {
-                arguments += ["--skill", skillName]
-            }
+    func install(skillSet: SkillSet, agents: [String]?) async throws {
+        var arguments = ["npx", "skills", "add", skillSet.repository, "--yes"]
+        for skill in skillSet.skills {
+            arguments += ["--skill", skill]
         }
-        if let agentNames = agents {
-            for agentName in agentNames {
-                arguments += ["--agent", agentName]
+        if let agents {
+            for agent in agents {
+                arguments += ["--agent", agent]
             }
         }
 
@@ -65,7 +59,7 @@ struct SkillInstaller: SkillInstalling {
 
         let status = try await subprocessRunner.run(executableURL: envURL, arguments: arguments)
         guard status == 0 else {
-            throw SkillInstallerError.installationFailed(skill.name, status)
+            throw SkillInstallerError.installationFailed(skillSet.repository, status)
         }
     }
 }

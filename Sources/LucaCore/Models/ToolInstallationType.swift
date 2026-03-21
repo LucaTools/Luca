@@ -1,9 +1,9 @@
-//  InstallationType.swift
+//  ToolInstallationType.swift
 
 import Foundation
 
 /// Specifies the source from which tools are resolved for installation.
-public enum InstallationType {
+public enum ToolInstallationType {
     /// Install all tools listed in a Lucafile at the given path.
     case spec(specPath: URL)
     /// Install a single tool identified by `"organization/repository@version"`.
