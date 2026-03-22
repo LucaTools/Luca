@@ -52,4 +52,21 @@ struct SpecLoaderTests {
             return true
         }
     }
+
+    @Test
+    func test_loadSpec_invalidYAML_errorDescriptionIsReadable() throws {
+        let sut = SpecLoader(fileManager: .default)
+
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_invalid", withExtension: "yml"))
+
+        #expect {
+            try sut.loadSpec(at: path)
+        } throws: { error in
+            guard let specError = error as? SpecLoader.SpecLoaderError,
+                  case SpecLoader.SpecLoaderError.invalidSpec = specError,
+                  let description = specError.errorDescription else { return false }
+            return !description.contains("NSUnderlyingError") && !description.contains("Error Domain=")
+        }
+    }
 }
