@@ -167,6 +167,26 @@ struct InstallCommand: AsyncParsableCommand {
     ))
     var quiet: Bool = false
 
+    @Flag(help: ArgumentHelp(
+        "Install only binary tools; skip skills.",
+        discussion: """
+        Cannot be combined with --only-skills.
+        Example:
+          luca install --only-tools
+        """
+    ))
+    var onlyTools: Bool = false
+
+    @Flag(help: ArgumentHelp(
+        "Install only skills; skip binary tools.",
+        discussion: """
+        Cannot be combined with --only-tools.
+        Example:
+          luca install --only-skills
+        """
+    ))
+    var onlySkills: Bool = false
+
     func run() async throws {
         let printer: Printing = quiet ? QuietPrinter() : Printer()
         Header(printer: printer).printHeader()
@@ -190,18 +210,49 @@ struct InstallCommand: AsyncParsableCommand {
             checksum: checksum,
             algorithm: algorithm
         )
-        let installationType = try installationType(for: arguments, fileManager: fileManager)
-        
         let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
         try gitIgnoreManager.ensureGitIgnoreIncludesSymlinksFolder()
-        
+
         if installPostCheckoutGitHook {
             let gitHookInstaller = GitHookInstaller(fileManager: fileManager, printer: printer)
             try gitHookInstaller.installPostCheckoutHook()
         }
-        
-        try await installer.install(installationType: installationType)
+
+        let installMode: InstallMode = onlyTools ? .toolsOnly : onlySkills ? .skillsOnly : .all
+
+        switch installMode {
+        case .toolsOnly:
+            let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager)
+            try await installer.install(installationType: toolInstallationType)
+        case .skillsOnly:
+            let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager)
+            try await installer.install(installationType: skillInstallationType)
+        case .all:
+            let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager)
+            try await installer.install(installationType: toolInstallationType)
+            let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager)
+            try await installer.install(installationType: skillInstallationType)
+        }
     }
+    
+    func validate() throws {
+        guard !(onlyTools && onlySkills) else {
+            throw InstallCommandError.invalidCombinationOfArguments(Arguments(
+                spec: spec,
+                identifier: identifier,
+                asset: asset,
+                name: name,
+                version: version,
+                url: try toolUrl(for: url),
+                binaryPath: binaryPath,
+                desiredBinaryName: desiredBinaryName,
+                checksum: checksum,
+                algorithm: algorithm
+            ))
+        }
+    }
+    
+    // mARK: - Private
     
     /// Path to the spec file: either explicit via `--spec` or default to `Constants.specFile` (or `Lucafile.yml`) in current directory.
     /// When no exact `Lucafile` or `Lucafile.yml` exists, discovers files with the `Lucafile` prefix and prompts the user to pick one.
@@ -246,7 +297,7 @@ struct InstallCommand: AsyncParsableCommand {
         }
     }
     
-    private func installationType(for arguments: Arguments, fileManager: FileManaging) throws -> InstallationType {
+    private func toolInstallationType(for arguments: Arguments, fileManager: FileManaging) throws -> ToolInstallationType {
         switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.desiredBinaryName, arguments.checksum, arguments.algorithm) {
         case (let spec, .none, .none, .none, .none, .none, .none, .none, .none, .none):
             let specPath = try specPath(providedSpec: spec, fileManager: fileManager)
@@ -255,6 +306,16 @@ struct InstallCommand: AsyncParsableCommand {
             return .individual(identifier: identifier, asset: asset, binaryPath: binaryPath, desiredBinaryName: desiredBinaryName, checksum: checksum, algorithm: algorithm)
         case (.none, .none, .none, .some(let name), .some(let version), .some(let url), let binaryPath, let desiredBinaryName, let checksum, let algorithm):
             return .individualInline(name: name, version: version, url: url, binaryPath: binaryPath, desiredBinaryName: desiredBinaryName, checksum: checksum, algorithm: algorithm)
+        default:
+            throw InstallCommandError.invalidCombinationOfArguments(arguments)
+        }
+    }
+    
+    private func skillInstallationType(for arguments: Arguments, fileManager: FileManaging) throws -> SkillInstallationType {
+        switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.desiredBinaryName, arguments.checksum, arguments.algorithm) {
+        case (let spec, .none, .none, .none, .none, .none, .none, .none, .none, .none):
+            let specPath = try specPath(providedSpec: spec, fileManager: fileManager)
+            return .spec(specPath: specPath)
         default:
             throw InstallCommandError.invalidCombinationOfArguments(arguments)
         }

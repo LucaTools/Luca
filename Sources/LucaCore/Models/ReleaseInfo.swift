@@ -20,4 +20,3 @@ struct ReleaseAsset: Decodable, Equatable {
         case url = "browser_download_url"
     }
 }
-

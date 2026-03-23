@@ -40,9 +40,16 @@ struct ErrorDescriptionTests {
     }
 
     @Test
-    func installerError_errorDescription() {
-        #expect(Installer.InstallerError.unknownFileType("/some/file").errorDescription != nil)
+    func toolInstallerError_errorDescription() {
+        #expect(ToolInstaller.ToolInstallerError.unknownFileType("/some/file").errorDescription != nil)
     }
+
+    @Test
+    func skillInstallerError_errorDescription() {
+        #expect(SkillInstaller.SkillInstallerError.npxNotAvailable.errorDescription != nil)
+        #expect(SkillInstaller.SkillInstallerError.installationFailed("my-skill", 1).errorDescription != nil)
+    }
+
 
     @Test
     func permissionManagerError_errorDescription() {

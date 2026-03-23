@@ -1,0 +1,21 @@
+---
+tools:
+  - name: MockToolA
+    binaryPath: bin/MockMachOTool
+    version: 1.0.0
+    url: https://example.com/mock/MockToolA.zip
+
+skills:
+  - name: frontend-design
+    repository: vercel-labs/agent-skills
+  - name: skill-creator
+    repository: vercel-labs/agent-skills
+  - name: swift-testing-expert
+    repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill
+
+agents:
+  - claude-code
+  - github-copilot
+  - opencode
+
+version: 0.0.1

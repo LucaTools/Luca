@@ -8,20 +8,24 @@ import Yams
 struct InstallerTests {
 
     private let fileManager: FileManaging
-    private let downloader: Downloading
-    
+
     init() async throws {
         fileManager = FileManagerWrapperMock()
-        downloader = DownloaderMock(result: .fixture(Fixture(filename: "MockMachO_Universal_Release", type: "zip")))
     }
-    
+
     private func makeInstaller(quiet: Bool) -> Installer {
-        Installer(
+        let toolInstaller = ToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            printer: PrinterMock(),
+            downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockMachO_Universal_Release", type: "zip")))
+        )
+        return Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: true,
             quiet: quiet,
             printer: PrinterMock(),
-            downloader: downloader
+            toolInstaller: toolInstaller
         )
     }
       
@@ -35,7 +39,7 @@ struct InstallerTests {
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
         let spec = try YAMLDecoder().decode(Spec.self, from: data)
         
-        for tool in spec.tools {
+        for tool in spec.tools ?? [] {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
@@ -84,29 +88,29 @@ struct InstallerTests {
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
         let spec = try YAMLDecoder().decode(Spec.self, from: data)
         
-        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: path)!))
         
-        for tool in spec.tools {
+        for tool in spec.tools ?? [] {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
 
             #expect(fileManager.fileExists(atPath: toolPath.path))
-            
+
             let binaryFinder = BinaryFinder(fileManager: fileManager)
             let binaryPath = try binaryFinder.findBinary(atPath: toolPath.path)
-            
+
             let expectedBinaryLocation = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(component: tool.version)
                 .appending(path: binaryPath)
-            
+
             #expect(fileManager.fileExists(atPath: expectedBinaryLocation.path))
         }
-        
+
         // Verify symlink exists for the last installed tool (all tools share same binaryPath basename)
         let toolSymLink = fileManager.symlinksFolder
-            .appending(component: spec.tools.first!.expectedBinaryName)
+            .appending(component: try #require(spec.tools?.first).expectedBinaryName)
         #expect(fileManager.fileExists(atPath: toolSymLink.path))
     }
     
@@ -119,7 +123,7 @@ struct InstallerTests {
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         
         await #expect(throws: (any Error).self) {
-            try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+            try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: path)!))
         }
     }
     
@@ -133,10 +137,10 @@ struct InstallerTests {
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
         let spec = try YAMLDecoder().decode(Spec.self, from: data)
         
-        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
-        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: path)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: path)!))
         
-        for tool in spec.tools {
+        for tool in spec.tools ?? [] {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
@@ -165,12 +169,12 @@ struct InstallerTests {
         let lowVersionPath = try #require(bundle.path(forResource: lowVersionFixture.filename, ofType: lowVersionFixture.type))
         let highVersionPath = try #require(bundle.path(forResource: highVersionFixture.filename, ofType: highVersionFixture.type))
         
-        try await installer.install(installationType: .spec(specPath: URL(string: lowVersionPath)!))
-        try await installer.install(installationType: .spec(specPath: URL(string: highVersionPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: lowVersionPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: highVersionPath)!))
 
         let highVersionSpec = try spec(for: highVersionFixture)
         
-        for tool in highVersionSpec.tools {
+        for tool in highVersionSpec.tools ?? [] {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
@@ -200,12 +204,12 @@ struct InstallerTests {
         let lowVersionPath = try #require(bundle.path(forResource: lowVersionFixture.filename, ofType: lowVersionFixture.type))
         let highVersionPath = try #require(bundle.path(forResource: highVersionFixture.filename, ofType: highVersionFixture.type))
         
-        try await installer.install(installationType: .spec(specPath: URL(string: highVersionPath)!))
-        try await installer.install(installationType: .spec(specPath: URL(string: lowVersionPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: highVersionPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: lowVersionPath)!))
         
         let lowVersionSpec = try spec(for: lowVersionFixture)
         
-        for tool in lowVersionSpec.tools {
+        for tool in lowVersionSpec.tools ?? [] {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
@@ -235,10 +239,10 @@ struct InstallerTests {
         let fullPath = try #require(bundle.path(forResource: fullFixture.filename, ofType: fullFixture.type))
         let fullSpec = try spec(for: fullFixture)
         
-        try await installer.install(installationType: .spec(specPath: URL(string: fullPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: fullPath)!))
         
         // Verify all tools are installed (each tool directory exists)
-        for tool in fullSpec.tools {
+        for tool in fullSpec.tools ?? [] {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
@@ -250,10 +254,10 @@ struct InstallerTests {
         let subsetPath = try #require(bundle.path(forResource: subsetFixture.filename, ofType: subsetFixture.type))
         let subsetSpec = try spec(for: subsetFixture)
         
-        try await installer.install(installationType: .spec(specPath: URL(string: subsetPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: subsetPath)!))
         
         // Verify tools in subset spec are still installed
-        for tool in subsetSpec.tools {
+        for tool in subsetSpec.tools ?? [] {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
@@ -271,12 +275,12 @@ struct InstallerTests {
         let fullPath = try #require(bundle.path(forResource: fullFixture.filename, ofType: fullFixture.type))
         let fullSpec = try spec(for: fullFixture)
         
-        try await installer.install(installationType: .spec(specPath: URL(string: fullPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: fullPath)!))
         
         // Install an individual tool (not from the spec)
         let individualFixture = Fixture(filename: "Lucafile_mock_lowversion", type: "yml")
         let individualSpec = try spec(for: individualFixture)
-        let individualTool = individualSpec.tools.first!
+        let individualTool = try #require(individualSpec.tools?.first)
         
         try await installer.install(
             installationType: .individualInline(
@@ -292,7 +296,7 @@ struct InstallerTests {
         
         // Verify ALL original tools from the full spec are still installed
         // (individual installs should NOT unlink existing tools)
-        for tool in fullSpec.tools {
+        for tool in fullSpec.tools ?? [] {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
@@ -316,13 +320,13 @@ struct InstallerTests {
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         let spec = try spec(for: fixture)
         
-        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: path)!))
         
         // Install the same spec again
-        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: path)!))
         
         // All tools should still be installed (no orphans to unlink)
-        for tool in spec.tools {
+        for tool in spec.tools ?? [] {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
@@ -342,14 +346,14 @@ struct InstallerTests {
         let bundle = Bundle.module
         let lowVersionPath = try #require(bundle.path(forResource: lowVersionFixture.filename, ofType: lowVersionFixture.type))
         
-        try await installer.install(installationType: .spec(specPath: URL(string: lowVersionPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: lowVersionPath)!))
         
         // The symlink is created with the binary name from binaryPath
         let symLink = fileManager.symlinksFolder.appending(component: "MockMachOTool")
         #expect(fileManager.fileExists(atPath: symLink.path))
         
         // Reinstall the same spec - the tool should NOT be unlinked
-        try await installer.install(installationType: .spec(specPath: URL(string: lowVersionPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: lowVersionPath)!))
         
         // Verify the symlink still exists after reinstall
         #expect(fileManager.fileExists(atPath: symLink.path))
@@ -367,11 +371,11 @@ struct InstallerTests {
         let bundle = Bundle.module
         let mockToolPath = try #require(bundle.path(forResource: mockToolFixture.filename, ofType: mockToolFixture.type))
         
-        try await installer.install(installationType: .spec(specPath: URL(string: mockToolPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: mockToolPath)!))
         
         // Verify MockTool is installed
         let mockToolSpec = try spec(for: mockToolFixture)
-        let mockTool = mockToolSpec.tools.first!
+        let mockTool = try #require(mockToolSpec.tools?.first)
         let mockToolInstallPath = fileManager.toolsFolder
             .appending(component: mockTool.name)
             .appending(components: mockTool.version)
@@ -381,14 +385,14 @@ struct InstallerTests {
         let differentFixture = Fixture(filename: "Lucafile_mock_subset", type: "yml")
         let differentPath = try #require(bundle.path(forResource: differentFixture.filename, ofType: differentFixture.type))
         
-        try await installer.install(installationType: .spec(specPath: URL(string: differentPath)!))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(string: differentPath)!))
         
         // MockTool directory should still exist (we don't delete installed tools, just unlink)
         #expect(fileManager.fileExists(atPath: mockToolInstallPath.path))
         
         // But tools in the new spec should be installed
         let subsetSpec = try spec(for: differentFixture)
-        for tool in subsetSpec.tools {
+        for tool in subsetSpec.tools ?? [] {
             let toolPath = fileManager.toolsFolder
                 .appending(component: tool.name)
                 .appending(components: tool.version)
@@ -396,443 +400,79 @@ struct InstallerTests {
         }
     }
     
-    @Test
-    func test_install_executableAsset() async throws {
-        let fileManager = FileManagerWrapperMock()
-        let toolName = "TestExecutableTool"
-        let version = "1.0.0"
-        let url = URL(string: "https://example.com/tool")!
-        let desiredBinaryName = "mytool"
+    // MARK: - Skills
 
-        // ELF binary bytes — detected as .executable by FileTypeDetector
-        let executableData = Data([0x7F, 0x45, 0x4C, 0x46,  // ELF magic
-                                   0x02, 0x01, 0x01, 0x00,  // class, encoding, version, OS/ABI
-                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // padding
-                                   0x02, 0x00,              // e_type
-                                   0xB7, 0x00])             // e_machine = EM_AARCH64
+    @Test(arguments: [true, false])
+    func test_installSkillsSpec_installsAllSkillSets(quiet: Bool) async throws {
+        let skillInstaller = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
 
         let installer = Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: true,
-            quiet: true,
+            quiet: quiet,
             printer: PrinterMock(),
-            downloader: DownloaderMock(result: .tempFile(executableData))
+            skillInstaller: skillInstaller,
+            specLoader: specLoader
         )
 
-        let installationType = InstallationType.individualInline(
-            name: toolName,
-            version: version,
-            url: url,
-            binaryPath: nil,
-            desiredBinaryName: desiredBinaryName,
-            checksum: nil,
-            algorithm: nil
-        )
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)))
 
-        // First install: covers installExecutable path
-        try await installer.install(installationType: installationType)
-
-        let binaryPath = fileManager.toolsFolder.appending(components: toolName, version, desiredBinaryName)
-        #expect(fileManager.fileExists(atPath: binaryPath.path))
-
-        let symLinkPath = fileManager.symlinksFolder.appending(component: desiredBinaryName)
-        #expect(fileManager.fileExists(atPath: symLinkPath.path))
-
-        // Second install: covers isToolInstalled desiredBinaryName path → reinstall
-        try await installer.install(installationType: installationType)
-        #expect(fileManager.fileExists(atPath: binaryPath.path))
-        #expect(fileManager.fileExists(atPath: symLinkPath.path))
-    }
-
-    @Test
-    func test_install_archiveNilBinaryPath_usesBinaryFinder() async throws {
-        let fileManager = FileManagerWrapperMock()
-        let installer = Installer(
-            fileManager: fileManager,
-            ignoreArchitectureCheck: true,
-            quiet: true,
-            printer: PrinterMock(),
-            downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockMachO_Universal_Release", type: "zip")))
-        )
-        let toolName = "TestArchiveTool"
-        let version = "1.0.0"
-
-        try await installer.install(installationType: .individualInline(
-            name: toolName,
-            version: version,
-            url: URL(string: "https://example.com/tool.zip")!,
-            binaryPath: nil,        // triggers binaryFinder.findBinary in installArchive
-            desiredBinaryName: nil,
-            checksum: nil,
-            algorithm: nil
-        ))
-
-        let toolPath = fileManager.toolsFolder.appending(components: toolName, version)
-        #expect(fileManager.fileExists(atPath: toolPath.path))
-        let symLinkPath = fileManager.symlinksFolder.appending(component: "MockMachOTool")
-        #expect(fileManager.fileExists(atPath: symLinkPath.path))
-    }
-
-    @Test
-    func test_install_executableNilDesiredBinaryName_usesToolName() async throws {
-        let fileManager = FileManagerWrapperMock()
-        let toolName = "mytoolex"
-
-        // ELF bytes — detected as .executable
-        let executableData = Data([0x7F, 0x45, 0x4C, 0x46,
-                                   0x02, 0x01, 0x01, 0x00,
-                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                   0x02, 0x00, 0xB7, 0x00])
-
-        let installer = Installer(
-            fileManager: fileManager,
-            ignoreArchitectureCheck: true,
-            quiet: true,
-            printer: PrinterMock(),
-            downloader: DownloaderMock(result: .tempFile(executableData))
-        )
-
-        try await installer.install(installationType: .individualInline(
-            name: toolName,
-            version: "1.0.0",
-            url: URL(string: "https://example.com/tool")!,
-            binaryPath: nil,
-            desiredBinaryName: nil,    // triggers `return tool.name` in installExecutable
-            checksum: nil,
-            algorithm: nil
-        ))
-
-        let binaryPath = fileManager.toolsFolder.appending(components: toolName, "1.0.0", toolName)
-        #expect(fileManager.fileExists(atPath: binaryPath.path))
-        let symLinkPath = fileManager.symlinksFolder.appending(component: toolName)
-        #expect(fileManager.fileExists(atPath: symLinkPath.path))
-    }
-
-    /// Regression test: when a tool's `binaryPath` points to a shell-script wrapper
-    /// (not an ELF/Mach-O binary), `reinstall` must honour `binaryPath` for the symlink
-    /// rather than falling back to `BinaryFinder`, which would skip the script and pick
-    /// the first real binary it finds in the tool directory instead
-    /// (e.g. `jre/bin/java` in SonarScannerCLI's case).
-    @Test
-    func test_reinstall_archiveToolWithBinaryPath_respectsBinaryPath() async throws {
-        let fileManager = FileManagerWrapperMock()
-        let toolName = "SonarScannerCLI"
-        let version = "7.0.0"
-        let binaryPathValue = "sonar-scanner"
-
-        // Manually build the "already installed" state to simulate a tool whose archive
-        // ships a shell-script launcher alongside a real JVM binary.
-        let installPath = fileManager.toolsFolder.appending(components: toolName, version)
-        try FileManager.default.createDirectory(atPath: installPath.path, withIntermediateDirectories: true)
-
-        // sonar-scanner: a shell script (not Mach-O/ELF). isToolInstalled finds it via
-        // binaryPath, but BinaryFinder rejects it because it lacks binary magic bytes.
-        let scriptPath = installPath.appending(component: binaryPathValue)
-        _ = FileManager.default.createFile(atPath: scriptPath.path,
-                                            contents: "#!/bin/bash\nexec java \"$@\"".data(using: .utf8))
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptPath.path)
-
-        // java: a real Mach-O binary that BinaryFinder would find instead of the script.
-        let javaPath = installPath.appending(component: "java")
-        _ = FileManager.default.createFile(atPath: javaPath.path,
-                                            contents: Data([0xCF, 0xFA, 0xED, 0xFE, 0x00, 0x00, 0x00, 0x00]))
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: javaPath.path)
-
-        // The downloader must never be called — the tool is already installed.
-        let installer = Installer(
-            fileManager: fileManager,
-            ignoreArchitectureCheck: true,
-            quiet: true,
-            printer: PrinterMock(),
-            downloader: DownloaderMock(result: .tempFile(Data()))
-        )
-
-        try await installer.install(installationType: .individualInline(
-            name: toolName,
-            version: version,
-            url: URL(string: "https://example.com/sonar-scanner-cli.zip")!,
-            binaryPath: binaryPathValue,
-            desiredBinaryName: nil,
-            checksum: nil,
-            algorithm: nil
-        ))
-
-        // Symlink must be named "sonar-scanner" (binaryPath), NOT "java" (BinaryFinder result)
-        let correctSymLink = fileManager.symlinksFolder.appending(component: "sonar-scanner")
-        #expect(fileManager.fileExists(atPath: correctSymLink.path))
-
-        let wrongSymLink = fileManager.symlinksFolder.appending(component: "java")
-        #expect(!fileManager.fileExists(atPath: wrongSymLink.path),
-                "reinstall must not use BinaryFinder when binaryPath is configured")
-    }
-
-    /// Regression test: when a direct-binary tool has `binaryPath` set but no `desiredBinaryName`
-    /// (e.g. `name: "FirebaseCLI"`, `binaryPath: "firebase"`), the binary must be stored under
-    /// the `binaryPath` name so that `isToolInstalled` can find it and avoids re-downloading
-    /// on every run.
-    @Test
-    func test_install_executableWithBinaryPath_storesBinaryUnderBinaryPathName() async throws {
-        let fileManager = FileManagerWrapperMock()
-        let toolName = "FirebaseCLI"
-        let binaryPathName = "firebase"
-        let version = "14.12.1"
-
-        let executableData = Data([0x7F, 0x45, 0x4C, 0x46,
-                                   0x02, 0x01, 0x01, 0x00,
-                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                   0x02, 0x00, 0xB7, 0x00])
-
-        let installer = Installer(
-            fileManager: fileManager,
-            ignoreArchitectureCheck: true,
-            quiet: true,
-            printer: PrinterMock(),
-            downloader: DownloaderMock(result: .tempFile(executableData))
-        )
-
-        let installationType = InstallationType.individualInline(
-            name: toolName,
-            version: version,
-            url: URL(string: "https://example.com/firebase-tools-macos")!,
-            binaryPath: binaryPathName,
-            desiredBinaryName: nil,
-            checksum: nil,
-            algorithm: nil
-        )
-
-        try await installer.install(installationType: installationType)
-
-        // Binary must be stored as "firebase", not "FirebaseCLI"
-        let binaryPath = fileManager.toolsFolder.appending(components: toolName, version, binaryPathName)
-        #expect(fileManager.fileExists(atPath: binaryPath.path))
-
-        // Symlink must be named "firebase"
-        let symLinkPath = fileManager.symlinksFolder.appending(component: binaryPathName)
-        #expect(fileManager.fileExists(atPath: symLinkPath.path))
-
-        // isToolInstalled checks versionFolder/binaryPath — must find it, avoiding re-download
-        let wrongPath = fileManager.toolsFolder.appending(components: toolName, version, toolName)
-        #expect(!fileManager.fileExists(atPath: wrongPath.path), "Binary must NOT be stored under tool name")
-
-        // Second install must not throw (isToolInstalled returns true, skips download)
-        try await installer.install(installationType: installationType)
-        #expect(fileManager.fileExists(atPath: binaryPath.path))
-    }
-
-    @Test
-    func test_install_unknownFileType_throws() async throws {
-        let fileManager = FileManagerWrapperMock()
-
-        // Unknown magic bytes — FileTypeDetector returns nil → InstallerError.unknownFileType
-        let unknownData = Data([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])
-
-        let installer = Installer(
-            fileManager: fileManager,
-            ignoreArchitectureCheck: true,
-            quiet: true,
-            printer: PrinterMock(),
-            downloader: DownloaderMock(result: .tempFile(unknownData))
-        )
-
-        await #expect(throws: (any Error).self) {
-            try await installer.install(installationType: .individualInline(
-                name: "SomeTool",
-                version: "1.0.0",
-                url: URL(string: "https://example.com/tool")!,
-                binaryPath: nil,
-                desiredBinaryName: nil,
-                checksum: nil,
-                algorithm: nil
-            ))
+        #expect(skillInstaller.calls.count == 2)
+        let installedRepositories = Set(skillInstaller.calls.map(\.skillSet.repository))
+        #expect(installedRepositories.contains("vercel-labs/agent-skills"))
+        #expect(installedRepositories.contains("https://github.com/AvdLee/Swift-Testing-Agent-Skill"))
+        for call in skillInstaller.calls {
+            #expect(call.agents == ["claude-code", "github-copilot", "opencode"])
         }
     }
 
-    @Test
-    func test_install_incompatibleArchitecture_throws() async throws {
-        let fileManager = FileManagerWrapperMock()
-
-        // Create an ELF binary that is incompatible with the current host
-        #if arch(arm64) && os(Linux)
-        // Linux aarch64: use x86_64 ELF
-        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,  // ELF magic
-                                     0x02, 0x01, 0x01, 0x00,  // class, encoding, version, OS/ABI
-                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // padding
-                                     0x02, 0x00,              // e_type
-                                     0x3E, 0x00])             // e_machine = EM_X86_64
-        #else
-        // macOS (any arch) or Linux x86_64: use aarch64 ELF
-        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,  // ELF magic
-                                     0x02, 0x01, 0x01, 0x00,  // class, encoding, version, OS/ABI
-                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // padding
-                                     0x02, 0x00,              // e_type
-                                     0xB7, 0x00])             // e_machine = EM_AARCH64
-        #endif
-
-        let installer = Installer(
-            fileManager: fileManager,
-            ignoreArchitectureCheck: false,
-            quiet: true,
-            printer: PrinterMock(),
-            downloader: DownloaderMock(result: .tempFile(incompatibleData))
-        )
-
-        await #expect(throws: (any Error).self) {
-            try await installer.install(installationType: .individualInline(
-                name: "SomeTool",
-                version: "1.0.0",
-                url: URL(string: "https://example.com/tool")!,
-                binaryPath: nil,
-                desiredBinaryName: "sometool",
-                checksum: nil,
-                algorithm: nil
-            ))
-        }
-    }
-
-    @Test
-    func test_install_perToolIgnoreArchCheck_true_overridesGlobalFalse() async throws {
-        // Per-tool ignoreArchCheck: true must skip arch check even when the installer flag is false
-        let fileManager = FileManagerWrapperMock()
-
-        #if arch(arm64) && os(Linux)
-        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
-                                     0x02, 0x01, 0x01, 0x00,
-                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                     0x02, 0x00,
-                                     0x3E, 0x00])  // EM_X86_64
-        #else
-        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
-                                     0x02, 0x01, 0x01, 0x00,
-                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                     0x02, 0x00,
-                                     0xB7, 0x00])  // EM_AARCH64
-        #endif
-
-        let installer = Installer(
-            fileManager: fileManager,
-            ignoreArchitectureCheck: false,
-            quiet: true,
-            printer: PrinterMock(),
-            downloader: DownloaderMock(result: .tempFile(incompatibleData))
-        )
-
-        let fixture = Fixture(filename: "Lucafile_mock_ignoreArchCheck_true", type: "yml")
-        let path = try #require(Bundle.module.path(forResource: fixture.filename, ofType: fixture.type))
-
-        // Should NOT throw: per-tool true overrides global false
-        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
-    }
-
-    @Test
-    func test_install_perToolIgnoreArchCheck_false_overridesGlobalTrue() async throws {
-        // Per-tool ignoreArchCheck: false must run arch check even when the installer flag is true
-        let fileManager = FileManagerWrapperMock()
-
-        #if arch(arm64) && os(Linux)
-        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
-                                     0x02, 0x01, 0x01, 0x00,
-                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                     0x02, 0x00,
-                                     0x3E, 0x00])  // EM_X86_64
-        #else
-        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
-                                     0x02, 0x01, 0x01, 0x00,
-                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                     0x02, 0x00,
-                                     0xB7, 0x00])  // EM_AARCH64
-        #endif
+    @Test(arguments: [true, false])
+    func test_installToolsSpec_doesNotInstallSkills(quiet: Bool) async throws {
+        let skillInstaller = SkillInstallerMock()
+        let toolInstaller = ToolInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
 
         let installer = Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: true,
-            quiet: true,
+            quiet: quiet,
             printer: PrinterMock(),
-            downloader: DownloaderMock(result: .tempFile(incompatibleData))
+            toolInstaller: toolInstaller,
+            skillInstaller: skillInstaller,
+            specLoader: specLoader
         )
 
-        let fixture = Fixture(filename: "Lucafile_mock_ignoreArchCheck_false", type: "yml")
-        let path = try #require(Bundle.module.path(forResource: fixture.filename, ofType: fixture.type))
+        try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(fileURLWithPath: path)))
 
-        // Should throw: per-tool false overrides global true
-        await #expect(throws: (any Error).self) {
-            try await installer.install(installationType: .spec(specPath: URL(string: path)!))
-        }
-    }
-
-    @Test
-    func test_install_perToolIgnoreArchCheck_nil_fallsBackToGlobal_skips() async throws {
-        // Per-tool ignoreArchCheck: nil falls back to global flag — global true → skip check
-        let fileManager = FileManagerWrapperMock()
-
-        #if arch(arm64) && os(Linux)
-        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
-                                     0x02, 0x01, 0x01, 0x00,
-                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                     0x02, 0x00,
-                                     0x3E, 0x00])  // EM_X86_64
-        #else
-        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
-                                     0x02, 0x01, 0x01, 0x00,
-                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                     0x02, 0x00,
-                                     0xB7, 0x00])  // EM_AARCH64
-        #endif
-
-        let installer = Installer(
-            fileManager: fileManager,
-            ignoreArchitectureCheck: true,
-            quiet: true,
-            printer: PrinterMock(),
-            downloader: DownloaderMock(result: .tempFile(incompatibleData))
-        )
-
-        let fixture = Fixture(filename: "Lucafile_mock_ignoreArchCheck_nil", type: "yml")
-        let path = try #require(Bundle.module.path(forResource: fixture.filename, ofType: fixture.type))
-
-        // Should NOT throw: nil falls back to global true
-        try await installer.install(installationType: .spec(specPath: URL(string: path)!))
-    }
-
-    @Test
-    func test_install_perToolIgnoreArchCheck_nil_fallsBackToGlobal_validates() async throws {
-        // Per-tool ignoreArchCheck: nil falls back to global flag — global false → run check
-        let fileManager = FileManagerWrapperMock()
-
-        #if arch(arm64) && os(Linux)
-        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
-                                     0x02, 0x01, 0x01, 0x00,
-                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                     0x02, 0x00,
-                                     0x3E, 0x00])  // EM_X86_64
-        #else
-        let incompatibleData = Data([0x7F, 0x45, 0x4C, 0x46,
-                                     0x02, 0x01, 0x01, 0x00,
-                                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                     0x02, 0x00,
-                                     0xB7, 0x00])  // EM_AARCH64
-        #endif
-
-        let installer = Installer(
-            fileManager: fileManager,
-            ignoreArchitectureCheck: false,
-            quiet: true,
-            printer: PrinterMock(),
-            downloader: DownloaderMock(result: .tempFile(incompatibleData))
-        )
-
-        let fixture = Fixture(filename: "Lucafile_mock_ignoreArchCheck_nil", type: "yml")
-        let path = try #require(Bundle.module.path(forResource: fixture.filename, ofType: fixture.type))
-
-        // Should throw: nil falls back to global false
-        await #expect(throws: (any Error).self) {
-            try await installer.install(installationType: .spec(specPath: URL(string: path)!))
-        }
+        #expect(skillInstaller.calls.isEmpty)
     }
 
     private func spec(for fixture: Fixture) throws -> Spec {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
+        return try YAMLDecoder().decode(Spec.self, from: data)
+    }
+}
+
+// MARK: - Private mocks
+
+private struct FixtureSpecLoader: SpecLoading {
+    let fixture: Fixture
+
+    func loadSpec(at path: URL) throws -> Spec {
+        let bundle = Bundle.module
+        guard let filePath = bundle.path(forResource: fixture.filename, ofType: fixture.type) else {
+            throw SpecLoader.SpecLoaderError.missingSpec(path.path)
+        }
+        let data = try Data(contentsOf: URL(fileURLWithPath: filePath))
         return try YAMLDecoder().decode(Spec.self, from: data)
     }
 }
