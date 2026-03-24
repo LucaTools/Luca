@@ -51,17 +51,17 @@ jobs:
           set -euo pipefail
           OUT_DIR=".github/.build"
           mkdir -p "$OUT_DIR"
-          UNIVERSAL_BIN="$OUT_DIR/${{ env.TOOL_NAME }}"
+          UNIVERSAL_BIN="$OUT_DIR/${{ env.PRODUCT_NAME }}"
           lipo -create \
             -output "$UNIVERSAL_BIN" \
-            .build/arm64-apple-macosx/release/${{ env.TOOL_NAME }} \
-            .build/x86_64-apple-macosx/release/${{ env.TOOL_NAME }}
+            .build/arm64-apple-macosx/release/${{ env.PRODUCT_NAME }} \
+            .build/x86_64-apple-macosx/release/${{ env.PRODUCT_NAME }}
           chmod +x "$UNIVERSAL_BIN"
           echo "binary-folder=$OUT_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Zip binary
         working-directory: .github/.build/
-        run: zip -r ${{ env.TOOL_NAME }}-macOS.zip ${{ env.TOOL_NAME }}
+        run: zip -r ${{ env.TOOL_NAME }}-macOS.zip ${{ env.PRODUCT_NAME }}
 
       - name: Upload macOS universal binary artifact
         uses: actions/upload-artifact@v4
@@ -106,10 +106,10 @@ jobs:
           set -euo pipefail
           OUT_DIR=".github/.build"
           mkdir -p "$OUT_DIR"
-          cp .build/release/${{ env.PRODUCT_NAME }} "$OUT_DIR/${{ env.TOOL_NAME }}"
-          chmod +x "$OUT_DIR/${{ env.TOOL_NAME }}"
+          cp .build/release/${{ env.PRODUCT_NAME }} "$OUT_DIR/${{ env.PRODUCT_NAME }}"
+          chmod +x "$OUT_DIR/${{ env.PRODUCT_NAME }}"
           cd "$OUT_DIR"
-          zip -r ${{ env.TOOL_NAME }}-Linux.zip ${{ env.TOOL_NAME }}
+          zip -r ${{ env.TOOL_NAME }}-Linux.zip ${{ env.PRODUCT_NAME }}
 
       - name: Upload Linux binary artifact
         uses: actions/upload-artifact@v4
@@ -148,9 +148,9 @@ jobs:
           set -euo pipefail
           BUNDLE="${{ env.TOOL_NAME }}.artifactbundle"
           mkdir -p "$BUNDLE/macos" "$BUNDLE/linux"
-          cp extracted/macos/${{ env.TOOL_NAME }} "$BUNDLE/macos/${{ env.TOOL_NAME }}"
-          cp extracted/linux/${{ env.TOOL_NAME }} "$BUNDLE/linux/${{ env.TOOL_NAME }}"
-          chmod +x "$BUNDLE/macos/${{ env.TOOL_NAME }}" "$BUNDLE/linux/${{ env.TOOL_NAME }}"
+          cp extracted/macos/${{ env.PRODUCT_NAME }} "$BUNDLE/macos/${{ env.PRODUCT_NAME }}"
+          cp extracted/linux/${{ env.PRODUCT_NAME }} "$BUNDLE/linux/${{ env.PRODUCT_NAME }}"
+          chmod +x "$BUNDLE/macos/${{ env.PRODUCT_NAME }}" "$BUNDLE/linux/${{ env.PRODUCT_NAME }}"
           cat > "$BUNDLE/info.json" << 'EOF'
           {
             "schemaVersion": "1.0",
@@ -160,11 +160,11 @@ jobs:
                 "type": "executable",
                 "variants": [
                   {
-                    "path": "macos/${{ env.TOOL_NAME }}",
+                    "path": "macos/${{ env.PRODUCT_NAME }}",
                     "supportedTriples": ["x86_64-apple-macosx", "arm64-apple-macosx"]
                   },
                   {
-                    "path": "linux/${{ env.TOOL_NAME }}",
+                    "path": "linux/${{ env.PRODUCT_NAME }}",
                     "supportedTriples": ["x86_64-unknown-linux-gnu"]
                   }
                 ]
