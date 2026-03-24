@@ -10,4 +10,9 @@ public protocol SelfUpdating {
     ///
     /// - Parameter currentVersion: The version string of the running binary.
     func updateIfNeeded(currentVersion: String) async throws
+
+    /// Fetches the latest release from GitHub and installs it if it differs from `currentVersion`.
+    ///
+    /// - Parameter currentVersion: The version string of the running binary.
+    func updateToLatest(currentVersion: String) async throws
 }

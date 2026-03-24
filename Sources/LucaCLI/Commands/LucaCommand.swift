@@ -21,6 +21,9 @@ struct LucaCommand: AsyncParsableCommand {
             CommandGroup(name: "Listing", subcommands: [
                 InstalledCommand.self
             ]),
+            CommandGroup(name: "Update", subcommands: [
+                UpdateCommand.self
+            ]),
             CommandGroup(name: "Validation", subcommands: [
                 CalculateChecksumCommand.self
             ])
