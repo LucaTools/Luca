@@ -82,6 +82,15 @@ public struct FileManagerWrapper: FileManaging {
     public func copyItem(at srcURL: URL, to dstURL: URL) throws {
         try fileManager.copyItem(at: srcURL, to: dstURL)
     }
+
+    public func contentsOfFile(atPath path: String) -> String? {
+        guard let data = fileManager.contents(atPath: path) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    public func isWritableFile(atPath path: String) -> Bool {
+        fileManager.isWritableFile(atPath: path)
+    }
     
     public func readString(at url: URL) throws -> String {
         try String(contentsOf: url, encoding: .utf8)

@@ -96,6 +96,10 @@ class FileManagerWrapperMock: FileManaging {
     func copyItem(at srcURL: URL, to dstURL: URL) throws {
         try fileManager.copyItem(at: srcURL, to: dstURL)
     }
+
+    func contentsOfFile(atPath path: String) -> String? { nil }
+
+    func isWritableFile(atPath path: String) -> Bool { true }
     
     func readString(at url: URL) throws -> String {
         try String(contentsOf: url, encoding: .utf8)
