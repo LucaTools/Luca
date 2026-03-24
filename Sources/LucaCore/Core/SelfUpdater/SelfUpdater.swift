@@ -59,6 +59,7 @@ public struct SelfUpdater: SelfUpdating {
     private let fileManager: SelfUpdaterFileManaging
     private let fileDownloader: FileDownloading
     private let subprocessRunner: SubprocessRunning
+    private let sudoInstaller: SudoInstalling
     private let printer: Printing
 
     // MARK: - Init
@@ -72,6 +73,7 @@ public struct SelfUpdater: SelfUpdating {
         self.fileManager = fileManager
         self.fileDownloader = FileDownloader()
         self.subprocessRunner = SubprocessRunner()
+        self.sudoInstaller = SudoInstaller()
         self.printer = printer
     }
 
@@ -80,11 +82,13 @@ public struct SelfUpdater: SelfUpdating {
         fileManager: SelfUpdaterFileManaging,
         fileDownloader: FileDownloading,
         subprocessRunner: SubprocessRunning,
+        sudoInstaller: SudoInstalling,
         printer: Printing
     ) {
         self.fileManager = fileManager
         self.fileDownloader = fileDownloader
         self.subprocessRunner = subprocessRunner
+        self.sudoInstaller = sudoInstaller
         self.printer = printer
     }
 
@@ -181,10 +185,7 @@ public struct SelfUpdater: SelfUpdating {
             }
         }
 
-        let exitCode = try await subprocessRunner.run(
-            executableURL: URL(fileURLWithPath: "/usr/bin/sudo"),
-            arguments: ["install", "-m", "755", binaryURL.path, destination.path]
-        )
+        let exitCode = try await sudoInstaller.install(from: binaryURL, to: destination)
         guard exitCode == 0 else {
             throw SelfUpdaterError.installFailed(destination.path)
         }

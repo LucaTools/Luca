@@ -13,25 +13,29 @@ struct SelfUpdaterTests {
         fileDownloaderResult: FileDownloadingMock.Result = .success(
             FileManager.default.temporaryDirectory.appendingPathComponent("test-luca.zip")
         ),
-        subprocessExitCodes: [Int32] = [0]
-    ) -> (sut: SelfUpdater, fileManager: SelfUpdaterFileManagerMock, subprocess: SubprocessRunnerMock) {
+        subprocessExitCodes: [Int32] = [0],
+        sudoExitCode: Int32 = 0
+    ) -> (sut: SelfUpdater, fileManager: SelfUpdaterFileManagerMock, subprocess: SubprocessRunnerMock, sudo: SudoInstallerMock) {
         let fileDownloader = FileDownloadingMock(result: fileDownloaderResult)
         let subprocess = SubprocessRunnerMock()
         subprocess.exitCodes = subprocessExitCodes
+        let sudo = SudoInstallerMock()
+        sudo.exitCode = sudoExitCode
         let sut = SelfUpdater(
             fileManager: fileManager,
             fileDownloader: fileDownloader,
             subprocessRunner: subprocess,
+            sudoInstaller: sudo,
             printer: PrinterMock()
         )
-        return (sut, fileManager, subprocess)
+        return (sut, fileManager, subprocess, sudo)
     }
 
     // MARK: - Skip conditions
 
     @Test
     func test_updateIfNeeded_noVersionFile_skips() async throws {
-        let (sut, fileManager, subprocess) = makeSUT()
+        let (sut, fileManager, subprocess, _) = makeSUT()
         fileManager.stubbedVersionFileContent = nil
 
         try await sut.updateIfNeeded(currentVersion: "0.0.1")
@@ -41,7 +45,7 @@ struct SelfUpdaterTests {
 
     @Test
     func test_updateIfNeeded_emptyVersionFile_skips() async throws {
-        let (sut, fileManager, subprocess) = makeSUT()
+        let (sut, fileManager, subprocess, _) = makeSUT()
         fileManager.stubbedVersionFileContent = "   \n"
 
         try await sut.updateIfNeeded(currentVersion: "0.0.1")
@@ -51,7 +55,7 @@ struct SelfUpdaterTests {
 
     @Test
     func test_updateIfNeeded_versionMatches_skips() async throws {
-        let (sut, fileManager, subprocess) = makeSUT()
+        let (sut, fileManager, subprocess, _) = makeSUT()
         fileManager.stubbedVersionFileContent = "0.0.1"
 
         try await sut.updateIfNeeded(currentVersion: "0.0.1")
@@ -63,7 +67,7 @@ struct SelfUpdaterTests {
 
     @Test(arguments: ["not-semver", "1.2", "1.2.3.4", "v1.2.3", "1.2.x"])
     func test_updateIfNeeded_invalidVersionFormat_throws(version: String) async throws {
-        let (sut, fileManager, _) = makeSUT()
+        let (sut, fileManager, _, _) = makeSUT()
         fileManager.stubbedVersionFileContent = version
 
         await #expect(throws: SelfUpdater.SelfUpdaterError.invalidVersionFormat(version)) {
@@ -75,22 +79,23 @@ struct SelfUpdaterTests {
 
     @Test
     func test_updateIfNeeded_writableDestination_movesFile() async throws {
-        let (sut, fileManager, subprocess) = makeSUT(subprocessExitCodes: [0])
+        let (sut, fileManager, subprocess, sudo) = makeSUT(subprocessExitCodes: [0])
         fileManager.stubbedVersionFileContent = "1.0.0"
         fileManager.stubbedIsWritable = true
 
         try await sut.updateIfNeeded(currentVersion: "0.0.1")
 
-        // One subprocess call (unzip only — no sudo)
+        // One subprocess call (unzip only — sudo not used)
         #expect(subprocess.recordedArguments.count == 1)
         #expect(subprocess.recordedArguments[0].first == "unzip")
+        #expect(sudo.calls.isEmpty)
         // Binary moved via fileManager
         #expect(fileManager.movedItems.count == 1)
     }
 
     @Test
     func test_updateIfNeeded_writableDestination_setsExecutablePermissions() async throws {
-        let (sut, fileManager, _) = makeSUT(subprocessExitCodes: [0])
+        let (sut, fileManager, _, _) = makeSUT(subprocessExitCodes: [0])
         fileManager.stubbedVersionFileContent = "1.0.0"
         fileManager.stubbedIsWritable = true
 
@@ -105,18 +110,16 @@ struct SelfUpdaterTests {
 
     @Test
     func test_updateIfNeeded_nonWritableDestination_usesSudo() async throws {
-        let (sut, fileManager, subprocess) = makeSUT(subprocessExitCodes: [0, 0])
+        let (sut, fileManager, subprocess, sudo) = makeSUT(subprocessExitCodes: [0], sudoExitCode: 0)
         fileManager.stubbedVersionFileContent = "1.0.0"
         fileManager.stubbedIsWritable = false
 
         try await sut.updateIfNeeded(currentVersion: "0.0.1")
 
-        // Two subprocess calls: unzip + sudo install
-        #expect(subprocess.recordedArguments.count == 2)
+        // Only unzip via subprocessRunner; sudo uses the dedicated SudoInstaller
+        #expect(subprocess.recordedArguments.count == 1)
         #expect(subprocess.recordedArguments[0].first == "unzip")
-        #expect(subprocess.recordedArguments[1].first == "install")
-        #expect(subprocess.recordedArguments[1].contains("-m"))
-        #expect(subprocess.recordedArguments[1].contains("755"))
+        #expect(sudo.calls.count == 1)
         // No direct moveItem call
         #expect(fileManager.movedItems.isEmpty)
     }
@@ -126,7 +129,7 @@ struct SelfUpdaterTests {
     @Test
     func test_updateIfNeeded_downloadError_propagates() async throws {
         struct DownloadError: Error {}
-        let (sut, fileManager, _) = makeSUT(fileDownloaderResult: .error(DownloadError()))
+        let (sut, fileManager, _, _) = makeSUT(fileDownloaderResult: .error(DownloadError()))
         fileManager.stubbedVersionFileContent = "1.0.0"
 
         await #expect(throws: (any Error).self) {
@@ -138,7 +141,7 @@ struct SelfUpdaterTests {
 
     @Test
     func test_updateIfNeeded_extractionFails_throws() async throws {
-        let (sut, fileManager, _) = makeSUT(subprocessExitCodes: [1])
+        let (sut, fileManager, _, _) = makeSUT(subprocessExitCodes: [1])
         fileManager.stubbedVersionFileContent = "1.0.0"
 
         await #expect(throws: SelfUpdater.SelfUpdaterError.extractionFailed(1)) {
@@ -150,7 +153,7 @@ struct SelfUpdaterTests {
 
     @Test
     func test_updateIfNeeded_sudoFails_throws() async throws {
-        let (sut, fileManager, _) = makeSUT(subprocessExitCodes: [0, 1])
+        let (sut, fileManager, _, _) = makeSUT(subprocessExitCodes: [0], sudoExitCode: 1)
         fileManager.stubbedVersionFileContent = "1.0.0"
         fileManager.stubbedIsWritable = false
 
@@ -163,7 +166,7 @@ struct SelfUpdaterTests {
 
     @Test
     func test_updateIfNeeded_cleansUpTempDirAfterSuccess() async throws {
-        let (sut, fileManager, _) = makeSUT(subprocessExitCodes: [0])
+        let (sut, fileManager, _, _) = makeSUT(subprocessExitCodes: [0])
         fileManager.stubbedVersionFileContent = "1.0.0"
         fileManager.stubbedIsWritable = true
 
@@ -174,7 +177,7 @@ struct SelfUpdaterTests {
 
     @Test
     func test_updateIfNeeded_cleansUpTempDirAfterExtractionFailure() async throws {
-        let (sut, fileManager, _) = makeSUT(subprocessExitCodes: [1])
+        let (sut, fileManager, _, _) = makeSUT(subprocessExitCodes: [1])
         fileManager.stubbedVersionFileContent = "1.0.0"
 
         await #expect(throws: (any Error).self) {
