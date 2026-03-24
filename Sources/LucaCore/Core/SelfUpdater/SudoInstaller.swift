@@ -66,7 +66,8 @@ struct SudoInstaller: SudoInstalling {
 
         var pid: pid_t = 0
         let spawnResult = argv.withUnsafeMutableBufferPointer { ptr in
-            posix_spawn(&pid, executable, nil, nil, ptr.baseAddress, environ)
+            // ptr.baseAddress is non-nil: argv always contains at least the executable + nil sentinel.
+            posix_spawn(&pid, executable, nil, nil, ptr.baseAddress!, environ)
         }
 
         guard spawnResult == 0 else {
