@@ -12,6 +12,7 @@ public protocol FileManaging:
     GitIgnoreFileManaging,
     InstalledToolsFileManaging,
     PermissionManagerFileManaging,
+    SelfUpdaterFileManaging,
     SpecFinderFileManaging,
     SymLinkFileManaging,
     UnarchiverFileManaging {
