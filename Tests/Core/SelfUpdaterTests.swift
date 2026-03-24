@@ -14,7 +14,8 @@ struct SelfUpdaterTests {
             FileManager.default.temporaryDirectory.appendingPathComponent("test-luca.zip")
         ),
         subprocessExitCodes: [Int32] = [0],
-        sudoExitCode: Int32 = 0
+        sudoExitCode: Int32 = 0,
+        dataDownloader: DataDownloaderMock = DataDownloaderMock(result: .statusCode(500))
     ) -> (sut: SelfUpdater, fileManager: SelfUpdaterFileManagerMock, subprocess: SubprocessRunnerMock, sudo: SudoInstallerMock) {
         let fileDownloader = FileDownloadingMock(result: fileDownloaderResult)
         let subprocess = SubprocessRunnerMock()
@@ -24,11 +25,16 @@ struct SelfUpdaterTests {
         let sut = SelfUpdater(
             fileManager: fileManager,
             fileDownloader: fileDownloader,
+            dataDownloader: dataDownloader,
             subprocessRunner: subprocess,
             sudoInstaller: sudo,
             printer: PrinterMock()
         )
         return (sut, fileManager, subprocess, sudo)
+    }
+
+    private func latestReleaseData(tagName: String) -> Data {
+        Data(#"{"tag_name": "\#(tagName)"}"#.utf8)
     }
 
     // MARK: - Skip conditions
@@ -255,5 +261,88 @@ struct SelfUpdaterTests {
         }
 
         #expect(fileManager.removedItems.count == 1)
+    }
+
+    // MARK: - updateToLatest — already up to date
+
+    @Test
+    func test_updateToLatest_alreadyUpToDate_skipsInstall() async throws {
+        let data = latestReleaseData(tagName: "1.0.0")
+        let (sut, _, subprocess, _) = makeSUT(
+            subprocessExitCodes: [0],
+            dataDownloader: DataDownloaderMock(result: .rawData(data, 200))
+        )
+
+        try await sut.updateToLatest(currentVersion: "1.0.0")
+
+        #expect(subprocess.recordedArguments.isEmpty)
+    }
+
+    @Test
+    func test_updateToLatest_tagWithVPrefix_normalised() async throws {
+        let data = latestReleaseData(tagName: "v1.0.0")
+        let (sut, _, subprocess, _) = makeSUT(
+            subprocessExitCodes: [0],
+            dataDownloader: DataDownloaderMock(result: .rawData(data, 200))
+        )
+
+        try await sut.updateToLatest(currentVersion: "1.0.0")
+
+        // "v1.0.0" normalised to "1.0.0" == currentVersion → no install
+        #expect(subprocess.recordedArguments.isEmpty)
+    }
+
+    // MARK: - updateToLatest — new version available
+
+    @Test
+    func test_updateToLatest_newVersionAvailable_installs() async throws {
+        let data = latestReleaseData(tagName: "2.0.0")
+        let (sut, fileManager, subprocess, _) = makeSUT(
+            subprocessExitCodes: [0],
+            dataDownloader: DataDownloaderMock(result: .rawData(data, 200))
+        )
+        fileManager.stubbedIsWritable = true
+
+        try await sut.updateToLatest(currentVersion: "1.0.0")
+
+        #expect(subprocess.recordedArguments.count == 1)
+        #expect(subprocess.recordedArguments[0].first == "unzip")
+        #expect(fileManager.movedItems.count == 1)
+    }
+
+    @Test
+    func test_updateToLatest_tagWithVPrefix_newVersion_installs() async throws {
+        let data = latestReleaseData(tagName: "v2.0.0")
+        let (sut, fileManager, subprocess, _) = makeSUT(
+            subprocessExitCodes: [0],
+            dataDownloader: DataDownloaderMock(result: .rawData(data, 200))
+        )
+        fileManager.stubbedIsWritable = true
+
+        try await sut.updateToLatest(currentVersion: "1.0.0")
+
+        #expect(subprocess.recordedArguments.count == 1)
+        #expect(fileManager.movedItems.count == 1)
+    }
+
+    // MARK: - updateToLatest — API failures
+
+    @Test
+    func test_updateToLatest_apiFetchFails_throwsLatestVersionFetchFailed() async throws {
+        let (sut, _, _, _) = makeSUT(dataDownloader: DataDownloaderMock(result: .statusCode(404)))
+
+        await #expect(throws: SelfUpdater.SelfUpdaterError.latestVersionFetchFailed(404)) {
+            try await sut.updateToLatest(currentVersion: "1.0.0")
+        }
+    }
+
+    @Test
+    func test_updateToLatest_networkError_propagates() async throws {
+        struct NetworkError: Error {}
+        let (sut, _, _, _) = makeSUT(dataDownloader: DataDownloaderMock(result: .error(NetworkError())))
+
+        await #expect(throws: (any Error).self) {
+            try await sut.updateToLatest(currentVersion: "1.0.0")
+        }
     }
 }

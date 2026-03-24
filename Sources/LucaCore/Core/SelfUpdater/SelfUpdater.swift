@@ -6,12 +6,13 @@ import FoundationNetworking
 #endif
 
 /// Replaces the Luca binary with a newer version when `.luca-version` differs
-/// from the running binary's built-in version constant.
+/// from the running binary's built-in version constant, or on explicit request
+/// via ``updateToLatest(currentVersion:)``.
 ///
 /// ## Update flow
 ///
-/// 1. Read `.luca-version` from the current working directory.
-/// 2. Compare with `currentVersion`; skip if identical or file is absent.
+/// 1. Determine the target version (from `.luca-version` or the GitHub latest-release API).
+/// 2. Compare with `currentVersion`; skip if identical.
 /// 3. Validate the target version string as a semver triple (`x.y.z`).
 /// 4. Download the platform ZIP from the GitHub releases page.
 /// 5. Extract the ZIP to a unique temp directory using `unzip`.
@@ -27,6 +28,7 @@ import FoundationNetworking
 ///
 /// ### Updating
 /// - ``updateIfNeeded(currentVersion:)``
+/// - ``updateToLatest(currentVersion:)``
 public struct SelfUpdater: SelfUpdating {
 
     // MARK: - Error
@@ -37,6 +39,7 @@ public struct SelfUpdater: SelfUpdating {
         case extractionFailed(Int32)
         case binaryNotFound
         case installFailed(String)
+        case latestVersionFetchFailed(Int)
 
         var errorDescription: String? {
             switch self {
@@ -47,9 +50,11 @@ public struct SelfUpdater: SelfUpdating {
             case .extractionFailed(let code):
                 return "Extraction failed with exit code \(code)."
             case .binaryNotFound:
-                return "Extracted archive does not contain the expected 'Luca' binary."
+                return "Extracted archive does not contain the expected 'luca' binary."
             case .installFailed(let path):
                 return "Failed to install updated binary to '\(path)'. Try running the install script manually."
+            case .latestVersionFetchFailed(let status):
+                return "Failed to fetch the latest Luca release from GitHub (HTTP \(status))."
             }
         }
     }
@@ -58,9 +63,13 @@ public struct SelfUpdater: SelfUpdating {
 
     private let fileManager: SelfUpdaterFileManaging
     private let fileDownloader: FileDownloading
+    private let dataDownloader: DataDownloading
     private let subprocessRunner: SubprocessRunning
     private let sudoInstaller: SudoInstalling
     private let printer: Printing
+
+    // Force-unwrap is safe: built from compile-time constants only.
+    private static let latestReleaseAPIURL = URL(string: "https://api.github.com/repos/LucaTools/Luca/releases/latest")!
 
     // MARK: - Init
 
@@ -72,6 +81,7 @@ public struct SelfUpdater: SelfUpdating {
     public init(fileManager: SelfUpdaterFileManaging, printer: Printing) {
         self.fileManager = fileManager
         self.fileDownloader = FileDownloader()
+        self.dataDownloader = DataDownloader()
         self.subprocessRunner = SubprocessRunner()
         self.sudoInstaller = SudoInstaller()
         self.printer = printer
@@ -81,12 +91,14 @@ public struct SelfUpdater: SelfUpdating {
     init(
         fileManager: SelfUpdaterFileManaging,
         fileDownloader: FileDownloading,
+        dataDownloader: DataDownloading = DataDownloader(),
         subprocessRunner: SubprocessRunning,
         sudoInstaller: SudoInstalling,
         printer: Printing
     ) {
         self.fileManager = fileManager
         self.fileDownloader = fileDownloader
+        self.dataDownloader = dataDownloader
         self.subprocessRunner = subprocessRunner
         self.sudoInstaller = sudoInstaller
         self.printer = printer
@@ -111,7 +123,39 @@ public struct SelfUpdater: SelfUpdating {
         guard targetVersion != currentVersion else { return }
 
         try validate(version: targetVersion)
+        try await performUpdate(from: currentVersion, to: targetVersion)
+    }
 
+    /// Fetches the latest release from GitHub and installs it if it differs from `currentVersion`.
+    ///
+    /// - Parameter currentVersion: The version string of the running binary.
+    public func updateToLatest(currentVersion: String) async throws {
+        var request = URLRequest(url: Self.latestReleaseAPIURL)
+        request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+        request.setValue("luca.tools.cli", forHTTPHeaderField: "User-Agent")
+
+        let (data, response) = try await dataDownloader.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+            throw SelfUpdaterError.latestVersionFetchFailed(httpResponse.statusCode)
+        }
+
+        let releaseInfo = try JSONDecoder().decode(LatestReleaseInfo.self, from: data)
+        let tag = releaseInfo.tagName
+        let targetVersion = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
+
+        guard targetVersion != currentVersion else {
+            printer.printFormatted("\(.primary("✅ luca \(currentVersion) is already up to date."))")
+            return
+        }
+
+        try validate(version: targetVersion)
+        try await performUpdate(from: currentVersion, to: targetVersion)
+    }
+
+    // MARK: - Private
+
+    private func performUpdate(from currentVersion: String, to targetVersion: String) async throws {
         printer.printFormatted("\(.raw("🔄 Updating Luca \(currentVersion) → \(targetVersion)..."))")
 
         let (tempZipURL, _) = try await fileDownloader.download(from: downloadURL(for: targetVersion))
@@ -155,8 +199,6 @@ public struct SelfUpdater: SelfUpdating {
 
         printer.printFormatted("\(.primary("✅ Luca updated to \(targetVersion). The new version will be used on the next run."))")
     }
-
-    // MARK: - Private
 
     private func validate(version: String) throws {
         guard version.range(of: #"^\d+\.\d+\.\d+$"#, options: .regularExpression) != nil else {

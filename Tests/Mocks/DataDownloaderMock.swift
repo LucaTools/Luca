@@ -12,7 +12,9 @@ struct DataDownloaderMock: DataDownloading {
     enum Result {
         case fixture(Fixture)
         case statusCode(Int)
+        case rawData(Data, Int)
         case nonHTTPResponse
+        case error(any Error)
     }
 
     var result: Result
@@ -29,9 +31,14 @@ struct DataDownloaderMock: DataDownloading {
             let data = Data()
             let response = HTTPURLResponse(url: request.url!, statusCode: statusCode, httpVersion: nil, headerFields: nil)!
             return (data, response)
+        case .rawData(let data, let statusCode):
+            let response = HTTPURLResponse(url: request.url!, statusCode: statusCode, httpVersion: nil, headerFields: nil)!
+            return (data, response)
         case .nonHTTPResponse:
             let response = URLResponse(url: request.url!, mimeType: nil, expectedContentLength: 0, textEncodingName: nil)
             return (Data(), response)
+        case .error(let error):
+            throw error
         }
     }
 }
