@@ -162,6 +162,76 @@ struct SelfUpdaterTests {
         }
     }
 
+    // MARK: - Binary not found
+
+    @Test
+    func test_updateIfNeeded_binaryNotFoundInArchive_throws() async throws {
+        let (sut, fileManager, _, _) = makeSUT(subprocessExitCodes: [0])
+        fileManager.stubbedVersionFileContent = "1.0.0"
+        fileManager.stubbedBinaryExists = false
+
+        await #expect(throws: SelfUpdater.SelfUpdaterError.binaryNotFound) {
+            try await sut.updateIfNeeded(currentVersion: "0.0.1")
+        }
+    }
+
+    @Test
+    func test_updateIfNeeded_binaryNotFoundInArchive_cleansUpTempDir() async throws {
+        let (sut, fileManager, _, _) = makeSUT(subprocessExitCodes: [0])
+        fileManager.stubbedVersionFileContent = "1.0.0"
+        fileManager.stubbedBinaryExists = false
+
+        await #expect(throws: (any Error).self) {
+            try await sut.updateIfNeeded(currentVersion: "0.0.1")
+        }
+
+        #expect(fileManager.removedItems.count == 1)
+    }
+
+    // MARK: - Writable destination move failure (sudo fallback)
+
+    @Test
+    func test_updateIfNeeded_writableDestinationMoveItemFails_fallsBackToSudo() async throws {
+        struct MoveError: Error {}
+        let (sut, fileManager, _, sudo) = makeSUT(subprocessExitCodes: [0], sudoExitCode: 0)
+        fileManager.stubbedVersionFileContent = "1.0.0"
+        fileManager.stubbedIsWritable = true
+        fileManager.stubbedMoveItemError = MoveError()
+
+        try await sut.updateIfNeeded(currentVersion: "0.0.1")
+
+        #expect(sudo.calls.count == 1)
+    }
+
+    // MARK: - Public init
+
+    @Test
+    func test_publicInit_skipsUpdateWhenNoVersionFile() async throws {
+        let fileManager = SelfUpdaterFileManagerMock()
+        fileManager.stubbedVersionFileContent = nil
+        let sut = SelfUpdater(fileManager: fileManager, printer: PrinterMock())
+
+        // Should return early without throwing — exercises the public init code path.
+        try await sut.updateIfNeeded(currentVersion: "1.0.0")
+    }
+
+    // MARK: - Error descriptions
+
+    @Test
+    func test_selfUpdaterError_errorDescriptions_areNonNilAndNonEmpty() {
+        let errors: [SelfUpdater.SelfUpdaterError] = [
+            .invalidVersionFormat("bad-version"),
+            .cannotResolveExecutablePath,
+            .extractionFailed(1),
+            .binaryNotFound,
+            .installFailed("/usr/local/bin/luca")
+        ]
+        for error in errors {
+            #expect(error.errorDescription != nil)
+            #expect(error.errorDescription?.isEmpty == false)
+        }
+    }
+
     // MARK: - Cleanup
 
     @Test

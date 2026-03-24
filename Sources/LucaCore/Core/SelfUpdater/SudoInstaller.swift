@@ -20,6 +20,13 @@ import Glibc
 /// password prompting correctly.
 struct SudoInstaller: SudoInstalling {
 
+    // The path of the sudo executable. Overridable in tests to inject a benign binary.
+    let executablePath: String
+
+    init(executablePath: String = "/usr/bin/sudo") {
+        self.executablePath = executablePath
+    }
+
     /// Installs `source` to `destination` using `sudo install -m 755`.
     ///
     /// - Parameters:
@@ -27,13 +34,14 @@ struct SudoInstaller: SudoInstalling {
     ///   - destination: Target path.
     /// - Returns: The `sudo` process exit code, or throws on spawn failure.
     func install(from source: URL, to destination: URL) async throws -> Int32 {
+        let executable = executablePath
         return try await withCheckedThrowingContinuation { continuation in
             // Run on a dedicated POSIX thread: waitpid() blocks and must not
             // occupy the Swift cooperative thread pool.
             Thread.detachNewThread {
                 do {
                     let exitCode = try Self.spawnAndWait(
-                        executable: "/usr/bin/sudo",
+                        executable: executable,
                         arguments: ["install", "-m", "755", source.path, destination.path]
                     )
                     continuation.resume(returning: exitCode)
@@ -46,7 +54,7 @@ struct SudoInstaller: SudoInstalling {
 
     // MARK: - Private
 
-    private static func spawnAndWait(executable: String, arguments: [String]) throws -> Int32 {
+    static func spawnAndWait(executable: String, arguments: [String]) throws -> Int32 {
         // Build a null-terminated C argv array: [executable] + arguments + [nil].
         let allArgs = [executable] + arguments
         let cStrings = allArgs.map { strdup($0) }

@@ -15,6 +15,12 @@ class SelfUpdaterFileManagerMock: SelfUpdaterFileManaging, @unchecked Sendable {
     /// Controls whether the install destination is considered writable.
     var stubbedIsWritable: Bool = true
 
+    /// Controls whether binary candidates (luca/Luca) appear to exist in the extract directory.
+    var stubbedBinaryExists: Bool = true
+
+    /// When set, `moveItem` records the call then throws this error.
+    var stubbedMoveItemError: Error?
+
     private(set) var movedItems: [(src: URL, dst: URL)] = []
     private(set) var setAttributesCalls: [(path: String, attributes: [FileAttributeKey: Any])] = []
     private(set) var createdDirectories: [URL] = []
@@ -26,7 +32,7 @@ class SelfUpdaterFileManagerMock: SelfUpdaterFileManaging, @unchecked Sendable {
         if path.hasSuffix(".luca-version") {
             return stubbedVersionFileContent != nil
         }
-        return true
+        return stubbedBinaryExists
     }
 
     func contentsOfFile(atPath path: String) -> String? {
@@ -48,6 +54,9 @@ class SelfUpdaterFileManagerMock: SelfUpdaterFileManaging, @unchecked Sendable {
 
     func moveItem(at srcURL: URL, to dstURL: URL) throws {
         movedItems.append((src: srcURL, dst: dstURL))
+        if let error = stubbedMoveItemError {
+            throw error
+        }
     }
 
     func setAttributes(_ attributes: [FileAttributeKey: Any], ofItemAtPath path: String) throws {
