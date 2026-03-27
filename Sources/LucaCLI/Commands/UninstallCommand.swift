@@ -29,8 +29,8 @@ struct UninstallCommand: AsyncParsableCommand {
     var tool: String
 
     func run() async throws {
-        let printer = Printer()
-        let noora = Noora()
+        let noora = Noora(terminal: Terminal(signalBehavior: .none))
+        let printer = Printer(noora: noora)
         Header(printer: printer).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)

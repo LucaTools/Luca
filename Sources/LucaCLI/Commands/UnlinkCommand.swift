@@ -3,6 +3,7 @@
 import ArgumentParser
 import Foundation
 import LucaCore
+import Noora
 
 /// Removes a specific symlink from the tools folder.
 struct UnlinkCommand: AsyncParsableCommand {
@@ -27,7 +28,8 @@ struct UnlinkCommand: AsyncParsableCommand {
     var symlink: String
 
     func run() async throws {
-        let printer = Printer()
+        let noora = Noora(terminal: Terminal(signalBehavior: .none))
+        let printer = Printer(noora: noora)
         Header(printer: printer).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)

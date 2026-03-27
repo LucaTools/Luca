@@ -3,6 +3,7 @@
 import ArgumentParser
 import Foundation
 import LucaCore
+import Noora
 
 /// Lists all tools and their cached versions in the local Luca cache.
 struct InstalledCommand: AsyncParsableCommand {
@@ -17,7 +18,8 @@ struct InstalledCommand: AsyncParsableCommand {
     )
     
     func run() async throws {
-        let printer = Printer()
+        let noora = Noora(terminal: Terminal(signalBehavior: .none))
+        let printer = Printer(noora: noora)
         let fileManager = FileManagerWrapper()
         let lister = InstalledToolsLister(fileManager: fileManager)
         

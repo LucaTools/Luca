@@ -8,7 +8,7 @@ public struct Printer: Printing {
 
     private let noora: Noorable
 
-    public init(noora: Noorable = Noora()) {
+    public init(noora: Noorable) {
         self.noora = noora
     }
 

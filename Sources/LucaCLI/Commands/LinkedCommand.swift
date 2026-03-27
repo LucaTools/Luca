@@ -3,6 +3,7 @@
 import ArgumentParser
 import Foundation
 import LucaCore
+import Noora
 
 /// Lists tools currently symlinked in the tools folder of the current project.
 struct LinkedCommand: AsyncParsableCommand {
@@ -17,7 +18,8 @@ struct LinkedCommand: AsyncParsableCommand {
     )
     
     func run() async throws {
-        let printer = Printer()
+        let noora = Noora(terminal: Terminal(signalBehavior: .none))
+        let printer = Printer(noora: noora)
         let fileManager = FileManagerWrapper()
         let lister = LinkedToolsLister(fileManager: fileManager)
         

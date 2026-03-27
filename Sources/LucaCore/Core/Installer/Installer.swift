@@ -47,7 +47,7 @@ public struct Installer {
         ignoreArchitectureCheck: Bool,
         quiet: Bool = false,
         printer: Printing,
-        noora: Noorable = Noora()
+        noora: Noorable
     ) {
         self.init(
             fileManager: fileManager,
