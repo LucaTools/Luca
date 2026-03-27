@@ -4,8 +4,8 @@ import Foundation
 import Noora
 @testable import LucaCore
 
-class NoorableMock: Noorable {
-
+final class NoorableMock: Noorable, @unchecked Sendable {
+    
     private(set) var formatCallCount = 0
     private(set) var lastFormattedText: TerminalText?
 
@@ -102,8 +102,8 @@ class NoorableMock: Noorable {
         successMessage: String?,
         errorMessage: String?,
         showSpinner: Bool,
-        renderer: Rendering,
-        task: @escaping ((String) -> Void) async throws -> V
+        renderer: any Rendering,
+        task: @escaping (@escaping @Sendable (String) -> Void) async throws -> V
     ) async throws -> V {
         fatalError("Not implemented in mock")
     }
@@ -114,7 +114,7 @@ class NoorableMock: Noorable {
         errorMessage: TerminalText?,
         visibleLines: UInt,
         renderer: Rendering,
-        task: @escaping (@escaping (TerminalText) -> Void) async throws -> Void
+        task: @escaping (@escaping @Sendable (TerminalText) -> Void) async throws -> Void
     ) async throws {}
 
     func progressBarStep<V>(
@@ -163,3 +163,4 @@ class NoorableMock: Noorable {
 
     func json(_ item: some Codable, encoder: JSONEncoder) throws {}
 }
+

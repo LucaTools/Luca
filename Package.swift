@@ -13,7 +13,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", exact: "1.7.1"),
         .package(url: "https://github.com/apple/swift-crypto.git", exact: "4.0.0"),
-        .package(url: "https://github.com/tuist/Noora", exact: "0.49.1"),
+        .package(url: "https://github.com/tuist/Noora", exact: "0.56.0"),
         .package(url: "https://github.com/jpsim/Yams.git", exact: "6.1.0"),
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.1.0")
     ],
