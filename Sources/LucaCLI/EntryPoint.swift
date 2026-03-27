@@ -2,6 +2,7 @@
 
 import Foundation
 import LucaCore
+import Noora
 
 /// The program entry point.
 ///
@@ -15,7 +16,8 @@ struct LucaEntryPoint {
 
         if !isVersionRequest {
             let fileManager = FileManagerWrapper()
-            let printer = Printer()
+            let noora = Noora(terminal: Terminal(signalBehavior: .none))
+            let printer = Printer(noora: noora)
             let updater = SelfUpdater(fileManager: fileManager, printer: printer)
             do {
                 try await updater.updateIfNeeded(currentVersion: version)

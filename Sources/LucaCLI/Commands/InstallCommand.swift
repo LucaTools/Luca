@@ -188,7 +188,8 @@ struct InstallCommand: AsyncParsableCommand {
     var onlySkills: Bool = false
 
     func run() async throws {
-        let printer: Printing = quiet ? QuietPrinter() : Printer()
+        let noora = Noora(terminal: Terminal(signalBehavior: .none))
+        let printer: Printing = quiet ? QuietPrinter() : Printer(noora: noora)
         Header(printer: printer).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)
@@ -196,7 +197,8 @@ struct InstallCommand: AsyncParsableCommand {
             fileManager: fileManager,
             ignoreArchitectureCheck: ignoreArchCheck,
             quiet: quiet,
-            printer: printer
+            printer: printer,
+            noora: noora
         )
         let arguments = Arguments(
             spec: spec,
@@ -222,15 +224,15 @@ struct InstallCommand: AsyncParsableCommand {
 
         switch installMode {
         case .toolsOnly:
-            let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager)
+            let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager, noora: noora)
             try await installer.install(installationType: toolInstallationType)
         case .skillsOnly:
-            let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager)
+            let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
             try await installer.install(installationType: skillInstallationType)
         case .all:
-            let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager)
+            let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager, noora: noora)
             try await installer.install(installationType: toolInstallationType)
-            let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager)
+            let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
             try await installer.install(installationType: skillInstallationType)
         }
     }
@@ -256,7 +258,7 @@ struct InstallCommand: AsyncParsableCommand {
     
     /// Path to the spec file: either explicit via `--spec` or default to `Constants.specFile` (or `Lucafile.yml`) in current directory.
     /// When no exact `Lucafile` or `Lucafile.yml` exists, discovers files with the `Lucafile` prefix and prompts the user to pick one.
-    private func specPath(providedSpec: String?, fileManager: FileManaging) throws -> URL {
+    private func specPath(providedSpec: String?, fileManager: FileManaging, noora: Noorable) throws -> URL {
         if let providedSpec {
             return URL(fileURLWithPath: providedSpec)
         }
@@ -286,7 +288,6 @@ struct InstallCommand: AsyncParsableCommand {
         case 1:
             return candidates[0]
         default:
-            let noora = Noora()
             let options = candidates.map { $0.lastPathComponent }
             let selected: String = noora.singleChoicePrompt(
                 title: "Select spec",
@@ -297,10 +298,10 @@ struct InstallCommand: AsyncParsableCommand {
         }
     }
     
-    private func toolInstallationType(for arguments: Arguments, fileManager: FileManaging) throws -> ToolInstallationType {
+    private func toolInstallationType(for arguments: Arguments, fileManager: FileManaging, noora: Noorable) throws -> ToolInstallationType {
         switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.desiredBinaryName, arguments.checksum, arguments.algorithm) {
         case (let spec, .none, .none, .none, .none, .none, .none, .none, .none, .none):
-            let specPath = try specPath(providedSpec: spec, fileManager: fileManager)
+            let specPath = try specPath(providedSpec: spec, fileManager: fileManager, noora: noora)
             return .spec(specPath: specPath)
         case (.none, .some(let identifier), let asset, .none, .none, .none, let binaryPath, let desiredBinaryName, let checksum, let algorithm):
             return .individual(identifier: identifier, asset: asset, binaryPath: binaryPath, desiredBinaryName: desiredBinaryName, checksum: checksum, algorithm: algorithm)
@@ -311,10 +312,10 @@ struct InstallCommand: AsyncParsableCommand {
         }
     }
     
-    private func skillInstallationType(for arguments: Arguments, fileManager: FileManaging) throws -> SkillInstallationType {
+    private func skillInstallationType(for arguments: Arguments, fileManager: FileManaging, noora: Noorable) throws -> SkillInstallationType {
         switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.desiredBinaryName, arguments.checksum, arguments.algorithm) {
         case (let spec, .none, .none, .none, .none, .none, .none, .none, .none, .none):
-            let specPath = try specPath(providedSpec: spec, fileManager: fileManager)
+            let specPath = try specPath(providedSpec: spec, fileManager: fileManager, noora: noora)
             return .spec(specPath: specPath)
         default:
             throw InstallCommandError.invalidCombinationOfArguments(arguments)
