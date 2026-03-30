@@ -85,6 +85,26 @@ struct GitIgnoreManagerSkillsTests {
     }
 
     @Test
+    func test_ensureGitIgnoreIncludesSkillFolders_appendsNewlineAndEntriesWhenNoTrailingNewline() throws {
+        let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
+        try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
+        let gitDirectory = currentDirectory.appending(component: ".git")
+        try fileManager.createDirectory(at: gitDirectory, withIntermediateDirectories: true)
+        let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
+        try fileManager.writeString("existing", to: gitIgnoreFile)
+        let agents = [
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills")
+        ]
+
+        try sut.ensureGitIgnoreIncludesSkillFolders(agents: agents)
+
+        let content = try fileManager.readString(at: gitIgnoreFile)
+        #expect(content.hasPrefix("existing\n"))
+        #expect(content.contains(".luca/skills\n"))
+        #expect(content.contains(".claude/skills\n"))
+    }
+
+    @Test
     func test_ensureGitIgnoreIncludesSkillFolders_emptyAgents_onlyAddsSkillsEntry() throws {
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
