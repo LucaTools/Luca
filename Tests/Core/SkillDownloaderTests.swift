@@ -189,7 +189,6 @@ struct SkillDownloaderTests {
         #expect(client.lastOwner == "owner")
         #expect(client.lastRepo == "repo")
     }
-}
 
     // MARK: - test_download_downloadFailed
 
@@ -224,6 +223,7 @@ struct SkillDownloaderTests {
         #expect(results[0].name == "repo")
         #expect(results[0].content == skillContent)
     }
+}
 
 // MARK: - Private Mock
 

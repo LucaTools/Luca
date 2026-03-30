@@ -1,9 +1,6 @@
 //  GitHubSkillTreeFetching.swift
 
 import Foundation
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
 
 /// Fetches the list of skill paths from a GitHub repository's file tree, and downloads individual skill files.
 protocol GitHubSkillTreeFetching {

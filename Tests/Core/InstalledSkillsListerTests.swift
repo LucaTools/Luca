@@ -41,7 +41,7 @@ struct InstalledSkillsListerTests {
 
         // Place a regular file inside the skills cache folder (should be silently skipped)
         let filePath = fileManager.skillsCacheFolder.appending(component: "not-a-skill.txt").path
-        _ = FileManager.default.createFile(atPath: filePath, contents: Data("content".utf8))
+        _ = fileManager.createFile(atPath: filePath, contents: Data("content".utf8))
 
         // Create a valid skill directory alongside the file
         let skillFolder = fileManager.skillsCacheFolder.appending(component: "valid-skill")

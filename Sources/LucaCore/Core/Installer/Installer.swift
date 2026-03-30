@@ -193,9 +193,15 @@ public struct Installer {
     private func installQuietly(installationType: SkillInstallationType, experimental: Bool) async throws {
         let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
         let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
-        var resolvedAgents: [AgentInfo] = []
+        // Compute resolvedAgents once (same for all SkillSets)
+        let resolvedAgents: [AgentInfo]
+        if let agentIds = skillsInfo.agents {
+            resolvedAgents = AgentRegistry.agents(for: agentIds)
+        } else {
+            resolvedAgents = AgentRegistry.all
+        }
         for skillSet in skillsInfo.skillSets {
-            resolvedAgents = try await install(skillSet, agents: skillsInfo.agents, experimental: experimental)
+            try await install(skillSet, agents: skillsInfo.agents, experimental: experimental, resolvedAgents: resolvedAgents)
         }
         if experimental {
             let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
@@ -212,9 +218,15 @@ public struct Installer {
         if !skillsInfo.skillSets.isEmpty {
             printer.printFormatted("\(.info("🧠 Installing skills for the current project."))")
             printer.printFormatted("")
-            var resolvedAgents: [AgentInfo] = []
+            // Compute resolvedAgents once (same for all SkillSets)
+            let resolvedAgents: [AgentInfo]
+            if let agentIds = skillsInfo.agents {
+                resolvedAgents = AgentRegistry.agents(for: agentIds)
+            } else {
+                resolvedAgents = AgentRegistry.all
+            }
             for skillSet in skillsInfo.skillSets {
-                resolvedAgents = try await install(skillSet, agents: skillsInfo.agents, experimental: experimental)
+                try await install(skillSet, agents: skillsInfo.agents, experimental: experimental, resolvedAgents: resolvedAgents)
                 printer.printFormatted("")
             }
             if experimental {
@@ -227,17 +239,10 @@ public struct Installer {
         }
     }
 
-    @discardableResult
-    private func install(_ skillSet: SkillSet, agents: [String]?, experimental: Bool) async throws -> [AgentInfo] {
+    private func install(_ skillSet: SkillSet, agents: [String]?, experimental: Bool, resolvedAgents: [AgentInfo]) async throws {
         printer.printFormatted("\(.raw("🧩 Installing skills from \(skillSet.repository)..."))")
-        var resolvedAgents: [AgentInfo] = []
         if experimental {
             let skills = try await skillDownloader.download(skillSet: skillSet)
-            if let agentIds = agents {
-                resolvedAgents = AgentRegistry.agents(for: agentIds)
-            } else {
-                resolvedAgents = AgentRegistry.all
-            }
             for (name, content) in skills {
                 let skillFolder = fileManager.skillsCacheFolder.appending(component: name)
                 try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
@@ -249,7 +254,6 @@ public struct Installer {
             try await skillInstaller.install(skillSet: skillSet, agents: agents)
         }
         printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed for the current project."))")
-        return resolvedAgents
     }
 
     private func isToolInstalled(_ tool: Tool) -> Bool {
