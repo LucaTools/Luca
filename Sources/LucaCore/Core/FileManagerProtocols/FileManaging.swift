@@ -13,6 +13,7 @@ public protocol FileManaging:
     InstalledToolsFileManaging,
     PermissionManagerFileManaging,
     SelfUpdaterFileManaging,
+    SkillSymLinkerFileManaging,
     SpecFinderFileManaging,
     SymLinkFileManaging,
     UnarchiverFileManaging {
