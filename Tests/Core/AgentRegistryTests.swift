@@ -48,6 +48,20 @@ struct AgentRegistryTests {
 
     @Test
     func test_all_hasExpectedCount() {
-        #expect(AgentRegistry.all.count >= 20)
+        #expect(AgentRegistry.all.count == 27)
+    }
+
+    @Test
+    func test_allAgentIds_isSorted() {
+        let ids = AgentRegistry.allAgentIds()
+        #expect(ids == ids.sorted())
+    }
+
+    @Test
+    func test_agents_forIds_hasCorrectPaths() {
+        let claudeCode = AgentRegistry.agents(for: ["claude-code"]).first
+        #expect(claudeCode?.projectSkillsPath == ".claude/skills")
+        let cursor = AgentRegistry.agents(for: ["cursor"]).first
+        #expect(cursor?.projectSkillsPath == ".cursor/rules")
     }
 }

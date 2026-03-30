@@ -5,12 +5,12 @@
 /// `AgentRegistry` provides a static catalogue of agents drawn from the Vercel Labs
 /// agent-skills registry. Use it to look up project-relative skill paths or to
 /// validate agent identifiers supplied by the user.
-struct AgentRegistry {
+public struct AgentRegistry {
 
     // MARK: - All agents
 
     /// Complete list of known AI coding agents.
-    static let all: [AgentInfo] = [
+    public static let all: [AgentInfo] = [
         AgentInfo(id: "claude-code",          projectSkillsPath: ".claude/skills"),
         AgentInfo(id: "cursor",               projectSkillsPath: ".cursor/rules"),
         AgentInfo(id: "cline",                projectSkillsPath: ".cline/rules"),
@@ -48,7 +48,7 @@ struct AgentRegistry {
     ///
     /// - Parameter ids: The agent identifiers to look up.
     /// - Returns: An array of `AgentInfo` values for each recognised id, in the order they appear in `ids`.
-    static func agents(for ids: [String]) -> [AgentInfo] {
+    public static func agents(for ids: [String]) -> [AgentInfo] {
         let lookup = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
         return ids.compactMap { lookup[$0] }
     }
@@ -56,7 +56,7 @@ struct AgentRegistry {
     /// Returns a sorted list of all known agent identifiers.
     ///
     /// - Returns: Alphabetically sorted array of agent id strings.
-    static func allAgentIds() -> [String] {
+    public static func allAgentIds() -> [String] {
         all.map(\.id).sorted()
     }
 }
