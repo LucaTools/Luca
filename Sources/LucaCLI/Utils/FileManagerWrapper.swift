@@ -22,6 +22,12 @@ public struct FileManagerWrapper: FileManaging {
         URL(fileURLWithPath: currentDirectoryPath)
             .appending(components: Constants.toolFolder, Constants.symlinksFolder)
     }
+
+    /// Folder containing project-local skills cache (per working directory).
+    public var skillsCacheFolder: URL {
+        URL(fileURLWithPath: currentDirectoryPath)
+            .appending(components: Constants.toolFolder, Constants.skillsFolder)
+    }
     
     public var homeDirectoryForCurrentUser: URL {
         fileManager.homeDirectoryForCurrentUser

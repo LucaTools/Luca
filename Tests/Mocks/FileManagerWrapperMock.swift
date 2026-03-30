@@ -19,6 +19,11 @@ class FileManagerWrapperMock: FileManaging {
         URL(fileURLWithPath: currentDirectoryPath)
             .appending(components: Constants.toolFolder, Constants.symlinksFolder)
     }
+
+    var skillsCacheFolder: URL {
+        URL(fileURLWithPath: currentDirectoryPath)
+            .appending(components: Constants.toolFolder, Constants.skillsFolder)
+    }
     
     init(fileManager: FileManager = .default) {
         self.fileManager = fileManager

@@ -18,6 +18,7 @@ public protocol FileManaging:
     UnarchiverFileManaging {
     var toolsFolder: URL { get }
     var symlinksFolder: URL { get }
+    var skillsCacheFolder: URL { get }
     var homeDirectoryForCurrentUser: URL { get }
     var currentDirectoryPath: String { get }
     func fileExists(atPath: String) -> Bool
