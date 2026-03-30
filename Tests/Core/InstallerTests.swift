@@ -484,6 +484,10 @@ struct InstallerTests {
 
         let skillFile = fileManager.skillsCacheFolder.appending(components: "find-skills", "SKILL.md")
         #expect(fileManager.fileExists(atPath: skillFile.path))
+
+        let expectedAgentIds = ["claude-code", "github-copilot", "opencode"]
+        let actualAgentIds = skillSymLinkerMock.lastAgents?.map(\.id) ?? []
+        #expect(actualAgentIds.sorted() == expectedAgentIds.sorted())
     }
 
     @Test(arguments: [true, false])
@@ -538,6 +542,7 @@ struct InstallerTests {
         #expect(skillDownloaderMock.downloadCalled == true)
         #expect(skillSymLinkerMock.setSymLinkCalled == true)
         #expect(skillInstallerMock.calls.isEmpty)
+        #expect(skillSymLinkerMock.lastAgents == AgentRegistry.all)
     }
 
     private func spec(for fixture: Fixture) throws -> Spec {

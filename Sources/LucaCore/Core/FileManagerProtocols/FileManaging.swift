@@ -26,6 +26,7 @@ public protocol FileManaging:
     var homeDirectoryForCurrentUser: URL { get }
     var currentDirectoryPath: String { get }
     func fileExists(atPath: String) -> Bool
+    @discardableResult func createFile(atPath path: String, contents data: Data?) -> Bool
     func removeItem(at: URL) throws
     func removeItem(atPath: String) throws
     func moveItem(at: URL, to: URL) throws

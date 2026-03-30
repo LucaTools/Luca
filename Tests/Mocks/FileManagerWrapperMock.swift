@@ -53,7 +53,12 @@ class FileManagerWrapperMock: FileManaging {
     func fileExists(atPath path: String) -> Bool {
         fileManager.fileExists(atPath: path)
     }
-    
+
+    @discardableResult
+    func createFile(atPath path: String, contents data: Data?) -> Bool {
+        fileManager.createFile(atPath: path, contents: data)
+    }
+
     func removeItem(at path: URL) throws {
         try fileManager.removeItem(at: path)
     }

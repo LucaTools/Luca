@@ -40,7 +40,12 @@ public struct FileManagerWrapper: FileManaging {
     public func fileExists(atPath path: String) -> Bool {
         fileManager.fileExists(atPath: path)
     }
-    
+
+    @discardableResult
+    public func createFile(atPath path: String, contents data: Data?) -> Bool {
+        fileManager.createFile(atPath: path, contents: data)
+    }
+
     public func removeItem(at path: URL) throws {
         try fileManager.removeItem(at: path)
     }

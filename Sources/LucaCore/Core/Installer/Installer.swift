@@ -9,7 +9,8 @@ import Noora
 /// 1. Loads the tool or skill spec (Lucafile or inline parameters)
 /// 2. Unlinks orphaned tools no longer present in the spec
 /// 3. Delegates per-tool download, installation, and reinstallation to ``ToolInstalling``
-/// 4. Delegates skill installation to ``SkillInstalling``
+/// 4. Delegates skill installation via the native pipeline (``SkillDownloading`` + ``SkillSymLinking``)
+///    or the npx-based ``SkillInstalling`` path, depending on the `experimental` flag
 ///
 /// ## Usage
 ///
@@ -27,8 +28,8 @@ import Noora
 /// ### Installing Tools
 /// - ``install(installationType:)``
 ///
-/// ### Installation Types
-/// - ``InstallationType``
+/// ### Installing Skills
+/// - ``install(installationType:experimental:)``
 public struct Installer {
 
     private let fileManager: FileManaging
@@ -230,7 +231,7 @@ public struct Installer {
                 let skillFolder = fileManager.skillsCacheFolder.appending(component: name)
                 try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
                 let skillFile = skillFolder.appending(component: "SKILL.md")
-                try content.write(to: skillFile)
+                _ = fileManager.createFile(atPath: skillFile.path, contents: content)
                 try skillSymLinker.setSymLink(skillName: name, agents: resolvedAgents)
             }
         } else {
