@@ -18,6 +18,7 @@ public protocol FileManaging:
     UnarchiverFileManaging {
     var toolsFolder: URL { get }
     var symlinksFolder: URL { get }
+    /// Folder for project-local skills cache (per working directory).
     var skillsCacheFolder: URL { get }
     var homeDirectoryForCurrentUser: URL { get }
     var currentDirectoryPath: String { get }
