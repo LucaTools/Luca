@@ -454,6 +454,92 @@ struct InstallerTests {
         #expect(skillInstaller.calls.isEmpty)
     }
 
+    @Test(arguments: [true, false])
+    func test_installSkillsSpec_experimental_usesNativePipeline(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        skillDownloaderMock.downloadResult = .success([("find-skills", Data("content".utf8))])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+        let skillInstallerMock = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillInstaller: skillInstallerMock,
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock,
+            specLoader: specLoader
+        )
+
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), experimental: true)
+
+        #expect(skillDownloaderMock.downloadCalled == true)
+        #expect(skillSymLinkerMock.setSymLinkCalled == true)
+        #expect(skillInstallerMock.calls.isEmpty)
+
+        let skillFile = fileManager.skillsCacheFolder.appending(components: "find-skills", "SKILL.md")
+        #expect(fileManager.fileExists(atPath: skillFile.path))
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSkillsSpec_nonExperimental_usesNpxPipeline(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        let skillSymLinkerMock = SkillSymLinkerMock()
+        let skillInstallerMock = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillInstaller: skillInstallerMock,
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock,
+            specLoader: specLoader
+        )
+
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), experimental: false)
+
+        #expect(skillInstallerMock.calls.count == 2)
+        #expect(skillDownloaderMock.downloadCalled == false)
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSkillsIndividual_experimental_usesNativePipeline(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        skillDownloaderMock.downloadResult = .success([("find-skills", Data("content".utf8))])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+        let skillInstallerMock = SkillInstallerMock()
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillInstaller: skillInstallerMock,
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock
+        )
+
+        try await installer.install(
+            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil),
+            experimental: true
+        )
+
+        #expect(skillDownloaderMock.downloadCalled == true)
+        #expect(skillSymLinkerMock.setSymLinkCalled == true)
+        #expect(skillInstallerMock.calls.isEmpty)
+    }
+
     private func spec(for fixture: Fixture) throws -> Spec {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))

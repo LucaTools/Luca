@@ -40,6 +40,8 @@ public struct Installer {
     private let noora: Noorable
     private let toolInstaller: ToolInstalling
     private let skillInstaller: SkillInstalling
+    private let skillDownloader: SkillDownloading
+    private let skillSymLinker: SkillSymLinking
     private let specLoader: SpecLoading
 
     public init(
@@ -57,6 +59,8 @@ public struct Installer {
             noora: noora,
             toolInstaller: nil,
             skillInstaller: nil,
+            skillDownloader: nil,
+            skillSymLinker: nil,
             specLoader: nil
         )
     }
@@ -69,6 +73,8 @@ public struct Installer {
         noora: Noorable = Noora(),
         toolInstaller: ToolInstalling? = nil,
         skillInstaller: SkillInstalling? = nil,
+        skillDownloader: SkillDownloading? = nil,
+        skillSymLinker: SkillSymLinking? = nil,
         specLoader: SpecLoading? = nil
     ) {
         self.fileManager = fileManager
@@ -84,6 +90,8 @@ public struct Installer {
             printer: printer
         )
         self.skillInstaller = skillInstaller ?? SkillInstaller()
+        self.skillDownloader = skillDownloader ?? SkillDownloader()
+        self.skillSymLinker = skillSymLinker ?? SkillSymLinker(fileManager: fileManager)
         self.specLoader = specLoader ?? SpecLoader(fileManager: .default)
     }
 
@@ -103,14 +111,17 @@ public struct Installer {
     
     /// Installs skills based on the specified installation type.
     ///
-    /// - Parameter installationType: Specifies how to determine which skills to install.
-    ///   Can be `.spec` to read from a Lucafile.
+    /// - Parameters:
+    ///   - installationType: Specifies how to determine which skills to install.
+    ///     Can be `.spec` to read from a Lucafile, or `.individual` to install directly from a repository.
+    ///   - experimental: When `true`, uses the native pipeline (``SkillDownloading`` + ``SkillSymLinking``)
+    ///     instead of the npx-based ``SkillInstalling`` path.
     /// - Throws: An error if downloading, extracting, or linking fails.
-    public func install(installationType: SkillInstallationType) async throws {
+    public func install(installationType: SkillInstallationType, experimental: Bool = false) async throws {
         if quiet {
-            try await installQuietly(installationType: installationType)
+            try await installQuietly(installationType: installationType, experimental: experimental)
         } else {
-            try await installVerbose(installationType: installationType)
+            try await installVerbose(installationType: installationType, experimental: experimental)
         }
     }
     
@@ -178,25 +189,25 @@ public struct Installer {
         }
     }
     
-    private func installQuietly(installationType: SkillInstallationType) async throws {
+    private func installQuietly(installationType: SkillInstallationType, experimental: Bool) async throws {
         let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
         let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
         for skillSet in skillsInfo.skillSets {
-            try await install(skillSet, agents: skillsInfo.agents)
+            try await install(skillSet, agents: skillsInfo.agents, experimental: experimental)
         }
     }
-    
-    private func installVerbose(installationType: SkillInstallationType) async throws {
+
+    private func installVerbose(installationType: SkillInstallationType, experimental: Bool) async throws {
         let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
-        
+
         printer.printFormatted("\(.info("🧠 Detecting skills to install..."))")
-        
+
         let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
         if !skillsInfo.skillSets.isEmpty {
             printer.printFormatted("\(.info("🧠 Installing skills for the current project."))")
             printer.printFormatted("")
             for skillSet in skillsInfo.skillSets {
-                try await install(skillSet, agents: skillsInfo.agents)
+                try await install(skillSet, agents: skillsInfo.agents, experimental: experimental)
                 printer.printFormatted("")
             }
             printer.printFormatted("\(.success("🚀 Skills have been installed for the current project."))")
@@ -205,9 +216,26 @@ public struct Installer {
         }
     }
 
-    private func install(_ skillSet: SkillSet, agents: [String]?) async throws {
+    private func install(_ skillSet: SkillSet, agents: [String]?, experimental: Bool) async throws {
         printer.printFormatted("\(.raw("🧩 Installing skills from \(skillSet.repository)..."))")
-        try await skillInstaller.install(skillSet: skillSet, agents: agents)
+        if experimental {
+            let skills = try await skillDownloader.download(skillSet: skillSet)
+            let resolvedAgents: [AgentInfo]
+            if let agentIds = agents {
+                resolvedAgents = AgentRegistry.agents(for: agentIds)
+            } else {
+                resolvedAgents = AgentRegistry.all
+            }
+            for (name, content) in skills {
+                let skillFolder = fileManager.skillsCacheFolder.appending(component: name)
+                try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
+                let skillFile = skillFolder.appending(component: "SKILL.md")
+                try content.write(to: skillFile)
+                try skillSymLinker.setSymLink(skillName: name, agents: resolvedAgents)
+            }
+        } else {
+            try await skillInstaller.install(skillSet: skillSet, agents: agents)
+        }
         printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed for the current project."))")
     }
 
