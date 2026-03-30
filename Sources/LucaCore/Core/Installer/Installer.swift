@@ -234,6 +234,8 @@ public struct Installer {
                 _ = fileManager.createFile(atPath: skillFile.path, contents: content)
                 try skillSymLinker.setSymLink(skillName: name, agents: resolvedAgents)
             }
+            let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
+            try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
         } else {
             try await skillInstaller.install(skillSet: skillSet, agents: agents)
         }
