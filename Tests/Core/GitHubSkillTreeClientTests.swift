@@ -42,6 +42,15 @@ struct GitHubSkillTreeClientTests {
         }
     }
 
+    @Test
+    func test_skillPaths_treeTruncated() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeTruncated", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        await #expect(throws: GitHubSkillTreeClient.GitHubSkillTreeClientError.treeTruncated) {
+            try await sut.skillPaths(owner: "owner", repo: "repo")
+        }
+    }
+
     // MARK: - downloadSkill(owner:repo:path:)
 
     @Test

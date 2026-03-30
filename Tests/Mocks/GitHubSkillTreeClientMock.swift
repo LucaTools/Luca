@@ -3,7 +3,7 @@
 import Foundation
 @testable import LucaCore
 
-final class GitHubSkillTreeClientMock: GitHubSkillTreeClientProtocol {
+final class GitHubSkillTreeClientMock: GitHubSkillTreeFetching, @unchecked Sendable {
 
     var skillPathsResult: Result<[String], Error> = .success([])
     var downloadSkillResult: Result<Data, Error> = .success(Data())

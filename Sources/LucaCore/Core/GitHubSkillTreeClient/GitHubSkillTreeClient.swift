@@ -5,32 +5,10 @@ import Foundation
 import FoundationNetworking
 #endif
 
-// MARK: - Protocol
-
-/// Fetches the list of skill paths from a GitHub repository's file tree, and downloads individual skill files.
-protocol GitHubSkillTreeClientProtocol {
-    /// Returns the paths of all `SKILL.md` blob items in the repository tree.
-    ///
-    /// - Parameters:
-    ///   - owner: The GitHub repository owner (user or organisation).
-    ///   - repo: The repository name.
-    /// - Returns: An array of file paths whose last component is `SKILL.md`.
-    func skillPaths(owner: String, repo: String) async throws -> [String]
-
-    /// Downloads the raw content of a skill file.
-    ///
-    /// - Parameters:
-    ///   - owner: The GitHub repository owner.
-    ///   - repo: The repository name.
-    ///   - path: The repository-relative path to the skill file.
-    /// - Returns: The raw file data.
-    func downloadSkill(owner: String, repo: String, path: String) async throws -> Data
-}
-
 // MARK: - Implementation
 
 /// Retrieves skill metadata from a GitHub repository using the Git Trees API and raw content endpoint.
-struct GitHubSkillTreeClient: GitHubSkillTreeClientProtocol {
+struct GitHubSkillTreeClient: GitHubSkillTreeFetching {
 
     // MARK: - Error
 
@@ -42,6 +20,8 @@ struct GitHubSkillTreeClient: GitHubSkillTreeClientProtocol {
         case unexpectedResponse(statusCode: Int)
         /// The JSON response body could not be decoded into the expected model.
         case decodingFailed
+        /// The repository tree was truncated due to its size.
+        case treeTruncated
 
         var errorDescription: String? {
             switch self {
@@ -51,6 +31,8 @@ struct GitHubSkillTreeClient: GitHubSkillTreeClientProtocol {
                 return "Unexpected HTTP response from GitHub: \(statusCode)."
             case .decodingFailed:
                 return "Failed to decode the GitHub API response."
+            case .treeTruncated:
+                return "The repository tree was truncated. The repository may be too large to fetch all skills."
             }
         }
     }
@@ -65,7 +47,7 @@ struct GitHubSkillTreeClient: GitHubSkillTreeClientProtocol {
         self.dataDownloader = dataDownloader
     }
 
-    // MARK: - GitHubSkillTreeClientProtocol
+    // MARK: - GitHubSkillTreeFetching
 
     func skillPaths(owner: String, repo: String) async throws -> [String] {
         let urlString = "https://api.github.com/repos/\(owner)/\(repo)/git/trees/HEAD?recursive=1"
@@ -89,9 +71,14 @@ struct GitHubSkillTreeClient: GitHubSkillTreeClientProtocol {
 
         do {
             let tree = try JSONDecoder().decode(GitHubTree.self, from: data)
+            guard !tree.truncated else {
+                throw GitHubSkillTreeClientError.treeTruncated
+            }
             return tree.tree
                 .filter { $0.type == "blob" && $0.path.hasSuffix("SKILL.md") }
                 .map(\.path)
+        } catch let error as GitHubSkillTreeClientError {
+            throw error
         } catch {
             throw GitHubSkillTreeClientError.decodingFailed
         }
@@ -130,9 +117,4 @@ private struct GitHubTree: Decodable {
 private struct GitHubTreeItem: Decodable {
     let path: String
     let type: String
-
-    enum CodingKeys: String, CodingKey {
-        case path
-        case type
-    }
 }
