@@ -18,15 +18,33 @@ struct UninstallCommand: AsyncParsableCommand {
     )
     
     @Argument(help: ArgumentHelp(
-        "Tool to uninstall, optionally with version.",
+        "Tool or skill name to uninstall.",
         discussion: """
-        Examples:
+        For tools:
           luca uninstall SwiftLint
           luca uninstall SwiftLint@0.61.0
+        For skills (with --only-skills --experimental):
+          luca uninstall find-skills --only-skills --experimental
         """,
-        valueName: "tool[@version]"
+        valueName: "name[@version]"
     ))
     var tool: String
+
+    @Flag(help: ArgumentHelp(
+        "Uninstall a skill instead of a binary tool.",
+        discussion: """
+        Use with --experimental.
+        Example:
+          luca uninstall find-skills --only-skills --experimental
+        """
+    ))
+    var onlySkills: Bool = false
+
+    @Flag(help: ArgumentHelp(
+        "Use native skills pipeline (experimental).",
+        discussion: "Use with --only-skills."
+    ))
+    var experimental: Bool = false
 
     func run() async throws {
         let noora = Noora(terminal: Terminal(signalBehavior: .none))
@@ -34,6 +52,13 @@ struct UninstallCommand: AsyncParsableCommand {
         Header(printer: printer).printHeader()
 
         let fileManager = FileManagerWrapper(fileManager: .default)
+
+        if onlySkills && experimental {
+            let uninstaller = SkillUninstaller(fileManager: fileManager, printer: printer)
+            try uninstaller.uninstall(skillName: tool, agents: AgentRegistry.all)
+            return
+        }
+
         let uninstaller = Uninstaller(fileManager: fileManager, printer: printer)
         let versionLister = VersionLister(fileManager: fileManager)
         

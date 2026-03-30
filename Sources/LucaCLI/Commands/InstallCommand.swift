@@ -187,6 +187,42 @@ struct InstallCommand: AsyncParsableCommand {
     ))
     var onlySkills: Bool = false
 
+    @Flag(help: ArgumentHelp(
+        "Use native skills pipeline (experimental).",
+        discussion: """
+        Enables native Swift-based skill installation instead of npx.
+        Use with --only-skills.
+        Example:
+          luca install --only-skills --experimental
+          luca install vercel-labs/agent-skills --only-skills --experimental
+        """
+    ))
+    var experimental: Bool = false
+
+    @Option(name: .customLong("skill"), help: ArgumentHelp(
+        "Specific skill name to install (repeatable).",
+        discussion: """
+        Install only the named skills from the repository.
+        Can be specified multiple times.
+        Example:
+          luca install vercel-labs/agent-skills --only-skills --experimental --skill find-skills
+        """,
+        valueName: "name"
+    ))
+    var skills: [String] = []
+
+    @Option(name: .customLong("agent"), help: ArgumentHelp(
+        "Agent to install skills for (repeatable).",
+        discussion: """
+        Override the agents: list from the Lucafile.
+        Can be specified multiple times.
+        Example:
+          luca install --only-skills --experimental --agent claude-code --agent cursor
+        """,
+        valueName: "agent-id"
+    ))
+    var agents: [String] = []
+
     func run() async throws {
         let noora = Noora(terminal: Terminal(signalBehavior: .none))
         let printer: Printing = quiet ? QuietPrinter() : Printer(noora: noora)
@@ -228,12 +264,12 @@ struct InstallCommand: AsyncParsableCommand {
             try await installer.install(installationType: toolInstallationType)
         case .skillsOnly:
             let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
-            try await installer.install(installationType: skillInstallationType)
+            try await installer.install(installationType: skillInstallationType, experimental: experimental)
         case .all:
             let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager, noora: noora)
             try await installer.install(installationType: toolInstallationType)
             let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
-            try await installer.install(installationType: skillInstallationType)
+            try await installer.install(installationType: skillInstallationType, experimental: experimental)
         }
     }
     
@@ -313,6 +349,13 @@ struct InstallCommand: AsyncParsableCommand {
     }
     
     private func skillInstallationType(for arguments: Arguments, fileManager: FileManaging, noora: Noorable) throws -> SkillInstallationType {
+        if experimental, let identifier = arguments.identifier {
+            return .individual(
+                repository: identifier,
+                skillNames: skills,
+                agents: agents.isEmpty ? nil : agents
+            )
+        }
         switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.desiredBinaryName, arguments.checksum, arguments.algorithm) {
         case (let spec, .none, .none, .none, .none, .none, .none, .none, .none, .none):
             let specPath = try specPath(providedSpec: spec, fileManager: fileManager, noora: noora)

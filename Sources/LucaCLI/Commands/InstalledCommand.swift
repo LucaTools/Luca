@@ -17,12 +17,38 @@ struct InstalledCommand: AsyncParsableCommand {
         """
     )
     
+    @Flag(help: ArgumentHelp(
+        "List installed skills instead of binary tools.",
+        discussion: "Use with --experimental."
+    ))
+    var onlySkills: Bool = false
+
+    @Flag(help: ArgumentHelp(
+        "Use native skills pipeline (experimental).",
+        discussion: "Use with --only-skills."
+    ))
+    var experimental: Bool = false
+
     func run() async throws {
         let noora = Noora(terminal: Terminal(signalBehavior: .none))
         let printer = Printer(noora: noora)
         let fileManager = FileManagerWrapper()
+
+        if onlySkills && experimental {
+            let lister = InstalledSkillsLister(fileManager: fileManager)
+            let skills = try lister.installedSkills()
+            if skills.isEmpty {
+                printer.printFormatted("\(.info("No skills installed."))")
+            } else {
+                for skill in skills {
+                    printer.printFormatted("\(.primary(skill))")
+                }
+            }
+            return
+        }
+
         let lister = InstalledToolsLister(fileManager: fileManager)
-        
+
         let installedTools = try lister.installedTools()
         
         if installedTools.isEmpty {
