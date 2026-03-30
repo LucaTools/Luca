@@ -288,9 +288,23 @@ struct InstallCommand: AsyncParsableCommand {
                 algorithm: algorithm
             ))
         }
+        if (!skills.isEmpty || !agents.isEmpty) && !experimental {
+            throw InstallCommandError.invalidCombinationOfArguments(Arguments(
+                spec: spec,
+                identifier: identifier,
+                asset: asset,
+                name: name,
+                version: version,
+                url: try toolUrl(for: url),
+                binaryPath: binaryPath,
+                desiredBinaryName: desiredBinaryName,
+                checksum: checksum,
+                algorithm: algorithm
+            ))
+        }
     }
     
-    // mARK: - Private
+    // MARK: - Private
     
     /// Path to the spec file: either explicit via `--spec` or default to `Constants.specFile` (or `Lucafile.yml`) in current directory.
     /// When no exact `Lucafile` or `Lucafile.yml` exists, discovers files with the `Lucafile` prefix and prompts the user to pick one.
@@ -349,7 +363,7 @@ struct InstallCommand: AsyncParsableCommand {
     }
     
     private func skillInstallationType(for arguments: Arguments, fileManager: FileManaging, noora: Noorable) throws -> SkillInstallationType {
-        if experimental, let identifier = arguments.identifier {
+        if experimental && onlySkills, let identifier = arguments.identifier {
             return .individual(
                 repository: identifier,
                 skillNames: skills,

@@ -59,6 +59,11 @@ struct UninstallCommand: AsyncParsableCommand {
             return
         }
 
+        if onlySkills {
+            // --only-skills requires --experimental
+            throw ValidationError("--only-skills requires --experimental. Use: luca uninstall <skill-name> --only-skills --experimental")
+        }
+
         let uninstaller = Uninstaller(fileManager: fileManager, printer: printer)
         let versionLister = VersionLister(fileManager: fileManager)
         

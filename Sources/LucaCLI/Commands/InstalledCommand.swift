@@ -47,6 +47,10 @@ struct InstalledCommand: AsyncParsableCommand {
             return
         }
 
+        if onlySkills {
+            throw ValidationError("--only-skills requires --experimental. Use: luca installed --only-skills --experimental")
+        }
+
         let lister = InstalledToolsLister(fileManager: fileManager)
 
         let installedTools = try lister.installedTools()
