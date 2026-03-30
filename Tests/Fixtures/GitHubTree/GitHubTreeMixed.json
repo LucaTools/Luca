@@ -1,0 +1,12 @@
+{
+  "tree": [
+    { "path": "README.md", "type": "blob" },
+    { "path": "src", "type": "tree" },
+    { "path": "skills/my-skill/SKILL.md", "type": "blob" },
+    { "path": "skills/my-skill/example.swift", "type": "blob" },
+    { "path": "skills/another-skill/SKILL.md", "type": "blob" },
+    { "path": "skills/another-skill", "type": "tree" },
+    { "path": "docs/SKILL.md", "type": "blob" }
+  ],
+  "truncated": false
+}

@@ -1,0 +1,64 @@
+//  GitHubSkillTreeClientTests.swift
+
+import Foundation
+import Testing
+@testable import LucaCore
+
+struct GitHubSkillTreeClientTests {
+
+    init() async throws {}
+
+    // MARK: - skillPaths(owner:repo:)
+
+    @Test
+    func test_skillPaths_returnsOnlySkillMdPaths() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let paths = try await sut.skillPaths(owner: "owner", repo: "repo")
+        #expect(paths.count == 3)
+        #expect(paths.contains("skills/my-skill/SKILL.md"))
+        #expect(paths.contains("skills/another-skill/SKILL.md"))
+        #expect(paths.contains("docs/SKILL.md"))
+        #expect(!paths.contains("README.md"))
+        #expect(!paths.contains("skills/my-skill/example.swift"))
+    }
+
+    @Test
+    func test_skillPaths_unexpectedResponse() async throws {
+        let dataDownloader = DataDownloaderMock(result: .statusCode(404))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        await #expect(throws: GitHubSkillTreeClient.GitHubSkillTreeClientError.unexpectedResponse(statusCode: 404)) {
+            try await sut.skillPaths(owner: "owner", repo: "repo")
+        }
+    }
+
+    @Test
+    func test_skillPaths_decodingFailed() async throws {
+        let invalidJSON = Data("not valid json".utf8)
+        let dataDownloader = DataDownloaderMock(result: .rawData(invalidJSON, 200))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        await #expect(throws: GitHubSkillTreeClient.GitHubSkillTreeClientError.decodingFailed) {
+            try await sut.skillPaths(owner: "owner", repo: "repo")
+        }
+    }
+
+    // MARK: - downloadSkill(owner:repo:path:)
+
+    @Test
+    func test_downloadSkill_returnsData() async throws {
+        let expectedData = Data("# My Skill\nThis is a skill.".utf8)
+        let dataDownloader = DataDownloaderMock(result: .rawData(expectedData, 200))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let data = try await sut.downloadSkill(owner: "owner", repo: "repo", path: "skills/my-skill/SKILL.md")
+        #expect(data == expectedData)
+    }
+
+    @Test
+    func test_downloadSkill_unexpectedResponse() async throws {
+        let dataDownloader = DataDownloaderMock(result: .statusCode(403))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        await #expect(throws: GitHubSkillTreeClient.GitHubSkillTreeClientError.unexpectedResponse(statusCode: 403)) {
+            try await sut.downloadSkill(owner: "owner", repo: "repo", path: "skills/my-skill/SKILL.md")
+        }
+    }
+}
