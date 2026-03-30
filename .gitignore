@@ -27,3 +27,6 @@ xcuserdata/
 .luca
 docs/
 .luca/tools
+
+# Worktrees
+.worktrees/
