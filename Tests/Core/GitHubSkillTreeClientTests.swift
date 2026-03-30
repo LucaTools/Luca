@@ -27,7 +27,7 @@ struct GitHubSkillTreeClientTests {
     func test_skillPaths_unexpectedResponse() async throws {
         let dataDownloader = DataDownloaderMock(result: .statusCode(404))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
-        await #expect(throws: GitHubSkillTreeClient.GitHubSkillTreeClientError.unexpectedResponse(statusCode: 404)) {
+        await #expect(throws: GitHubSkillTreeClientError.unexpectedResponse(statusCode: 404)) {
             try await sut.skillPaths(owner: "owner", repo: "repo")
         }
     }
@@ -37,7 +37,7 @@ struct GitHubSkillTreeClientTests {
         let invalidJSON = Data("not valid json".utf8)
         let dataDownloader = DataDownloaderMock(result: .rawData(invalidJSON, 200))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
-        await #expect(throws: GitHubSkillTreeClient.GitHubSkillTreeClientError.decodingFailed) {
+        await #expect(throws: GitHubSkillTreeClientError.decodingFailed) {
             try await sut.skillPaths(owner: "owner", repo: "repo")
         }
     }
@@ -46,7 +46,7 @@ struct GitHubSkillTreeClientTests {
     func test_skillPaths_treeTruncated() async throws {
         let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeTruncated", type: "json")))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
-        await #expect(throws: GitHubSkillTreeClient.GitHubSkillTreeClientError.treeTruncated) {
+        await #expect(throws: GitHubSkillTreeClientError.treeTruncated) {
             try await sut.skillPaths(owner: "owner", repo: "repo")
         }
     }
@@ -66,7 +66,7 @@ struct GitHubSkillTreeClientTests {
     func test_downloadSkill_unexpectedResponse() async throws {
         let dataDownloader = DataDownloaderMock(result: .statusCode(403))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
-        await #expect(throws: GitHubSkillTreeClient.GitHubSkillTreeClientError.unexpectedResponse(statusCode: 403)) {
+        await #expect(throws: GitHubSkillTreeClientError.unexpectedResponse(statusCode: 403)) {
             try await sut.downloadSkill(owner: "owner", repo: "repo", path: "skills/my-skill/SKILL.md")
         }
     }

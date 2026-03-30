@@ -47,13 +47,13 @@ struct SkillDownloader: SkillDownloading {
     // MARK: - Properties
 
     private let gitHubClient: GitHubSkillTreeFetching
-    private let frontmatterParser: SkillFrontmatterParser
+    private let frontmatterParser: SkillFrontmatterParsing
 
     // MARK: - Init
 
     init(
         gitHubClient: GitHubSkillTreeFetching = GitHubSkillTreeClient(),
-        frontmatterParser: SkillFrontmatterParser = SkillFrontmatterParser()
+        frontmatterParser: SkillFrontmatterParsing = SkillFrontmatterParser()
     ) {
         self.gitHubClient = gitHubClient
         self.frontmatterParser = frontmatterParser
@@ -71,14 +71,18 @@ struct SkillDownloader: SkillDownloading {
         let paths: [String]
         do {
             paths = try await gitHubClient.skillPaths(owner: owner, repo: repo)
-        } catch GitHubSkillTreeClient.GitHubSkillTreeClientError.unexpectedResponse(let statusCode) {
-            switch statusCode {
-            case 404:
-                throw SkillDownloaderError.repositoryNotFound(skillSet.repository)
-            case 403, 429:
-                throw SkillDownloaderError.rateLimitExceeded
-            default:
-                throw SkillDownloaderError.repositoryNotFound(skillSet.repository)
+        } catch let clientError as GitHubSkillTreeClientError {
+            if case .unexpectedResponse(let statusCode) = clientError {
+                switch statusCode {
+                case 404:
+                    throw SkillDownloaderError.repositoryNotFound(skillSet.repository)
+                case 403, 429:
+                    throw SkillDownloaderError.rateLimitExceeded
+                default:
+                    throw clientError
+                }
+            } else {
+                throw clientError
             }
         }
 
@@ -152,12 +156,13 @@ struct SkillDownloader: SkillDownloading {
             let withoutScheme = repository
                 .replacingOccurrences(of: "https://github.com/", with: "")
                 .replacingOccurrences(of: "http://github.com/", with: "")
-                .replacingOccurrences(of: ".git", with: "")
             let components = withoutScheme.split(separator: "/", maxSplits: 1).map(String.init)
             guard components.count == 2, !components[0].isEmpty, !components[1].isEmpty else {
                 throw SkillDownloaderError.invalidRepository(repository)
             }
-            return (owner: components[0], repo: components[1])
+            var repoName = components[1]
+            if repoName.hasSuffix(".git") { repoName = String(repoName.dropLast(4)) }
+            return (owner: components[0], repo: repoName)
         }
 
         // Shorthand: owner/repo

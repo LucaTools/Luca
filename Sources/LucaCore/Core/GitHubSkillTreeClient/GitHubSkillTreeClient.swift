@@ -5,37 +5,37 @@ import Foundation
 import FoundationNetworking
 #endif
 
+// MARK: - Error
+
+/// Errors thrown by ``GitHubSkillTreeClient``.
+enum GitHubSkillTreeClientError: Error, LocalizedError, Equatable {
+    /// The URL could not be constructed from the provided parameters.
+    case invalidURL
+    /// GitHub returned a non-200 HTTP status code.
+    case unexpectedResponse(statusCode: Int)
+    /// The JSON response body could not be decoded into the expected model.
+    case decodingFailed
+    /// The repository tree was truncated due to its size.
+    case treeTruncated
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "Could not construct the GitHub API URL."
+        case .unexpectedResponse(let statusCode):
+            return "Unexpected HTTP response from GitHub: \(statusCode)."
+        case .decodingFailed:
+            return "Failed to decode the GitHub API response."
+        case .treeTruncated:
+            return "The repository tree was truncated. The repository may be too large to fetch all skills."
+        }
+    }
+}
+
 // MARK: - Implementation
 
 /// Retrieves skill metadata from a GitHub repository using the Git Trees API and raw content endpoint.
 struct GitHubSkillTreeClient: GitHubSkillTreeFetching {
-
-    // MARK: - Error
-
-    /// Errors thrown by ``GitHubSkillTreeClient``.
-    enum GitHubSkillTreeClientError: Error, LocalizedError, Equatable {
-        /// The URL could not be constructed from the provided parameters.
-        case invalidURL
-        /// GitHub returned a non-200 HTTP status code.
-        case unexpectedResponse(statusCode: Int)
-        /// The JSON response body could not be decoded into the expected model.
-        case decodingFailed
-        /// The repository tree was truncated due to its size.
-        case treeTruncated
-
-        var errorDescription: String? {
-            switch self {
-            case .invalidURL:
-                return "Could not construct the GitHub API URL."
-            case .unexpectedResponse(let statusCode):
-                return "Unexpected HTTP response from GitHub: \(statusCode)."
-            case .decodingFailed:
-                return "Failed to decode the GitHub API response."
-            case .treeTruncated:
-                return "The repository tree was truncated. The repository may be too large to fetch all skills."
-            }
-        }
-    }
 
     // MARK: - Properties
 

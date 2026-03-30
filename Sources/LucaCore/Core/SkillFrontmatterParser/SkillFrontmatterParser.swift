@@ -17,7 +17,7 @@ import Yams
 /// ```
 ///
 /// This parser extracts the `name` field from the frontmatter block.
-struct SkillFrontmatterParser {
+struct SkillFrontmatterParser: SkillFrontmatterParsing {
 
     enum SkillFrontmatterParserError: Error, LocalizedError, Equatable {
         /// The frontmatter was parsed successfully but does not contain a `name` key.
