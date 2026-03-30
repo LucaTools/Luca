@@ -10,10 +10,12 @@ public protocol FileManaging:
     FileTypeDetectorFileManaging,
     GitHookInstallerFileManaging,
     GitIgnoreFileManaging,
+    InstalledSkillsListerFileManaging,
     InstalledToolsFileManaging,
     PermissionManagerFileManaging,
     SelfUpdaterFileManaging,
     SkillSymLinkerFileManaging,
+    SkillUninstallerFileManaging,
     SpecFinderFileManaging,
     SymLinkFileManaging,
     UnarchiverFileManaging {
