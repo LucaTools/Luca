@@ -5,8 +5,9 @@ import Foundation
 /// Downloads skill files from a GitHub repository.
 ///
 /// `SkillDownloader` parses the repository reference from a ``SkillSet``, fetches the list of
-/// `SKILL.md` paths from the GitHub tree, optionally filters by requested skill names, downloads
-/// each skill's content, and returns the results as `(name, content)` pairs.
+/// skill-related paths from the GitHub tree, optionally filters by requested skill names, downloads
+/// every file in each skill's directory, and returns the results as `(name, files)` pairs where
+/// `files` contains all ``SkillFile`` values with paths relative to the skill root.
 struct SkillDownloader: SkillDownloading {
 
     // MARK: - Error
@@ -64,13 +65,15 @@ struct SkillDownloader: SkillDownloading {
     /// Downloads skills from the repository described by `skillSet`.
     ///
     /// - Parameter skillSet: The ``SkillSet`` describing the repository and optional skill name filter.
-    /// - Returns: An array of `(name, content)` tuples for each downloaded skill.
-    func download(skillSet: SkillSet) async throws -> [(name: String, content: Data)] {
+    /// - Returns: An array of `(name, files)` tuples. Each `files` array contains every file in the
+    ///   skill's directory with paths relative to the skill root (e.g. `"SKILL.md"`,
+    ///   `"resources/template.md"`).
+    func download(skillSet: SkillSet) async throws -> [(name: String, files: [SkillFile])] {
         let (owner, repo) = try parseRepository(skillSet.repository)
 
-        let paths: [String]
+        let allPaths: [String]
         do {
-            paths = try await gitHubClient.skillPaths(owner: owner, repo: repo)
+            allPaths = try await gitHubClient.skillPaths(owner: owner, repo: repo)
         } catch let clientError as GitHubSkillTreeClientError {
             if case .unexpectedResponse(let statusCode) = clientError {
                 switch statusCode {
@@ -86,60 +89,84 @@ struct SkillDownloader: SkillDownloading {
             }
         }
 
-        guard !paths.isEmpty else {
+        let skillMdPaths = allPaths.filter { $0.hasSuffix("SKILL.md") }
+        guard !skillMdPaths.isEmpty else {
             throw SkillDownloaderError.noSkillsFound(repository: skillSet.repository)
         }
 
-        // Separate root SKILL.md (name comes from frontmatter) from directory-based skills
-        let rootPath = "SKILL.md"
-        let nonRootPaths = paths.filter { $0 != rootPath }
-
-        // Build name→path mapping for non-root skills (name derived from parent directory)
-        var namePathPairs: [(name: String, path: String)] = nonRootPaths.map { path in
-            let name = URL(fileURLWithPath: path).deletingLastPathComponent().lastPathComponent
-            return (name: name, path: path)
+        // Phase 1: build skill entries — name, skill directory, and the set of file paths to download.
+        // For a root SKILL.md the name comes from frontmatter, so we download it early and cache it.
+        struct SkillEntry {
+            let name: String
+            let skillDir: String        // empty string for a root-level SKILL.md
+            let filePaths: [String]
+            let cachedRootContent: Data? // non-nil only for the root SKILL.md skill
         }
 
-        // Handle root SKILL.md: download first to extract name from frontmatter
-        var rootSkillData: (name: String, path: String, content: Data)? = nil
-        if paths.contains(rootPath) {
-            let content: Data
-            do {
-                content = try await gitHubClient.downloadSkill(owner: owner, repo: repo, path: rootPath)
-            } catch {
-                throw SkillDownloaderError.downloadFailed(path: rootPath)
+        var skillEntries: [SkillEntry] = []
+
+        for skillMdPath in skillMdPaths {
+            if skillMdPath == "SKILL.md" {
+                // Root skill: fetch early to extract the skill name from frontmatter.
+                let content: Data
+                do {
+                    content = try await gitHubClient.downloadSkill(owner: owner, repo: repo, path: skillMdPath)
+                } catch {
+                    throw SkillDownloaderError.downloadFailed(path: skillMdPath)
+                }
+                let name = (try? frontmatterParser.skillName(from: content)) ?? repo
+                skillEntries.append(SkillEntry(
+                    name: name,
+                    skillDir: "",
+                    filePaths: ["SKILL.md"],
+                    cachedRootContent: content
+                ))
+            } else {
+                let skillDir = URL(fileURLWithPath: skillMdPath).deletingLastPathComponent().path
+                let name = URL(fileURLWithPath: skillDir).lastPathComponent
+                // Include every path that lives inside this skill's directory.
+                let filePaths = allPaths.filter { $0.hasPrefix(skillDir + "/") }
+                skillEntries.append(SkillEntry(
+                    name: name,
+                    skillDir: skillDir,
+                    filePaths: filePaths,
+                    cachedRootContent: nil
+                ))
             }
-            let name = (try? frontmatterParser.skillName(from: content)) ?? repo
-            rootSkillData = (name: name, path: rootPath, content: content)
-            namePathPairs.append((name: name, path: rootPath))
         }
 
-        // Filter by requested skill names if specified
-        var filteredPairs = namePathPairs
+        // Phase 2: filter by requested skill names.
         if !skillSet.skills.isEmpty {
             for requestedName in skillSet.skills {
-                let found = namePathPairs.contains { $0.name == requestedName }
-                if !found {
+                guard skillEntries.contains(where: { $0.name == requestedName }) else {
                     throw SkillDownloaderError.skillNotFound(name: requestedName, repository: skillSet.repository)
                 }
             }
-            filteredPairs = namePathPairs.filter { skillSet.skills.contains($0.name) }
+            skillEntries = skillEntries.filter { skillSet.skills.contains($0.name) }
         }
 
-        // Download remaining skills (skip root which was already downloaded)
-        var results: [(name: String, content: Data)] = []
-        for pair in filteredPairs {
-            if pair.path == rootPath, let root = rootSkillData {
-                results.append((name: root.name, content: root.content))
-            } else {
+        // Phase 3: download all files for each skill and compute relative paths.
+        var results: [(name: String, files: [SkillFile])] = []
+        for entry in skillEntries {
+            var files: [SkillFile] = []
+            for filePath in entry.filePaths {
                 let content: Data
-                do {
-                    content = try await gitHubClient.downloadSkill(owner: owner, repo: repo, path: pair.path)
-                } catch {
-                    throw SkillDownloaderError.downloadFailed(path: pair.path)
+                // Reuse the cached root SKILL.md content to avoid a redundant HTTP request.
+                if entry.skillDir.isEmpty, let cached = entry.cachedRootContent {
+                    content = cached
+                } else {
+                    do {
+                        content = try await gitHubClient.downloadSkill(owner: owner, repo: repo, path: filePath)
+                    } catch {
+                        throw SkillDownloaderError.downloadFailed(path: filePath)
+                    }
                 }
-                results.append((name: pair.name, content: content))
+                let relativePath = entry.skillDir.isEmpty
+                    ? filePath
+                    : String(filePath.dropFirst(entry.skillDir.count + 1))
+                files.append(SkillFile(relativePath: relativePath, content: content))
             }
+            results.append((name: entry.name, files: files))
         }
 
         return results

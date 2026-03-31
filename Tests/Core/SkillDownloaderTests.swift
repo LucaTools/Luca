@@ -28,6 +28,10 @@ struct SkillDownloaderTests {
         let names = results.map(\.name)
         #expect(names.contains("foo"))
         #expect(names.contains("bar"))
+        let fooFiles = try #require(results.first { $0.name == "foo" }?.files)
+        #expect(fooFiles.count == 1)
+        #expect(fooFiles[0].relativePath == "SKILL.md")
+        #expect(fooFiles[0].content == Data("foo content".utf8))
     }
 
     // MARK: - test_download_filteredByName
@@ -55,6 +59,34 @@ struct SkillDownloaderTests {
         #expect(names.contains("foo"))
         #expect(names.contains("baz"))
         #expect(!names.contains("bar"))
+    }
+
+    // MARK: - test_download_includesAuxiliaryFiles
+
+    @Test
+    func test_download_includesAuxiliaryFiles() async throws {
+        let client = MultiSkillGitHubClientMock()
+        client.skillPathsResult = .success([
+            "skills/foo/SKILL.md",
+            "skills/foo/resources/template.md"
+        ])
+        client.downloadResults = [
+            "skills/foo/SKILL.md": Data("foo skill".utf8),
+            "skills/foo/resources/template.md": Data("template content".utf8)
+        ]
+        let sut = SkillDownloader(gitHubClient: client)
+        let skillSet = SkillSet(repository: "owner/repo", skills: [])
+
+        let results = try await sut.download(skillSet: skillSet)
+
+        #expect(results.count == 1)
+        #expect(results[0].name == "foo")
+        #expect(results[0].files.count == 2)
+        let relativePaths = results[0].files.map(\.relativePath)
+        #expect(relativePaths.contains("SKILL.md"))
+        #expect(relativePaths.contains("resources/template.md"))
+        let templateFile = try #require(results[0].files.first { $0.relativePath == "resources/template.md" })
+        #expect(templateFile.content == Data("template content".utf8))
     }
 
     // MARK: - test_download_skillNotFound
@@ -153,7 +185,8 @@ struct SkillDownloaderTests {
 
         #expect(results.count == 1)
         #expect(results[0].name == "my-root-skill")
-        #expect(results[0].content == skillContent)
+        #expect(results[0].files[0].relativePath == "SKILL.md")
+        #expect(results[0].files[0].content == skillContent)
     }
 
     // MARK: - test_download_httpsUrl_parsesOwnerRepo
@@ -221,7 +254,8 @@ struct SkillDownloaderTests {
 
         #expect(results.count == 1)
         #expect(results[0].name == "repo")
-        #expect(results[0].content == skillContent)
+        #expect(results[0].files[0].relativePath == "SKILL.md")
+        #expect(results[0].files[0].content == skillContent)
     }
 }
 
