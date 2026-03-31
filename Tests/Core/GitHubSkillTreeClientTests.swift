@@ -37,6 +37,22 @@ struct GitHubSkillTreeClientTests {
     }
 
     @Test
+    func test_skillPaths_excludesMetadataJsonAndExcludedDirectories() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeWithExcludedFiles", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let paths = try await sut.skillPaths(owner: "owner", repo: "repo")
+        // Always included
+        #expect(paths.contains("skills/foo/SKILL.md"))
+        #expect(paths.contains("skills/foo/AGENTS.md"))
+        #expect(paths.contains("skills/foo/resources/template.md"))
+        // Excluded by file name
+        #expect(!paths.contains("skills/foo/metadata.json"))
+        // Excluded because they live inside excluded directories
+        #expect(!paths.contains("skills/foo/__pycache__/module.pyc"))
+        #expect(!paths.contains("skills/foo/.git/config"))
+    }
+
+    @Test
     func test_skillPaths_unexpectedResponse() async throws {
         let dataDownloader = DataDownloaderMock(result: .statusCode(404))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)

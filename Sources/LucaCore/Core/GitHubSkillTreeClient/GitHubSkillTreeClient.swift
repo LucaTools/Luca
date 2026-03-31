@@ -37,6 +37,14 @@ enum GitHubSkillTreeClientError: Error, LocalizedError, Equatable {
 /// Retrieves skill metadata from a GitHub repository using the Git Trees API and raw content endpoint.
 struct GitHubSkillTreeClient: GitHubSkillTreeFetching {
 
+    // MARK: - Exclusion Lists
+
+    /// File names that are never downloaded, regardless of location.
+    private static let excludedFileNames: Set<String> = ["metadata.json"]
+
+    /// Directory names whose contents are never downloaded.
+    private static let excludedDirectories: Set<String> = [".git", "__pycache__", "__pypackages__"]
+
     // MARK: - Properties
 
     private var dataDownloader: DataDownloading
@@ -82,11 +90,17 @@ struct GitHubSkillTreeClient: GitHubSkillTreeFetching {
                     .filter { $0.path.hasSuffix("SKILL.md") && $0.path != "SKILL.md" }
                     .map { $0.path.components(separatedBy: "/").dropLast().joined(separator: "/") }
             )
-            // Include all SKILL.md files plus every file inside a skill directory.
+            // Include all SKILL.md files plus every file inside a skill directory,
+            // except those matching the exclusion lists.
             return allBlobs
                 .filter { item in
-                    if item.path.hasSuffix("SKILL.md") { return true }
-                    return skillDirectories.contains(where: { item.path.hasPrefix($0 + "/") })
+                    guard item.path.hasSuffix("SKILL.md") || skillDirectories.contains(where: { item.path.hasPrefix($0 + "/") }) else {
+                        return false
+                    }
+                    let components = item.path.components(separatedBy: "/")
+                    if let fileName = components.last, Self.excludedFileNames.contains(fileName) { return false }
+                    if components.dropLast().contains(where: { Self.excludedDirectories.contains($0) }) { return false }
+                    return true
                 }
                 .map(\.path)
         } catch let error as GitHubSkillTreeClientError {
