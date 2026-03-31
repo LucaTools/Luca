@@ -1,0 +1,11 @@
+{
+  "tree": [
+    { "path": "README.md", "type": "blob" },
+    { "path": "skills/foo/SKILL.md", "type": "blob" },
+    { "path": "skills/foo/resources", "type": "tree" },
+    { "path": "skills/foo/resources/template.md", "type": "blob" },
+    { "path": "skills/foo/resources/examples", "type": "tree" },
+    { "path": "skills/foo/resources/examples/sample.yaml", "type": "blob" }
+  ],
+  "truncated": false
+}

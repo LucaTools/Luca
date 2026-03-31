@@ -11,16 +11,29 @@ struct GitHubSkillTreeClientTests {
     // MARK: - skillPaths(owner:repo:)
 
     @Test
-    func test_skillPaths_returnsOnlySkillMdPaths() async throws {
+    func test_skillPaths_returnsSkillMdAndAuxiliaryFilePaths() async throws {
         let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
         let paths = try await sut.skillPaths(owner: "owner", repo: "repo")
-        #expect(paths.count == 3)
+        // SKILL.md files for each skill
         #expect(paths.contains("skills/my-skill/SKILL.md"))
         #expect(paths.contains("skills/another-skill/SKILL.md"))
         #expect(paths.contains("docs/SKILL.md"))
+        // Auxiliary file inside a skill directory — must now be included
+        #expect(paths.contains("skills/my-skill/example.swift"))
+        // File NOT in any skill directory — must remain excluded
         #expect(!paths.contains("README.md"))
-        #expect(!paths.contains("skills/my-skill/example.swift"))
+    }
+
+    @Test
+    func test_skillPaths_includesDeepNestedAuxiliaryFiles() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeWithResources", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let paths = try await sut.skillPaths(owner: "owner", repo: "repo")
+        #expect(paths.contains("skills/foo/SKILL.md"))
+        #expect(paths.contains("skills/foo/resources/template.md"))
+        #expect(paths.contains("skills/foo/resources/examples/sample.yaml"))
+        #expect(!paths.contains("README.md"))
     }
 
     @Test
