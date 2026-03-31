@@ -12,8 +12,8 @@ struct SkillSymLinkerTests {
     func test_setSymLink_createsSymlinksForAllAgents() throws {
         let skillName = "find-skills"
         let agents = [
-            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills"),
-            AgentInfo(id: "cursor", projectSkillsPath: ".cursor/skills")
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills"),
+            AgentInfo(id: "cursor", projectSkillsPath: ".cursor/skills", globalSkillsPath: "~/.cursor/skills")
         ]
 
         let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
@@ -33,7 +33,7 @@ struct SkillSymLinkerTests {
     func test_setSymLink_removesExistingSymlink() throws {
         let skillName = "find-skills"
         let agents = [
-            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills")
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
         ]
 
         let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
@@ -58,7 +58,7 @@ struct SkillSymLinkerTests {
         let skillName = "find-skills"
         let agentSkillsPath = ".claude/skills"
         let agents = [
-            AgentInfo(id: "claude-code", projectSkillsPath: agentSkillsPath)
+            AgentInfo(id: "claude-code", projectSkillsPath: agentSkillsPath, globalSkillsPath: "~/.claude/skills")
         ]
 
         let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)

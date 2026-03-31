@@ -48,7 +48,7 @@ struct AgentRegistryTests {
 
     @Test
     func test_all_hasExpectedCount() {
-        #expect(AgentRegistry.all.count == 27)
+        #expect(AgentRegistry.all.count == 45)
     }
 
     @Test
@@ -62,6 +62,6 @@ struct AgentRegistryTests {
         let claudeCode = AgentRegistry.agents(for: ["claude-code"]).first
         #expect(claudeCode?.projectSkillsPath == ".claude/skills")
         let cursor = AgentRegistry.agents(for: ["cursor"]).first
-        #expect(cursor?.projectSkillsPath == ".cursor/rules")
+        #expect(cursor?.projectSkillsPath == ".agents/skills")
     }
 }

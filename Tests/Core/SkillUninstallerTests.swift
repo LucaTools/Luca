@@ -13,8 +13,8 @@ struct SkillUninstallerTests {
 
         let skillName = "find-skills"
         let agents = [
-            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills"),
-            AgentInfo(id: "cursor", projectSkillsPath: ".cursor/skills")
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills"),
+            AgentInfo(id: "cursor", projectSkillsPath: ".cursor/skills", globalSkillsPath: "~/.cursor/skills")
         ]
 
         // Create the skill cache folder
@@ -64,7 +64,7 @@ struct SkillUninstallerTests {
 
         let skillName = "find-skills"
         let agents = [
-            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills")
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
         ]
 
         // Create the skill cache folder but no agent symlinks

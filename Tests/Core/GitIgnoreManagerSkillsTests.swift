@@ -19,8 +19,8 @@ struct GitIgnoreManagerSkillsTests {
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
         let agents = [
-            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills"),
-            AgentInfo(id: "cursor", projectSkillsPath: ".cursor/rules")
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills"),
+            AgentInfo(id: "cursor", projectSkillsPath: ".cursor/rules", globalSkillsPath: "~/.cursor/skills")
         ]
 
         try sut.ensureGitIgnoreIncludesSkillFolders(agents: agents)
@@ -36,8 +36,8 @@ struct GitIgnoreManagerSkillsTests {
         let gitDirectory = currentDirectory.appending(component: ".git")
         try fileManager.createDirectory(at: gitDirectory, withIntermediateDirectories: true)
         let agents = [
-            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills"),
-            AgentInfo(id: "cursor", projectSkillsPath: ".cursor/rules")
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills"),
+            AgentInfo(id: "cursor", projectSkillsPath: ".cursor/rules", globalSkillsPath: "~/.cursor/skills")
         ]
 
         try sut.ensureGitIgnoreIncludesSkillFolders(agents: agents)
@@ -57,7 +57,7 @@ struct GitIgnoreManagerSkillsTests {
         let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
         try fileManager.writeString("existing\n", to: gitIgnoreFile)
         let agents = [
-            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills")
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
         ]
 
         try sut.ensureGitIgnoreIncludesSkillFolders(agents: agents)
@@ -75,7 +75,7 @@ struct GitIgnoreManagerSkillsTests {
         let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
         try fileManager.writeString(".luca/skills\n.claude/skills\n", to: gitIgnoreFile)
         let agents = [
-            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills")
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
         ]
 
         try sut.ensureGitIgnoreIncludesSkillFolders(agents: agents)
@@ -93,7 +93,7 @@ struct GitIgnoreManagerSkillsTests {
         let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
         try fileManager.writeString("existing", to: gitIgnoreFile)
         let agents = [
-            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills")
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
         ]
 
         try sut.ensureGitIgnoreIncludesSkillFolders(agents: agents)
