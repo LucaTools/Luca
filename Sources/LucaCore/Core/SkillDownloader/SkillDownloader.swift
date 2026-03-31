@@ -122,8 +122,9 @@ struct SkillDownloader: SkillDownloading {
                     cachedRootContent: content
                 ))
             } else {
-                let skillDir = URL(fileURLWithPath: skillMdPath).deletingLastPathComponent().path
-                let name = URL(fileURLWithPath: skillDir).lastPathComponent
+                // Use string splitting to preserve relative paths (not URL resolution).
+                let skillDir = skillMdPath.components(separatedBy: "/").dropLast().joined(separator: "/")
+                let name = skillDir.components(separatedBy: "/").last ?? skillDir
                 // Include every path that lives inside this skill's directory.
                 let filePaths = allPaths.filter { $0.hasPrefix(skillDir + "/") }
                 skillEntries.append(SkillEntry(

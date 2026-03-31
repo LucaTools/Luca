@@ -75,13 +75,14 @@ struct GitHubSkillTreeClient: GitHubSkillTreeFetching {
                 throw GitHubSkillTreeClientError.treeTruncated
             }
             let allBlobs = tree.tree.filter { $0.type == "blob" }
-            // Identify directories that contain a SKILL.md (excluding the repo root)
+            // Identify directories that contain a SKILL.md (excluding the repo root).
+            // Use string splitting to preserve the relative path (not URL resolution).
             let skillDirectories: Set<String> = Set(
                 allBlobs
                     .filter { $0.path.hasSuffix("SKILL.md") && $0.path != "SKILL.md" }
-                    .map { URL(fileURLWithPath: $0.path).deletingLastPathComponent().path }
+                    .map { $0.path.components(separatedBy: "/").dropLast().joined(separator: "/") }
             )
-            // Include all SKILL.md files plus every file inside a skill directory
+            // Include all SKILL.md files plus every file inside a skill directory.
             return allBlobs
                 .filter { item in
                     if item.path.hasSuffix("SKILL.md") { return true }

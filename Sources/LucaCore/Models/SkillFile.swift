@@ -8,7 +8,7 @@ import Foundation
 /// For example, a skill named `find-skills` may contain:
 /// - `relativePath: "SKILL.md"`, the skill definition
 /// - `relativePath: "resources/template.md"`, an auxiliary resource
-public struct SkillFile: Equatable {
+public struct SkillFile: Equatable, Sendable {
     /// The path of this file relative to the skill's root directory.
     ///
     /// For example `"SKILL.md"` or `"resources/template.md"`.

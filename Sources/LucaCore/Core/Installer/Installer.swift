@@ -243,11 +243,15 @@ public struct Installer {
         printer.printFormatted("\(.raw("🧩 Installing skills from \(skillSet.repository)..."))")
         if experimental {
             let skills = try await skillDownloader.download(skillSet: skillSet)
-            for (name, content) in skills {
+            for (name, files) in skills {
                 let skillFolder = fileManager.skillsCacheFolder.appending(component: name)
                 try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
-                let skillFile = skillFolder.appending(component: "SKILL.md")
-                _ = fileManager.createFile(atPath: skillFile.path, contents: content)
+                for skillFile in files {
+                    let filePath = skillFolder.appendingPathComponent(skillFile.relativePath)
+                    let parentDir = filePath.deletingLastPathComponent()
+                    try fileManager.createDirectory(at: parentDir, withIntermediateDirectories: true)
+                    _ = fileManager.createFile(atPath: filePath.path, contents: skillFile.content)
+                }
                 try skillSymLinker.setSymLink(skillName: name, agents: resolvedAgents)
             }
         } else {
