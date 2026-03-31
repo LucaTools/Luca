@@ -95,43 +95,47 @@ struct SkillDownloader: SkillDownloading {
         }
 
         // Phase 1: build skill entries — name, skill directory, and the set of file paths to download.
-        // For a root SKILL.md the name comes from frontmatter, so we download it early and cache it.
+        // SKILL.md is always fetched early (for both root and nested skills) to extract the name from
+        // frontmatter. The downloaded content is cached so Phase 3 can reuse it without a second request.
         struct SkillEntry {
             let name: String
             let skillDir: String        // empty string for a root-level SKILL.md
             let filePaths: [String]
-            let cachedRootContent: Data? // non-nil only for the root SKILL.md skill
+            let cachedSkillMdContent: Data
         }
 
         var skillEntries: [SkillEntry] = []
 
         for skillMdPath in skillMdPaths {
+            let content: Data
+            do {
+                content = try await gitHubClient.downloadSkill(owner: owner, repo: repo, path: skillMdPath)
+            } catch {
+                throw SkillDownloaderError.downloadFailed(path: skillMdPath)
+            }
+
             if skillMdPath == "SKILL.md" {
-                // Root skill: fetch early to extract the skill name from frontmatter.
-                let content: Data
-                do {
-                    content = try await gitHubClient.downloadSkill(owner: owner, repo: repo, path: skillMdPath)
-                } catch {
-                    throw SkillDownloaderError.downloadFailed(path: skillMdPath)
-                }
+                // Root skill: name comes from frontmatter, falling back to the repo name.
                 let name = (try? frontmatterParser.skillName(from: content)) ?? repo
                 skillEntries.append(SkillEntry(
                     name: name,
                     skillDir: "",
                     filePaths: ["SKILL.md"],
-                    cachedRootContent: content
+                    cachedSkillMdContent: content
                 ))
             } else {
+                // Nested skill: name comes from frontmatter, falling back to the parent folder name.
                 // Use string splitting to preserve relative paths (not URL resolution).
                 let skillDir = skillMdPath.components(separatedBy: "/").dropLast().joined(separator: "/")
-                let name = skillDir.components(separatedBy: "/").last ?? skillDir
+                let folderName = skillDir.components(separatedBy: "/").last ?? skillDir
+                let name = (try? frontmatterParser.skillName(from: content)) ?? folderName
                 // Include every path that lives inside this skill's directory.
                 let filePaths = allPaths.filter { $0.hasPrefix(skillDir + "/") }
                 skillEntries.append(SkillEntry(
                     name: name,
                     skillDir: skillDir,
                     filePaths: filePaths,
-                    cachedRootContent: nil
+                    cachedSkillMdContent: content
                 ))
             }
         }
@@ -152,9 +156,10 @@ struct SkillDownloader: SkillDownloading {
             var files: [SkillFile] = []
             for filePath in entry.filePaths {
                 let content: Data
-                // Reuse the cached root SKILL.md content to avoid a redundant HTTP request.
-                if entry.skillDir.isEmpty, let cached = entry.cachedRootContent {
-                    content = cached
+                // Reuse the cached SKILL.md content (fetched in Phase 1) to avoid a redundant request.
+                let isSkillMd = entry.skillDir.isEmpty ? filePath == "SKILL.md" : filePath == entry.skillDir + "/SKILL.md"
+                if isSkillMd {
+                    content = entry.cachedSkillMdContent
                 } else {
                     do {
                         content = try await gitHubClient.downloadSkill(owner: owner, repo: repo, path: filePath)

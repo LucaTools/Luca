@@ -239,6 +239,47 @@ struct SkillDownloaderTests {
         }
     }
 
+    // MARK: - test_download_nestedSkillMd_usesNameFromFrontmatter
+
+    @Test
+    func test_download_nestedSkillMd_usesNameFromFrontmatter() async throws {
+        let client = MultiSkillGitHubClientMock()
+        client.skillPathsResult = .success(["skills/composition-patterns/SKILL.md"])
+        let skillContent = """
+        ---
+        name: vercel-composition-patterns
+        description: Composition patterns skill
+        ---
+
+        # Skill content
+        """.data(using: .utf8)!
+        client.downloadResults = ["skills/composition-patterns/SKILL.md": skillContent]
+        let sut = SkillDownloader(gitHubClient: client)
+        let skillSet = SkillSet(repository: "owner/repo", skills: [])
+
+        let results = try await sut.download(skillSet: skillSet)
+
+        #expect(results.count == 1)
+        #expect(results[0].name == "vercel-composition-patterns")
+    }
+
+    // MARK: - test_download_nestedSkillMd_noFrontmatter_fallsBackToFolderName
+
+    @Test
+    func test_download_nestedSkillMd_noFrontmatter_fallsBackToFolderName() async throws {
+        let client = MultiSkillGitHubClientMock()
+        client.skillPathsResult = .success(["skills/my-skill/SKILL.md"])
+        let skillContent = Data("# No frontmatter here\n\nJust content.".utf8)
+        client.downloadResults = ["skills/my-skill/SKILL.md": skillContent]
+        let sut = SkillDownloader(gitHubClient: client)
+        let skillSet = SkillSet(repository: "owner/repo", skills: [])
+
+        let results = try await sut.download(skillSet: skillSet)
+
+        #expect(results.count == 1)
+        #expect(results[0].name == "my-skill")
+    }
+
     // MARK: - test_download_rootSkillMd_noFrontmatter_fallsBackToRepoName
 
     @Test
