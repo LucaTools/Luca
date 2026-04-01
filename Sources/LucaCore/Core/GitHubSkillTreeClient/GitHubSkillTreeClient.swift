@@ -9,7 +9,7 @@ import FoundationNetworking
 
 /// Errors thrown by ``GitHubSkillTreeClient``.
 enum GitHubSkillTreeClientError: Error, LocalizedError, Equatable {
-    /// The URL could not be constructed from the provided parameters.
+    /// The repository reference could not be parsed or a URL could not be constructed.
     case invalidURL
     /// GitHub returned a non-200 HTTP status code.
     case unexpectedResponse(statusCode: Int)
@@ -35,7 +35,11 @@ enum GitHubSkillTreeClientError: Error, LocalizedError, Equatable {
 // MARK: - Implementation
 
 /// Retrieves skill metadata from a GitHub repository using the Git Trees API and raw content endpoint.
-struct GitHubSkillTreeClient: GitHubSkillTreeFetching {
+///
+/// This client is suitable for public repositories and private repositories where a GitHub
+/// personal access token is available. For private repositories or GitHub Enterprise instances
+/// where SSH-key authentication is preferred, use ``GitRepositorySkillFetcher`` instead.
+struct GitHubSkillTreeClient: SkillRepositoryFetching {
 
     // MARK: - Exclusion Lists
 
@@ -55,10 +59,11 @@ struct GitHubSkillTreeClient: GitHubSkillTreeFetching {
         self.dataDownloader = dataDownloader
     }
 
-    // MARK: - GitHubSkillTreeFetching
+    // MARK: - SkillRepositoryFetching
 
-    func skillPaths(owner: String, repo: String) async throws -> [String] {
-        let urlString = "https://api.github.com/repos/\(owner)/\(repo)/git/trees/HEAD?recursive=1"
+    func skillPaths(repository: String) async throws -> [String] {
+        let (owner, repo, host) = try parseRepository(repository)
+        let urlString = apiURL(host: host, owner: owner, repo: repo)
         guard let url = URL(string: urlString) else {
             throw GitHubSkillTreeClientError.invalidURL
         }
@@ -110,8 +115,9 @@ struct GitHubSkillTreeClient: GitHubSkillTreeFetching {
         }
     }
 
-    func downloadSkill(owner: String, repo: String, path: String) async throws -> Data {
-        let urlString = "https://raw.githubusercontent.com/\(owner)/\(repo)/HEAD/\(path)"
+    func downloadSkill(repository: String, path: String) async throws -> Data {
+        let (owner, repo, host) = try parseRepository(repository)
+        let urlString = rawURL(host: host, owner: owner, repo: repo, path: path)
         guard let url = URL(string: urlString) else {
             throw GitHubSkillTreeClientError.invalidURL
         }
@@ -130,6 +136,71 @@ struct GitHubSkillTreeClient: GitHubSkillTreeFetching {
         }
 
         return data
+    }
+
+    // MARK: - Private URL Helpers
+
+    /// Returns the Git Trees API URL for the given host.
+    ///
+    /// Uses `api.github.com` for `github.com`; falls back to the GitHub Enterprise Server
+    /// REST API base (`https://{host}/api/v3`) for any other hostname.
+    private func apiURL(host: String, owner: String, repo: String) -> String {
+        let base = host == "github.com"
+            ? "https://api.github.com"
+            : "https://\(host)/api/v3"
+        return "\(base)/repos/\(owner)/\(repo)/git/trees/HEAD?recursive=1"
+    }
+
+    /// Returns the raw-content URL for the given host.
+    ///
+    /// Uses `raw.githubusercontent.com` for `github.com`; falls back to the GitHub Enterprise
+    /// Server raw endpoint (`https://{host}/{owner}/{repo}/raw/HEAD/{path}`) for any other hostname.
+    private func rawURL(host: String, owner: String, repo: String, path: String) -> String {
+        return host == "github.com"
+            ? "https://raw.githubusercontent.com/\(owner)/\(repo)/HEAD/\(path)"
+            : "https://\(host)/\(owner)/\(repo)/raw/HEAD/\(path)"
+    }
+
+    // MARK: - Private Repository Parsing
+
+    /// Parses a repository reference into `(owner, repo, host)`.
+    ///
+    /// Supports SSH URLs, HTTPS URLs, and `owner/repo` shorthand.
+    private func parseRepository(_ repository: String) throws -> (owner: String, repo: String, host: String) {
+        // SSH URL: git@hostname:owner/repo or git@hostname:owner/repo.git
+        if repository.hasPrefix("git@") {
+            let withoutPrefix = String(repository.dropFirst(4))
+            let colonParts = withoutPrefix.split(separator: ":", maxSplits: 1).map(String.init)
+            guard colonParts.count == 2, !colonParts[0].isEmpty else {
+                throw GitHubSkillTreeClientError.invalidURL
+            }
+            let host = colonParts[0]
+            let pathParts = colonParts[1].split(separator: "/", maxSplits: 1).map(String.init)
+            guard pathParts.count == 2, !pathParts[0].isEmpty, !pathParts[1].isEmpty else {
+                throw GitHubSkillTreeClientError.invalidURL
+            }
+            var repoName = pathParts[1]
+            if repoName.hasSuffix(".git") { repoName = String(repoName.dropLast(4)) }
+            return (owner: pathParts[0], repo: repoName, host: host)
+        }
+
+        // Full HTTPS URL: https://hostname/owner/repo or https://hostname/owner/repo.git
+        if let url = URL(string: repository), let scheme = url.scheme, (scheme == "https" || scheme == "http"), let host = url.host {
+            let pathComponents = url.pathComponents.filter { $0 != "/" }
+            guard pathComponents.count >= 2, !pathComponents[0].isEmpty, !pathComponents[1].isEmpty else {
+                throw GitHubSkillTreeClientError.invalidURL
+            }
+            var repoName = pathComponents[1]
+            if repoName.hasSuffix(".git") { repoName = String(repoName.dropLast(4)) }
+            return (owner: pathComponents[0], repo: repoName, host: host)
+        }
+
+        // Shorthand: owner/repo (defaults to github.com)
+        let components = repository.split(separator: "/", maxSplits: 1).map(String.init)
+        guard components.count == 2, !components[0].isEmpty, !components[1].isEmpty else {
+            throw GitHubSkillTreeClientError.invalidURL
+        }
+        return (owner: components[0], repo: components[1], host: "github.com")
     }
 }
 

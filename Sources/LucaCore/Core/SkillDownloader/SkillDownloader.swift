@@ -2,20 +2,24 @@
 
 import Foundation
 
-/// Downloads skill files from a GitHub repository.
+/// Downloads skill files from a repository.
 ///
 /// `SkillDownloader` parses the repository reference from a ``SkillSet``, fetches the list of
-/// skill-related paths from the GitHub tree, optionally filters by requested skill names, downloads
-/// every file in each skill's directory, and returns the results as `(name, files)` pairs where
-/// `files` contains all ``SkillFile`` values with paths relative to the skill root.
+/// skill-related paths, optionally filters by requested skill names, downloads every file in
+/// each skill's directory, and returns the results as `(name, files)` pairs where `files`
+/// contains all ``SkillFile`` values with paths relative to the skill root.
 struct SkillDownloader: SkillDownloading {
 
     // MARK: - Error
 
     /// Errors thrown by ``SkillDownloader``.
     enum SkillDownloaderError: Error, LocalizedError, Equatable {
-        /// The repository string cannot be parsed as `owner/repo` or a GitHub HTTPS URL.
+        /// The repository string cannot be parsed as `owner/repo`, an HTTPS URL, or an SSH URL.
         case invalidRepository(String)
+        /// The git executable was not found on the system.
+        case gitNotFound
+        /// Cloning the repository failed.
+        case cloneFailed(repository: String)
         /// GitHub returned 404 for the given repository.
         case repositoryNotFound(String)
         /// GitHub returned 403 or 429 (rate-limit exceeded).
@@ -30,9 +34,13 @@ struct SkillDownloader: SkillDownloading {
         var errorDescription: String? {
             switch self {
             case .invalidRepository(let repo):
-                return "'\(repo)' could not be parsed as a GitHub repository reference (expected 'owner/repo' or a GitHub HTTPS URL)."
+                return "'\(repo)' could not be parsed as a repository reference (expected 'owner/repo', a GitHub HTTPS URL, or an SSH URL such as 'git@github.com:owner/repo.git')."
+            case .gitNotFound:
+                return "Could not find git at /usr/bin/git. Please install git (e.g. Xcode Command Line Tools on macOS)."
+            case .cloneFailed(let repo):
+                return "Failed to clone '\(repo)'. Ensure the URL is correct and that you have access — for SSH repositories, verify that your SSH key is loaded and authorised for this host."
             case .repositoryNotFound(let repo):
-                return "Repository '\(repo)' was not found on GitHub."
+                return "Repository '\(repo)' was not found."
             case .rateLimitExceeded:
                 return "GitHub API rate limit exceeded. Please wait before trying again."
             case .noSkillsFound(let repo):
@@ -47,16 +55,16 @@ struct SkillDownloader: SkillDownloading {
 
     // MARK: - Properties
 
-    private let gitHubClient: GitHubSkillTreeFetching
+    private let skillFetcher: SkillRepositoryFetching
     private let frontmatterParser: SkillFrontmatterParsing
 
     // MARK: - Init
 
     init(
-        gitHubClient: GitHubSkillTreeFetching = GitHubSkillTreeClient(),
+        skillFetcher: SkillRepositoryFetching = GitRepositorySkillFetcher(),
         frontmatterParser: SkillFrontmatterParsing = SkillFrontmatterParser()
     ) {
-        self.gitHubClient = gitHubClient
+        self.skillFetcher = skillFetcher
         self.frontmatterParser = frontmatterParser
     }
 
@@ -69,11 +77,20 @@ struct SkillDownloader: SkillDownloading {
     ///   skill's directory with paths relative to the skill root (e.g. `"SKILL.md"`,
     ///   `"resources/template.md"`).
     func download(skillSet: SkillSet) async throws -> [(name: String, files: [SkillFile])] {
-        let (owner, repo) = try parseRepository(skillSet.repository)
+        let repoName = try extractRepoName(from: skillSet.repository)
 
         let allPaths: [String]
         do {
-            allPaths = try await gitHubClient.skillPaths(owner: owner, repo: repo)
+            allPaths = try await skillFetcher.skillPaths(repository: skillSet.repository)
+        } catch let fetcherError as GitRepositorySkillFetcherError {
+            switch fetcherError {
+            case .gitNotFound:
+                throw SkillDownloaderError.gitNotFound
+            case .cloneFailed(let repo, _):
+                throw SkillDownloaderError.cloneFailed(repository: repo)
+            case .fileReadFailed(let path):
+                throw SkillDownloaderError.downloadFailed(path: path)
+            }
         } catch let clientError as GitHubSkillTreeClientError {
             if case .unexpectedResponse(let statusCode) = clientError {
                 switch statusCode {
@@ -109,14 +126,14 @@ struct SkillDownloader: SkillDownloading {
         for skillMdPath in skillMdPaths {
             let content: Data
             do {
-                content = try await gitHubClient.downloadSkill(owner: owner, repo: repo, path: skillMdPath)
+                content = try await skillFetcher.downloadSkill(repository: skillSet.repository, path: skillMdPath)
             } catch {
                 throw SkillDownloaderError.downloadFailed(path: skillMdPath)
             }
 
             if skillMdPath == "SKILL.md" {
                 // Root skill: name comes from frontmatter, falling back to the repo name.
-                let name = (try? frontmatterParser.skillName(from: content)) ?? repo
+                let name = (try? frontmatterParser.skillName(from: content)) ?? repoName
                 skillEntries.append(SkillEntry(
                     name: name,
                     skillDir: "",
@@ -162,7 +179,7 @@ struct SkillDownloader: SkillDownloading {
                     content = entry.cachedSkillMdContent
                 } else {
                     do {
-                        content = try await gitHubClient.downloadSkill(owner: owner, repo: repo, path: filePath)
+                        content = try await skillFetcher.downloadSkill(repository: skillSet.repository, path: filePath)
                     } catch {
                         throw SkillDownloaderError.downloadFailed(path: filePath)
                     }
@@ -180,29 +197,45 @@ struct SkillDownloader: SkillDownloading {
 
     // MARK: - Private Helpers
 
-    /// Parses a repository reference into `(owner, repo)`.
+    /// Extracts the repository name from a repository reference for use as a skill name fallback.
     ///
-    /// Supports `owner/repo` shorthand and full HTTPS GitHub URLs (with optional `.git` suffix).
-    private func parseRepository(_ repository: String) throws -> (owner: String, repo: String) {
-        // Full HTTPS URL: https://github.com/owner/repo or https://github.com/owner/repo.git
-        if repository.hasPrefix("https://github.com/") || repository.hasPrefix("http://github.com/") {
-            let withoutScheme = repository
-                .replacingOccurrences(of: "https://github.com/", with: "")
-                .replacingOccurrences(of: "http://github.com/", with: "")
-            let components = withoutScheme.split(separator: "/", maxSplits: 1).map(String.init)
-            guard components.count == 2, !components[0].isEmpty, !components[1].isEmpty else {
+    /// Also validates that the reference is parseable, throwing ``SkillDownloaderError/invalidRepository(_:)``
+    /// for strings that do not match any supported format.
+    private func extractRepoName(from repository: String) throws -> String {
+        // SSH: git@host:owner/repo.git → "repo"
+        if repository.hasPrefix("git@") {
+            let withoutPrefix = String(repository.dropFirst(4))
+            guard let colonIndex = withoutPrefix.firstIndex(of: ":") else {
                 throw SkillDownloaderError.invalidRepository(repository)
             }
-            var repoName = components[1]
-            if repoName.hasSuffix(".git") { repoName = String(repoName.dropLast(4)) }
-            return (owner: components[0], repo: repoName)
+            let path = String(withoutPrefix[withoutPrefix.index(after: colonIndex)...])
+            let parts = path.split(separator: "/").map(String.init)
+            guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else {
+                throw SkillDownloaderError.invalidRepository(repository)
+            }
+            var name = parts[1]
+            if name.hasSuffix(".git") { name = String(name.dropLast(4)) }
+            return name
         }
 
-        // Shorthand: owner/repo
+        // HTTPS/HTTP URL: https://host/owner/repo[.git] → "repo"
+        if let url = URL(string: repository),
+           let scheme = url.scheme, (scheme == "https" || scheme == "http"),
+           url.host != nil {
+            let pathComponents = url.pathComponents.filter { $0 != "/" }
+            guard pathComponents.count >= 2, !pathComponents[1].isEmpty else {
+                throw SkillDownloaderError.invalidRepository(repository)
+            }
+            var name = pathComponents[1]
+            if name.hasSuffix(".git") { name = String(name.dropLast(4)) }
+            return name
+        }
+
+        // Shorthand: owner/repo → "repo"
         let components = repository.split(separator: "/", maxSplits: 1).map(String.init)
         guard components.count == 2, !components[0].isEmpty, !components[1].isEmpty else {
             throw SkillDownloaderError.invalidRepository(repository)
         }
-        return (owner: components[0], repo: components[1])
+        return components[1]
     }
 }

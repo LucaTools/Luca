@@ -137,6 +137,8 @@ struct ErrorDescriptionTests {
     @Test
     func skillDownloaderError_errorDescription() {
         #expect(SkillDownloader.SkillDownloaderError.invalidRepository("owner/repo").errorDescription != nil)
+        #expect(SkillDownloader.SkillDownloaderError.gitNotFound.errorDescription != nil)
+        #expect(SkillDownloader.SkillDownloaderError.cloneFailed(repository: "owner/repo").errorDescription != nil)
         #expect(SkillDownloader.SkillDownloaderError.repositoryNotFound("owner/repo").errorDescription != nil)
         #expect(SkillDownloader.SkillDownloaderError.rateLimitExceeded.errorDescription != nil)
         #expect(SkillDownloader.SkillDownloaderError.noSkillsFound(repository: "owner/repo").errorDescription != nil)
@@ -153,5 +155,12 @@ struct ErrorDescriptionTests {
     @Test
     func skillUninstallerError_errorDescription() {
         #expect(SkillUninstaller.SkillUninstallerError.skillNotFound(name: "my-skill").errorDescription != nil)
+    }
+
+    @Test
+    func gitRepositorySkillFetcherError_errorDescription() {
+        #expect(GitRepositorySkillFetcherError.gitNotFound.errorDescription != nil)
+        #expect(GitRepositorySkillFetcherError.cloneFailed(repository: "owner/repo", exitCode: 128).errorDescription != nil)
+        #expect(GitRepositorySkillFetcherError.fileReadFailed(path: "/some/path").errorDescription != nil)
     }
 }

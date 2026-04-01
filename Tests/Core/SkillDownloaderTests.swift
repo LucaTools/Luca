@@ -10,16 +10,16 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_allSkills() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success([
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success([
             "skills/foo/SKILL.md",
             "skills/bar/SKILL.md"
         ])
-        client.downloadResults = [
+        fetcher.downloadResults = [
             "skills/foo/SKILL.md": Data("foo content".utf8),
             "skills/bar/SKILL.md": Data("bar content".utf8)
         ]
-        let sut = SkillDownloader(gitHubClient: client)
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: [])
 
         let results = try await sut.download(skillSet: skillSet)
@@ -38,18 +38,18 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_filteredByName() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success([
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success([
             "skills/foo/SKILL.md",
             "skills/bar/SKILL.md",
             "skills/baz/SKILL.md"
         ])
-        client.downloadResults = [
+        fetcher.downloadResults = [
             "skills/foo/SKILL.md": Data("foo content".utf8),
             "skills/bar/SKILL.md": Data("bar content".utf8),
             "skills/baz/SKILL.md": Data("baz content".utf8)
         ]
-        let sut = SkillDownloader(gitHubClient: client)
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: ["foo", "baz"])
 
         let results = try await sut.download(skillSet: skillSet)
@@ -65,16 +65,16 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_includesAuxiliaryFiles() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success([
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success([
             "skills/foo/SKILL.md",
             "skills/foo/resources/template.md"
         ])
-        client.downloadResults = [
+        fetcher.downloadResults = [
             "skills/foo/SKILL.md": Data("foo skill".utf8),
             "skills/foo/resources/template.md": Data("template content".utf8)
         ]
-        let sut = SkillDownloader(gitHubClient: client)
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: [])
 
         let results = try await sut.download(skillSet: skillSet)
@@ -93,14 +93,14 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_skillNotFound() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success([
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success([
             "skills/foo/SKILL.md"
         ])
-        client.downloadResults = [
+        fetcher.downloadResults = [
             "skills/foo/SKILL.md": Data("foo content".utf8)
         ]
-        let sut = SkillDownloader(gitHubClient: client)
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: ["missing-skill"])
 
         await #expect(throws: SkillDownloader.SkillDownloaderError.skillNotFound(name: "missing-skill", repository: "owner/repo")) {
@@ -112,9 +112,9 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_repositoryNotFound() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .failure(GitHubSkillTreeClientError.unexpectedResponse(statusCode: 404))
-        let sut = SkillDownloader(gitHubClient: client)
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .failure(GitHubSkillTreeClientError.unexpectedResponse(statusCode: 404))
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/missing-repo", skills: [])
 
         await #expect(throws: SkillDownloader.SkillDownloaderError.repositoryNotFound("owner/missing-repo")) {
@@ -126,12 +126,40 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_rateLimitExceeded() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .failure(GitHubSkillTreeClientError.unexpectedResponse(statusCode: 403))
-        let sut = SkillDownloader(gitHubClient: client)
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .failure(GitHubSkillTreeClientError.unexpectedResponse(statusCode: 403))
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: [])
 
         await #expect(throws: SkillDownloader.SkillDownloaderError.rateLimitExceeded) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
+
+    // MARK: - test_download_gitNotFound
+
+    @Test
+    func test_download_gitNotFound() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .failure(GitRepositorySkillFetcherError.gitNotFound)
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "git@github.com:owner/repo.git", skills: [])
+
+        await #expect(throws: SkillDownloader.SkillDownloaderError.gitNotFound) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
+
+    // MARK: - test_download_cloneFailed
+
+    @Test
+    func test_download_cloneFailed() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .failure(GitRepositorySkillFetcherError.cloneFailed(repository: "git@github.com:owner/repo.git", exitCode: 128))
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "git@github.com:owner/repo.git", skills: [])
+
+        await #expect(throws: SkillDownloader.SkillDownloaderError.cloneFailed(repository: "git@github.com:owner/repo.git")) {
             try await sut.download(skillSet: skillSet)
         }
     }
@@ -140,9 +168,9 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_noSkillsFound() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success([])
-        let sut = SkillDownloader(gitHubClient: client)
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success([])
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: [])
 
         await #expect(throws: SkillDownloader.SkillDownloaderError.noSkillsFound(repository: "owner/repo")) {
@@ -154,8 +182,8 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_invalidRepository() async throws {
-        let client = MultiSkillGitHubClientMock()
-        let sut = SkillDownloader(gitHubClient: client)
+        let fetcher = SkillRepositoryFetchingMock()
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "not-a-valid-repo-string", skills: [])
 
         await #expect(throws: SkillDownloader.SkillDownloaderError.invalidRepository("not-a-valid-repo-string")) {
@@ -167,8 +195,8 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_rootSkillMd_usesNameFromFrontmatter() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success(["SKILL.md"])
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["SKILL.md"])
         let skillContent = """
         ---
         name: my-root-skill
@@ -177,8 +205,8 @@ struct SkillDownloaderTests {
 
         # Root skill content
         """.data(using: .utf8)!
-        client.downloadResults = ["SKILL.md": skillContent]
-        let sut = SkillDownloader(gitHubClient: client)
+        fetcher.downloadResults = ["SKILL.md": skillContent]
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: [])
 
         let results = try await sut.download(skillSet: skillSet)
@@ -189,49 +217,60 @@ struct SkillDownloaderTests {
         #expect(results[0].files[0].content == skillContent)
     }
 
-    // MARK: - test_download_httpsUrl_parsesOwnerRepo
+    // MARK: - test_download_sshUrl_passesRepositoryVerbatim
 
     @Test
-    func test_download_httpsUrl_parsesOwnerRepo() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success(["skills/foo/SKILL.md"])
-        client.downloadResults = ["skills/foo/SKILL.md": Data("foo".utf8)]
-        let sut = SkillDownloader(gitHubClient: client)
-        let skillSet = SkillSet(repository: "https://github.com/owner/repo", skills: [])
+    func test_download_sshUrl_passesRepositoryVerbatim() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["skills/foo/SKILL.md"])
+        fetcher.downloadResults = ["skills/foo/SKILL.md": Data("foo".utf8)]
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "git@github.com:owner/repo.git", skills: [])
 
-        let results = try await sut.download(skillSet: skillSet)
+        _ = try await sut.download(skillSet: skillSet)
 
-        #expect(results.count == 1)
-        #expect(client.lastOwner == "owner")
-        #expect(client.lastRepo == "repo")
+        #expect(fetcher.lastRepository == "git@github.com:owner/repo.git")
     }
 
-    // MARK: - test_download_httpsUrlWithGitSuffix_parsesOwnerRepo
+    // MARK: - test_download_sshUrlGitHubEnterprise_passesRepositoryVerbatim
 
     @Test
-    func test_download_httpsUrlWithGitSuffix_parsesOwnerRepo() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success(["skills/bar/SKILL.md"])
-        client.downloadResults = ["skills/bar/SKILL.md": Data("bar".utf8)]
-        let sut = SkillDownloader(gitHubClient: client)
-        let skillSet = SkillSet(repository: "https://github.com/owner/repo.git", skills: [])
+    func test_download_sshUrlGitHubEnterprise_passesRepositoryVerbatim() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["skills/foo/SKILL.md"])
+        fetcher.downloadResults = ["skills/foo/SKILL.md": Data("foo".utf8)]
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "git@github.je-labs.com:ai-platform/skills.git", skills: [])
 
-        let results = try await sut.download(skillSet: skillSet)
+        _ = try await sut.download(skillSet: skillSet)
 
-        #expect(results.count == 1)
-        #expect(client.lastOwner == "owner")
-        #expect(client.lastRepo == "repo")
+        #expect(fetcher.lastRepository == "git@github.je-labs.com:ai-platform/skills.git")
+    }
+
+    // MARK: - test_download_httpsUrl_passesRepositoryVerbatim
+
+    @Test
+    func test_download_httpsUrl_passesRepositoryVerbatim() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["skills/foo/SKILL.md"])
+        fetcher.downloadResults = ["skills/foo/SKILL.md": Data("foo".utf8)]
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "https://github.com/owner/repo", skills: [])
+
+        _ = try await sut.download(skillSet: skillSet)
+
+        #expect(fetcher.lastRepository == "https://github.com/owner/repo")
     }
 
     // MARK: - test_download_downloadFailed
 
     @Test
     func test_download_downloadFailed() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success(["skills/foo/SKILL.md"])
-        // No entry in downloadResults so the mock throws unexpectedResponse(404),
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["skills/foo/SKILL.md"])
+        // No entry in downloadResults so the mock throws an error,
         // which SkillDownloader wraps as downloadFailed.
-        let sut = SkillDownloader(gitHubClient: client)
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: [])
 
         await #expect(throws: SkillDownloader.SkillDownloaderError.downloadFailed(path: "skills/foo/SKILL.md")) {
@@ -243,8 +282,8 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_nestedSkillMd_usesNameFromFrontmatter() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success(["skills/composition-patterns/SKILL.md"])
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["skills/composition-patterns/SKILL.md"])
         let skillContent = """
         ---
         name: vercel-composition-patterns
@@ -253,8 +292,8 @@ struct SkillDownloaderTests {
 
         # Skill content
         """.data(using: .utf8)!
-        client.downloadResults = ["skills/composition-patterns/SKILL.md": skillContent]
-        let sut = SkillDownloader(gitHubClient: client)
+        fetcher.downloadResults = ["skills/composition-patterns/SKILL.md": skillContent]
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: [])
 
         let results = try await sut.download(skillSet: skillSet)
@@ -267,11 +306,11 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_nestedSkillMd_noFrontmatter_fallsBackToFolderName() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success(["skills/my-skill/SKILL.md"])
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["skills/my-skill/SKILL.md"])
         let skillContent = Data("# No frontmatter here\n\nJust content.".utf8)
-        client.downloadResults = ["skills/my-skill/SKILL.md": skillContent]
-        let sut = SkillDownloader(gitHubClient: client)
+        fetcher.downloadResults = ["skills/my-skill/SKILL.md": skillContent]
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: [])
 
         let results = try await sut.download(skillSet: skillSet)
@@ -284,11 +323,11 @@ struct SkillDownloaderTests {
 
     @Test
     func test_download_rootSkillMd_noFrontmatter_fallsBackToRepoName() async throws {
-        let client = MultiSkillGitHubClientMock()
-        client.skillPathsResult = .success(["SKILL.md"])
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["SKILL.md"])
         let skillContent = Data("# No frontmatter here\n\nJust content.".utf8)
-        client.downloadResults = ["SKILL.md": skillContent]
-        let sut = SkillDownloader(gitHubClient: client)
+        fetcher.downloadResults = ["SKILL.md": skillContent]
+        let sut = SkillDownloader(skillFetcher: fetcher)
         let skillSet = SkillSet(repository: "owner/repo", skills: [])
 
         let results = try await sut.download(skillSet: skillSet)
@@ -302,22 +341,20 @@ struct SkillDownloaderTests {
 
 // MARK: - Private Mock
 
-private final class MultiSkillGitHubClientMock: GitHubSkillTreeFetching, @unchecked Sendable {
+private final class SkillRepositoryFetchingMock: SkillRepositoryFetching, @unchecked Sendable {
 
     var skillPathsResult: Result<[String], Error> = .success([])
     var downloadResults: [String: Data] = [:]
-    var lastOwner: String?
-    var lastRepo: String?
+    var lastRepository: String?
 
-    func skillPaths(owner: String, repo: String) async throws -> [String] {
-        lastOwner = owner
-        lastRepo = repo
+    func skillPaths(repository: String) async throws -> [String] {
+        lastRepository = repository
         return try skillPathsResult.get()
     }
 
-    func downloadSkill(owner: String, repo: String, path: String) async throws -> Data {
+    func downloadSkill(repository: String, path: String) async throws -> Data {
         guard let data = downloadResults[path] else {
-            throw GitHubSkillTreeClientError.unexpectedResponse(statusCode: 404)
+            throw GitRepositorySkillFetcherError.fileReadFailed(path: path)
         }
         return data
     }

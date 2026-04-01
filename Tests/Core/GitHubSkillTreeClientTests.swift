@@ -8,13 +8,13 @@ struct GitHubSkillTreeClientTests {
 
     init() async throws {}
 
-    // MARK: - skillPaths(owner:repo:)
+    // MARK: - skillPaths(repository:)
 
     @Test
     func test_skillPaths_returnsSkillMdAndAuxiliaryFilePaths() async throws {
         let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
-        let paths = try await sut.skillPaths(owner: "owner", repo: "repo")
+        let paths = try await sut.skillPaths(repository: "owner/repo")
         // SKILL.md files for each skill
         #expect(paths.contains("skills/my-skill/SKILL.md"))
         #expect(paths.contains("skills/another-skill/SKILL.md"))
@@ -29,7 +29,7 @@ struct GitHubSkillTreeClientTests {
     func test_skillPaths_includesDeepNestedAuxiliaryFiles() async throws {
         let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeWithResources", type: "json")))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
-        let paths = try await sut.skillPaths(owner: "owner", repo: "repo")
+        let paths = try await sut.skillPaths(repository: "owner/repo")
         #expect(paths.contains("skills/foo/SKILL.md"))
         #expect(paths.contains("skills/foo/resources/template.md"))
         #expect(paths.contains("skills/foo/resources/examples/sample.yaml"))
@@ -40,7 +40,7 @@ struct GitHubSkillTreeClientTests {
     func test_skillPaths_excludesMetadataJsonAndExcludedDirectories() async throws {
         let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeWithExcludedFiles", type: "json")))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
-        let paths = try await sut.skillPaths(owner: "owner", repo: "repo")
+        let paths = try await sut.skillPaths(repository: "owner/repo")
         // Always included
         #expect(paths.contains("skills/foo/SKILL.md"))
         #expect(paths.contains("skills/foo/AGENTS.md"))
@@ -57,7 +57,7 @@ struct GitHubSkillTreeClientTests {
         let dataDownloader = DataDownloaderMock(result: .statusCode(404))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
         await #expect(throws: GitHubSkillTreeClientError.unexpectedResponse(statusCode: 404)) {
-            try await sut.skillPaths(owner: "owner", repo: "repo")
+            try await sut.skillPaths(repository: "owner/repo")
         }
     }
 
@@ -67,7 +67,7 @@ struct GitHubSkillTreeClientTests {
         let dataDownloader = DataDownloaderMock(result: .rawData(invalidJSON, 200))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
         await #expect(throws: GitHubSkillTreeClientError.decodingFailed) {
-            try await sut.skillPaths(owner: "owner", repo: "repo")
+            try await sut.skillPaths(repository: "owner/repo")
         }
     }
 
@@ -76,18 +76,18 @@ struct GitHubSkillTreeClientTests {
         let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeTruncated", type: "json")))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
         await #expect(throws: GitHubSkillTreeClientError.treeTruncated) {
-            try await sut.skillPaths(owner: "owner", repo: "repo")
+            try await sut.skillPaths(repository: "owner/repo")
         }
     }
 
-    // MARK: - downloadSkill(owner:repo:path:)
+    // MARK: - downloadSkill(repository:path:)
 
     @Test
     func test_downloadSkill_returnsData() async throws {
         let expectedData = Data("# My Skill\nThis is a skill.".utf8)
         let dataDownloader = DataDownloaderMock(result: .rawData(expectedData, 200))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
-        let data = try await sut.downloadSkill(owner: "owner", repo: "repo", path: "skills/my-skill/SKILL.md")
+        let data = try await sut.downloadSkill(repository: "owner/repo", path: "skills/my-skill/SKILL.md")
         #expect(data == expectedData)
     }
 
@@ -96,7 +96,7 @@ struct GitHubSkillTreeClientTests {
         let dataDownloader = DataDownloaderMock(result: .statusCode(403))
         let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
         await #expect(throws: GitHubSkillTreeClientError.unexpectedResponse(statusCode: 403)) {
-            try await sut.downloadSkill(owner: "owner", repo: "repo", path: "skills/my-skill/SKILL.md")
+            try await sut.downloadSkill(repository: "owner/repo", path: "skills/my-skill/SKILL.md")
         }
     }
 }

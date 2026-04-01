@@ -3,7 +3,7 @@
 import Foundation
 
 /// Runs an external process and returns its exit code.
-protocol SubprocessRunning {
+protocol SubprocessRunning: Sendable {
     /// Runs the executable at the given URL with the provided arguments.
     ///
     /// - Parameters:
