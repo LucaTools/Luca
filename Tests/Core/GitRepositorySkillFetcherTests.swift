@@ -49,6 +49,21 @@ struct GitRepositorySkillFetcherTests {
         #expect(runner.runCallCount == 1)
     }
 
+    // MARK: - test_skillPaths_disablesGitTerminalPrompt
+
+    @Test
+    func test_skillPaths_disablesGitTerminalPrompt() async throws {
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCode = 0
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        _ = try await sut.skillPaths(repository: "owner/repo")
+
+        let env = try #require(runner.recordedEnvironments.first)
+        #expect(env["GIT_TERMINAL_PROMPT"] == "0")
+    }
+
     // MARK: - test_skillPaths_clonesWithQuietFlag
 
     @Test
@@ -175,10 +190,12 @@ private final class SeedingSubprocessRunnerMock: SubprocessRunning, @unchecked S
     /// Relative paths → file contents to write into the clone destination.
     var filesToCreate: [String: String] = [:]
     var recordedArguments: [[String]] = []
+    var recordedEnvironments: [[String: String]] = []
     var runCallCount = 0
 
-    func run(executableURL: URL, arguments: [String]) async throws -> Int32 {
+    func run(executableURL: URL, arguments: [String], environment: [String: String]) async throws -> Int32 {
         recordedArguments.append(arguments)
+        recordedEnvironments.append(environment)
         runCallCount += 1
 
         guard exitCode == 0, let destPath = arguments.last else {

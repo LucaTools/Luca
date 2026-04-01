@@ -100,7 +100,8 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
 
         let exitCode = try await subprocessRunner.run(
             executableURL: Self.gitExecutableURL,
-            arguments: ["clone", "--quiet", "--depth", "1", gitURL, tempDir.path]
+            arguments: ["clone", "--quiet", "--depth", "1", gitURL, tempDir.path],
+            environment: ["GIT_TERMINAL_PROMPT": "0"]
         )
 
         guard exitCode == 0 else {
