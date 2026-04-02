@@ -191,21 +191,31 @@ public struct Installer {
     }
     
     private func installQuietly(installationType: SkillInstallationType, experimental: Bool) async throws {
-        let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
-        let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
-        // Compute resolvedAgents once (same for all SkillSets)
-        let resolvedAgents: [AgentInfo]
-        if let agentIds = skillsInfo.agents {
-            resolvedAgents = AgentRegistry.agents(for: agentIds)
-        } else {
-            resolvedAgents = AgentRegistry.all
-        }
-        for skillSet in skillsInfo.skillSets {
-            try await install(skillSet, agents: skillsInfo.agents, experimental: experimental, resolvedAgents: resolvedAgents)
-        }
-        if experimental {
-            let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
-            try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
+        try await noora.progressStep(
+            message: "Installing skills",
+            successMessage: "Skills have been installed for the current project",
+            errorMessage: "Failed to install skills",
+            showSpinner: true
+        ) { updateMessage in
+            let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
+
+            updateMessage("Detecting skills to install")
+            let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
+            // Compute resolvedAgents once (same for all SkillSets)
+            let resolvedAgents: [AgentInfo]
+            if let agentIds = skillsInfo.agents {
+                resolvedAgents = AgentRegistry.agents(for: agentIds)
+            } else {
+                resolvedAgents = AgentRegistry.all
+            }
+            for skillSet in skillsInfo.skillSets {
+                updateMessage("Installing skills from \(skillSet.repository)")
+                try await install(skillSet, agents: skillsInfo.agents, experimental: experimental, resolvedAgents: resolvedAgents)
+            }
+            if experimental {
+                let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
+                try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
+            }
         }
     }
 
