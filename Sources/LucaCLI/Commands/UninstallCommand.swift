@@ -69,7 +69,11 @@ struct UninstallCommand: AsyncParsableCommand {
         } catch VersionLister.VersionListerError.toolNotFound {
             // No tool found — attempt skill uninstall.
             let skillUninstaller = SkillUninstaller(fileManager: fileManager, printer: printer)
-            try skillUninstaller.uninstall(skillName: toolName, agents: AgentRegistry.all)
+            do {
+                try skillUninstaller.uninstall(skillName: toolName, agents: AgentRegistry.all)
+            } catch SkillUninstaller.SkillUninstallerError.skillNotFound {
+                printer.printFormatted("\(.info("No tool or skill named '\(toolName)' was found."))")
+            }
         }
     }
 }

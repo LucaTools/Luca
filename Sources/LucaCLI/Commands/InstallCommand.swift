@@ -58,9 +58,9 @@ struct InstallCommand: AsyncParsableCommand {
           luca install TogglesPlatform/Toggles@1.0.0
           luca install krzysztofzablocki/Sourcery@2.2.7 --asset sourcery-2.2.7.zip
 
-        Skill examples (--experimental required):
-          luca install vercel-labs/agent-skills --experimental
-          luca install vercel-labs/agent-skills --experimental --skill find-skills
+        Skill examples:
+          luca install vercel-labs/agent-skills
+          luca install vercel-labs/agent-skills --skill find-skills
         """,
         valueName: "identifier"
     ))
@@ -193,17 +193,18 @@ struct InstallCommand: AsyncParsableCommand {
     ))
     var onlySkills: Bool = false
 
-    @Flag(help: ArgumentHelp(
-        "Use native skills pipeline (experimental).",
+    @Flag(name: .customLong("use-npx"), help: ArgumentHelp(
+        "Use Vercel Labs' npx-based skills tool instead of the native pipeline.",
         discussion: """
-        Enables native Swift-based skill installation instead of npx.
-        Use with --only-skills.
+        Routes skill installation through `npx skills add` (Vercel Labs' skills tool)
+        instead of Luca's built-in native pipeline.
+        Requires Node.js and npx to be available.
         Example:
-          luca install --only-skills --experimental
-          luca install vercel-labs/agent-skills --only-skills --experimental
+          luca install --only-skills --use-npx
+          luca install vercel-labs/agent-skills --use-npx
         """
     ))
-    var experimental: Bool = false
+    var useNpx: Bool = false
 
     @Option(name: .customLong("skill"), help: ArgumentHelp(
         "Specific skill name to install (repeatable).",
@@ -211,7 +212,7 @@ struct InstallCommand: AsyncParsableCommand {
         Install only the named skills from the repository.
         Can be specified multiple times.
         Example:
-          luca install vercel-labs/agent-skills --only-skills --experimental --skill find-skills
+          luca install vercel-labs/agent-skills --skill find-skills
         """,
         valueName: "name"
     ))
@@ -223,7 +224,7 @@ struct InstallCommand: AsyncParsableCommand {
         Override the agents: list from the Lucafile.
         Can be specified multiple times.
         Example:
-          luca install --only-skills --experimental --agent claude-code --agent cursor
+          luca install --only-skills --agent claude-code --agent cursor
         """,
         valueName: "agent-id"
     ))
@@ -275,12 +276,12 @@ struct InstallCommand: AsyncParsableCommand {
             try await installer.install(installationType: toolInstallationType)
         case .skillsOnly:
             let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
-            try await installer.install(installationType: skillInstallationType, experimental: experimental)
+            try await installer.install(installationType: skillInstallationType, experimental: !useNpx)
         case .all:
             let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager, noora: noora)
             try await installer.install(installationType: toolInstallationType)
             let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
-            try await installer.install(installationType: skillInstallationType, experimental: experimental)
+            try await installer.install(installationType: skillInstallationType, experimental: !useNpx)
         }
     }
     
@@ -313,7 +314,7 @@ struct InstallCommand: AsyncParsableCommand {
                 algorithm: algorithm
             ))
         }
-        if (!skills.isEmpty || !agents.isEmpty) && !experimental {
+        if (!skills.isEmpty || !agents.isEmpty) && useNpx {
             throw InstallCommandError.invalidCombinationOfArguments(Arguments(
                 spec: spec,
                 identifier: identifier,
@@ -388,7 +389,7 @@ struct InstallCommand: AsyncParsableCommand {
     }
     
     private func skillInstallationType(for arguments: Arguments, fileManager: FileManaging, noora: Noorable) throws -> SkillInstallationType {
-        if experimental, let identifier = arguments.identifier {
+        if !useNpx, let identifier = arguments.identifier {
             return .individual(
                 repository: identifier,
                 skillNames: skills,

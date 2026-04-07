@@ -196,23 +196,29 @@ Skills are installed into agent-specific directories (e.g. `.claude/skills/`, `.
 
 ### Installing skills directly from a repository
 
-Use the native pipeline (`--experimental`) to install skills directly without a Lucafile:
+Install skills directly from a repository without a Lucafile:
 
 ```bash
 # Install all skills from a repository
-luca install vercel-labs/agent-skills --only-skills --experimental
+luca install vercel-labs/agent-skills
 
 # Install specific skills by name
-luca install vercel-labs/agent-skills --only-skills --experimental --skill find-skills --skill swift-testing-expert
+luca install vercel-labs/agent-skills --skill find-skills --skill swift-testing-expert
 
 # Target specific agents only
-luca install vercel-labs/agent-skills --only-skills --experimental --agent claude-code --agent cursor
+luca install vercel-labs/agent-skills --agent claude-code --agent cursor
+```
+
+If you prefer to use [Vercel Labs' skills tool](https://github.com/vercel-labs/skills) instead of Luca's native pipeline, pass `--use-npx` (requires Node.js and npx):
+
+```bash
+luca install vercel-labs/agent-skills --use-npx
 ```
 
 ### Listing installed skills
 
 ```bash
-luca installed --only-skills --experimental
+luca installed --skills
 
 find-skills
 swift-testing-expert
@@ -221,7 +227,7 @@ swift-testing-expert
 ### Uninstalling skills
 
 ```bash
-luca uninstall find-skills --only-skills --experimental
+luca uninstall find-skills
 ```
 
 ### Combining tools and skills

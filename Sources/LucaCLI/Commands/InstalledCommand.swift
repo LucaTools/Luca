@@ -18,23 +18,16 @@ struct InstalledCommand: AsyncParsableCommand {
     )
     
     @Flag(help: ArgumentHelp(
-        "List installed skills instead of binary tools.",
-        discussion: "Use with --experimental."
+        "List installed skills instead of binary tools."
     ))
-    var onlySkills: Bool = false
-
-    @Flag(help: ArgumentHelp(
-        "Use native skills pipeline (experimental).",
-        discussion: "Use with --only-skills."
-    ))
-    var experimental: Bool = false
+    var skills: Bool = false
 
     func run() async throws {
         let noora = Noora(terminal: Terminal(signalBehavior: .none))
         let printer = Printer(noora: noora)
         let fileManager = FileManagerWrapper()
 
-        if onlySkills && experimental {
+        if skills {
             let lister = InstalledSkillsLister(fileManager: fileManager)
             let skills = try lister.installedSkills()
             if skills.isEmpty {
@@ -45,10 +38,6 @@ struct InstalledCommand: AsyncParsableCommand {
                 }
             }
             return
-        }
-
-        if onlySkills {
-            throw ValidationError("--only-skills requires --experimental. Use: luca installed --only-skills --experimental")
         }
 
         let lister = InstalledToolsLister(fileManager: fileManager)
