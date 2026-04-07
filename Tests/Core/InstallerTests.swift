@@ -419,7 +419,7 @@ struct InstallerTests {
             specLoader: specLoader
         )
 
-        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)))
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), useNpx: true)
 
         #expect(skillInstaller.calls.count == 2)
         let installedRepositories = Set(skillInstaller.calls.map(\.skillSet.repository))
