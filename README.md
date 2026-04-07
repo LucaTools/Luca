@@ -15,6 +15,7 @@ Luca is a lightweight tool manager for macOS and Linux that helps developers ins
 - **Zero configuration**: Just create a Lucafile and run `luca install`
 - **No PATH pollution**: Tools are symlinked locally in your project directory
 - **Idempotent operations**: Safe to run multiple times
+- **Skill management**: Install and manage agentic skills for AI coding agents (Claude Code, Cursor, GitHub Copilot, and more)
 
 ## Installation
 
@@ -167,6 +168,71 @@ Remove a symlink from the current project's `.luca/tools` directory:
 luca unlink swiftlint
 ```
 
+### Installing skills using a Lucafile
+
+Skills are agentic plugins for AI coding agents (Claude Code, Cursor, GitHub Copilot, and others). Add a `skills:` section to your Lucafile:
+
+```yaml
+---
+skills:
+  - name: swift-testing-expert         # Install a specific skill by name
+    repository: vercel-labs/agent-skills
+  - name: find-skills
+    repository: vercel-labs/agent-skills
+  - repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill  # Omit 'name' to install all skills from a repository
+
+agents:                                # Optional — omit to target all supported agents
+  - claude-code
+  - cursor
+```
+
+Then run:
+
+```bash
+luca install
+```
+
+Skills are installed into agent-specific directories (e.g. `.claude/skills/`, `.cursor/skills/`) in the current project.
+
+### Installing skills directly from a repository
+
+Use the native pipeline (`--experimental`) to install skills directly without a Lucafile:
+
+```bash
+# Install all skills from a repository
+luca install vercel-labs/agent-skills --only-skills --experimental
+
+# Install specific skills by name
+luca install vercel-labs/agent-skills --only-skills --experimental --skill find-skills --skill swift-testing-expert
+
+# Target specific agents only
+luca install vercel-labs/agent-skills --only-skills --experimental --agent claude-code --agent cursor
+```
+
+### Listing installed skills
+
+```bash
+luca installed --only-skills --experimental
+
+find-skills
+swift-testing-expert
+```
+
+### Uninstalling skills
+
+```bash
+luca uninstall find-skills --only-skills --experimental
+```
+
+### Combining tools and skills
+
+A Lucafile can define both `tools:` and `skills:` together. By default, `luca install` installs everything. Use `--only-tools` or `--only-skills` to install only one category:
+
+```bash
+luca install --only-tools   # Install binary tools, skip skills
+luca install --only-skills  # Install skills, skip binary tools
+```
+
 ## How It Works
 
 Luca performs the following steps:
@@ -191,6 +257,15 @@ tools:
     desiredBinaryName: toolname              # Name of the binary stored locally. Requires `url` to point to an executable file, ignored otherwise. (optional)
     checksum: e0a6540d01434f436335a9...      # The checksum hash of asset associated with the tool (optional)
     algorithm: (md5|sha1|sha256|sha512)      # The algorithm used to generate the checksum (optional)
+
+skills:
+  - name: skill-name                         # Name of the specific skill to install (optional — omit to install all skills from the repository)
+    repository: owner/repo                   # GitHub shorthand (owner/repo) or full HTTPS/Git URL
+
+agents:                                      # Agent identifiers to install skills for (optional — omit to target all supported agents)
+  - claude-code
+  - cursor
+  - github-copilot
 ```
 
 ## Uninstallation
