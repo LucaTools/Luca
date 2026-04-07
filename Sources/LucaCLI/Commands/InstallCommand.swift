@@ -276,12 +276,12 @@ struct InstallCommand: AsyncParsableCommand {
             try await installer.install(installationType: toolInstallationType)
         case .skillsOnly:
             let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
-            try await installer.install(installationType: skillInstallationType, experimental: !useNpx)
+            try await installer.install(installationType: skillInstallationType, useNpx: useNpx)
         case .all:
             let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager, noora: noora)
             try await installer.install(installationType: toolInstallationType)
             let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
-            try await installer.install(installationType: skillInstallationType, experimental: !useNpx)
+            try await installer.install(installationType: skillInstallationType, useNpx: useNpx)
         }
     }
     

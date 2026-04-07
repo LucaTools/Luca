@@ -10,7 +10,7 @@ import Noora
 /// 2. Unlinks orphaned tools no longer present in the spec
 /// 3. Delegates per-tool download, installation, and reinstallation to ``ToolInstalling``
 /// 4. Delegates skill installation via the native pipeline (``SkillDownloading`` + ``SkillSymLinking``)
-///    or the npx-based ``SkillInstalling`` path, depending on the `experimental` flag
+///    or the npx-based ``SkillInstalling`` path, depending on the `useNpx` flag
 ///
 /// ## Usage
 ///
@@ -29,7 +29,7 @@ import Noora
 /// - ``install(installationType:)``
 ///
 /// ### Installing Skills
-/// - ``install(installationType:experimental:)``
+/// - ``install(installationType:useNpx:)``
 public struct Installer {
 
     private let fileManager: FileManaging
@@ -115,14 +115,14 @@ public struct Installer {
     /// - Parameters:
     ///   - installationType: Specifies how to determine which skills to install.
     ///     Can be `.spec` to read from a Lucafile, or `.individual` to install directly from a repository.
-    ///   - experimental: When `true`, uses the native pipeline (``SkillDownloading`` + ``SkillSymLinking``)
-    ///     instead of the npx-based ``SkillInstalling`` path.
+    ///   - useNpx: When `true`, routes installation through the npx-based ``SkillInstalling`` path
+    ///     instead of Luca's native pipeline (``SkillDownloading`` + ``SkillSymLinking``).
     /// - Throws: An error if downloading, extracting, or linking fails.
-    public func install(installationType: SkillInstallationType, experimental: Bool = false) async throws {
+    public func install(installationType: SkillInstallationType, useNpx: Bool = false) async throws {
         if quiet {
-            try await installQuietly(installationType: installationType, experimental: experimental)
+            try await installQuietly(installationType: installationType, useNpx: useNpx)
         } else {
-            try await installVerbose(installationType: installationType, experimental: experimental)
+            try await installVerbose(installationType: installationType, useNpx: useNpx)
         }
     }
     
@@ -190,7 +190,7 @@ public struct Installer {
         }
     }
     
-    private func installQuietly(installationType: SkillInstallationType, experimental: Bool) async throws {
+    private func installQuietly(installationType: SkillInstallationType, useNpx: Bool) async throws {
         try await noora.progressStep(
             message: "Installing skills",
             successMessage: "Skills have been installed for the current project",
@@ -210,16 +210,16 @@ public struct Installer {
             }
             for skillSet in skillsInfo.skillSets {
                 updateMessage("Installing skills from \(skillSet.repository)")
-                try await install(skillSet, agents: skillsInfo.agents, experimental: experimental, resolvedAgents: resolvedAgents)
+                try await install(skillSet, agents: skillsInfo.agents, useNpx: useNpx, resolvedAgents: resolvedAgents)
             }
-            if experimental {
+            if !useNpx {
                 let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
                 try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
             }
         }
     }
 
-    private func installVerbose(installationType: SkillInstallationType, experimental: Bool) async throws {
+    private func installVerbose(installationType: SkillInstallationType, useNpx: Bool) async throws {
         let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
 
         printer.printFormatted("\(.info("🧠 Detecting skills to install..."))")
@@ -236,10 +236,10 @@ public struct Installer {
                 resolvedAgents = AgentRegistry.all
             }
             for skillSet in skillsInfo.skillSets {
-                try await install(skillSet, agents: skillsInfo.agents, experimental: experimental, resolvedAgents: resolvedAgents)
+                try await install(skillSet, agents: skillsInfo.agents, useNpx: useNpx, resolvedAgents: resolvedAgents)
                 printer.printFormatted("")
             }
-            if experimental {
+            if !useNpx {
                 let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
                 try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
             }
@@ -249,9 +249,11 @@ public struct Installer {
         }
     }
 
-    private func install(_ skillSet: SkillSet, agents: [String]?, experimental: Bool, resolvedAgents: [AgentInfo]) async throws {
+    private func install(_ skillSet: SkillSet, agents: [String]?, useNpx: Bool, resolvedAgents: [AgentInfo]) async throws {
         printer.printFormatted("\(.raw("🧩 Installing skills from \(skillSet.repository)..."))")
-        if experimental {
+        if useNpx {
+            try await skillInstaller.install(skillSet: skillSet, agents: agents)
+        } else {
             let skills = try await skillDownloader.download(skillSet: skillSet)
             for (name, files) in skills {
                 let skillFolder = fileManager.skillsCacheFolder.appending(component: name)
@@ -264,8 +266,6 @@ public struct Installer {
                 }
                 try skillSymLinker.setSymLink(skillName: name, agents: resolvedAgents)
             }
-        } else {
-            try await skillInstaller.install(skillSet: skillSet, agents: agents)
         }
         printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed for the current project."))")
     }

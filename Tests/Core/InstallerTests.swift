@@ -455,7 +455,7 @@ struct InstallerTests {
     }
 
     @Test(arguments: [true, false])
-    func test_installSkillsSpec_experimental_usesNativePipeline(quiet: Bool) async throws {
+    func test_installSkillsSpec_usesNativePipeline(quiet: Bool) async throws {
         let skillDownloaderMock = SkillDownloaderMock()
         skillDownloaderMock.downloadResult = .success([
             ("find-skills", [SkillFile(relativePath: "SKILL.md", content: Data("content".utf8))])
@@ -478,7 +478,7 @@ struct InstallerTests {
             specLoader: specLoader
         )
 
-        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), experimental: true)
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), useNpx: false)
 
         #expect(skillDownloaderMock.downloadCalled == true)
         #expect(skillSymLinkerMock.setSymLinkCalled == true)
@@ -493,7 +493,7 @@ struct InstallerTests {
     }
 
     @Test(arguments: [true, false])
-    func test_installSkillsSpec_nonExperimental_usesNpxPipeline(quiet: Bool) async throws {
+    func test_installSkillsSpec_useNpx_usesNpxPipeline(quiet: Bool) async throws {
         let skillDownloaderMock = SkillDownloaderMock()
         let skillSymLinkerMock = SkillSymLinkerMock()
         let skillInstallerMock = SkillInstallerMock()
@@ -513,14 +513,14 @@ struct InstallerTests {
             specLoader: specLoader
         )
 
-        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), experimental: false)
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), useNpx: true)
 
         #expect(skillInstallerMock.calls.count == 2)
         #expect(skillDownloaderMock.downloadCalled == false)
     }
 
     @Test(arguments: [true, false])
-    func test_installSkillsIndividual_experimental_usesNativePipeline(quiet: Bool) async throws {
+    func test_installSkillsIndividual_usesNativePipeline(quiet: Bool) async throws {
         let skillDownloaderMock = SkillDownloaderMock()
         skillDownloaderMock.downloadResult = .success([
             ("find-skills", [SkillFile(relativePath: "SKILL.md", content: Data("content".utf8))])
@@ -540,7 +540,7 @@ struct InstallerTests {
 
         try await installer.install(
             installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil),
-            experimental: true
+            useNpx: false
         )
 
         #expect(skillDownloaderMock.downloadCalled == true)
@@ -550,7 +550,7 @@ struct InstallerTests {
     }
 
     @Test(arguments: [true, false])
-    func test_installSkillsSpec_experimental_writesAuxiliaryFiles(quiet: Bool) async throws {
+    func test_installSkillsSpec_writesAuxiliaryFiles(quiet: Bool) async throws {
         let skillDownloaderMock = SkillDownloaderMock()
         skillDownloaderMock.downloadResult = .success([
             ("find-skills", [
@@ -578,7 +578,7 @@ struct InstallerTests {
 
         try await installer.install(
             installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)),
-            experimental: true
+            useNpx: false
         )
 
         let skillMd = fileManager.skillsCacheFolder.appending(components: "find-skills", "SKILL.md")
