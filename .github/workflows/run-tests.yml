@@ -50,11 +50,13 @@ jobs:
             -ignore-filename-regex=".build|Tests" \
             > coverage.lcov
 
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          name: coverage-macos
-          path: coverage.lcov
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.lcov
+          flags: macos
+          fail_ci_if_error: true
 
   run-tests-linux:
     name: Run tests (Linux)
@@ -84,8 +86,13 @@ jobs:
             -ignore-filename-regex=".build|Tests" \
             > coverage.lcov
 
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+      - name: Install curl
+        run: apt-get update && apt-get install -y curl
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          name: coverage-linux
-          path: coverage.lcov
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.lcov
+          flags: linux
+          fail_ci_if_error: true
