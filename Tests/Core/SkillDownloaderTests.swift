@@ -394,6 +394,115 @@ struct SkillDownloaderTests {
         }
     }
 
+    // MARK: - test_download_invalidSshRepository_noColon
+
+    @Test
+    func test_download_invalidSshRepository_noColon() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "git@github.com-no-colon", skills: [])
+
+        await #expect(throws: SkillDownloader.SkillDownloaderError.invalidRepository("git@github.com-no-colon")) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
+
+    // MARK: - test_download_invalidSshRepository_missingRepo
+
+    @Test
+    func test_download_invalidSshRepository_missingRepo() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "git@github.com:owner-only", skills: [])
+
+        await #expect(throws: SkillDownloader.SkillDownloaderError.invalidRepository("git@github.com:owner-only")) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
+
+    // MARK: - test_download_invalidHttpsRepository_missingRepo
+
+    @Test
+    func test_download_invalidHttpsRepository_missingRepo() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "https://github.com/owner-only", skills: [])
+
+        await #expect(throws: SkillDownloader.SkillDownloaderError.invalidRepository("https://github.com/owner-only")) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
+
+    // MARK: - test_download_httpsUrlWithGitSuffix_extractsRepoName
+
+    @Test
+    func test_download_httpsUrlWithGitSuffix_extractsRepoName() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["SKILL.md"])
+        let skillContent = Data("# No frontmatter".utf8)
+        fetcher.downloadResults = ["SKILL.md": skillContent]
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "https://github.com/owner/repo.git", skills: [])
+
+        let results = try await sut.download(skillSet: skillSet)
+
+        // Falls back to repo name extracted from HTTPS URL, stripping .git suffix
+        #expect(results.count == 1)
+        #expect(results[0].name == "repo")
+    }
+
+    // MARK: - test_download_httpsUrl_extractsRepoName
+
+    @Test
+    func test_download_httpsUrl_extractsRepoName() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["SKILL.md"])
+        let skillContent = Data("# No frontmatter".utf8)
+        fetcher.downloadResults = ["SKILL.md": skillContent]
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "https://github.com/owner/my-repo", skills: [])
+
+        let results = try await sut.download(skillSet: skillSet)
+
+        #expect(results.count == 1)
+        #expect(results[0].name == "my-repo")
+    }
+
+    // MARK: - test_download_httpUrl_extractsRepoName
+
+    @Test
+    func test_download_httpUrl_extractsRepoName() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["SKILL.md"])
+        let skillContent = Data("# No frontmatter".utf8)
+        fetcher.downloadResults = ["SKILL.md": skillContent]
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "http://github.com/owner/my-repo", skills: [])
+
+        let results = try await sut.download(skillSet: skillSet)
+
+        #expect(results.count == 1)
+        #expect(results[0].name == "my-repo")
+    }
+
+    // MARK: - test_download_sshUrl_extractsRepoName
+
+    @Test
+    func test_download_sshUrl_extractsRepoName() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success(["SKILL.md"])
+        let skillContent = Data("# No frontmatter".utf8)
+        fetcher.downloadResults = ["SKILL.md": skillContent]
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "git@github.com:owner/my-repo.git", skills: [])
+
+        let results = try await sut.download(skillSet: skillSet)
+
+        // Falls back to repo name from SSH URL, stripping .git suffix
+        #expect(results.count == 1)
+        #expect(results[0].name == "my-repo")
+    }
+
     // MARK: - test_download_auxiliaryFileDownloadFailed
 
     @Test
