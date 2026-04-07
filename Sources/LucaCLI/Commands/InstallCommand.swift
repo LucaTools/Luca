@@ -314,20 +314,6 @@ struct InstallCommand: AsyncParsableCommand {
                 algorithm: algorithm
             ))
         }
-        if (!skills.isEmpty || !agents.isEmpty) && useNpx {
-            throw InstallCommandError.invalidCombinationOfArguments(Arguments(
-                spec: spec,
-                identifier: identifier,
-                asset: asset,
-                name: name,
-                version: version,
-                url: try toolUrl(for: url),
-                binaryPath: binaryPath,
-                desiredBinaryName: desiredBinaryName,
-                checksum: checksum,
-                algorithm: algorithm
-            ))
-        }
     }
     
     // MARK: - Private
@@ -389,7 +375,7 @@ struct InstallCommand: AsyncParsableCommand {
     }
     
     private func skillInstallationType(for arguments: Arguments, fileManager: FileManaging, noora: Noorable) throws -> SkillInstallationType {
-        if !useNpx, let identifier = arguments.identifier {
+        if let identifier = arguments.identifier {
             return .individual(
                 repository: identifier,
                 skillNames: skills,
