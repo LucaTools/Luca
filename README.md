@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202-green.svg)](LICENSE)
 [![codecov](https://codecov.io/github/LucaTools/Luca/graph/badge.svg)](https://app.codecov.io/github/LucaTools/Luca)
 
-Luca is a lightweight tool manager for macOS and Linux that helps developers install, manage, and activate specific versions of development tools in their projects. It creates project-specific tool environments without polluting your global PATH.
+Luca is a lightweight tool and skills manager for macOS and Linux. It helps developers install, manage, and activate specific versions of development tools in their projects, and install agentic skills for AI coding agents (Claude Code, Cursor, GitHub Copilot, and more). It creates project-specific tool environments without polluting your global PATH.
 
 ## Features
 
@@ -241,6 +241,8 @@ luca install --only-skills  # Install skills, skip binary tools
 
 ## How It Works
 
+### Binary tools
+
 Luca performs the following steps:
 
 1. Reads the tool specifications from your Lucafile
@@ -248,6 +250,15 @@ Luca performs the following steps:
 3. Extracts the binaries to `~/.luca/tools/{tool-name}/{version}/`
 4. Creates symlinks in `.luca/tools/` in your current directory
 5. Tools can then be accessed via `.luca/tools/{binary-name}`
+
+### Agentic skills
+
+For skills, Luca:
+
+1. Reads the skill specifications from your Lucafile (or accepts a repository directly)
+2. Clones or pulls the skill repository
+3. Stores skill files in `.luca/skills/` in the current project and symlinks them into agent-specific directories (e.g. `.claude/skills/`, `.cursor/skills/`)
+4. Skills are immediately available to the configured AI coding agents
 
 ## Lucafile Format
 
