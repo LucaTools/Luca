@@ -27,7 +27,7 @@ struct InstallCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(
         commandName: "install",
-        abstract: "Install tools from a spec file or GitHub releases.",
+        abstract: "Install tools or skills from a spec file or GitHub releases.",
         discussion: """
         Supports three installation modes:
         - Spec file: Install all tools defined in a Lucafile
