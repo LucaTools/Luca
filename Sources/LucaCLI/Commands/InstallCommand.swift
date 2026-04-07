@@ -52,13 +52,17 @@ struct InstallCommand: AsyncParsableCommand {
     var spec: String?
     
     @Argument(help: ArgumentHelp(
-        "Tool to install in 'org/repo@version' format.",
+        "Tool ('org/repo@version') or skill ('org/repo' or URL) to install.",
         discussion: """
-        Examples:
+        Tool examples:
           luca install TogglesPlatform/Toggles@1.0.0
           luca install krzysztofzablocki/Sourcery@2.2.7 --asset sourcery-2.2.7.zip
+
+        Skill examples (--experimental required):
+          luca install vercel-labs/agent-skills --experimental
+          luca install vercel-labs/agent-skills --experimental --skill find-skills
         """,
-        valueName: "org/repo@version"
+        valueName: "identifier"
     ))
     var identifier: String?
     
@@ -170,6 +174,7 @@ struct InstallCommand: AsyncParsableCommand {
     @Flag(help: ArgumentHelp(
         "Install only binary tools; skip skills.",
         discussion: """
+        For spec-based installs only (no identifier argument).
         Cannot be combined with --only-skills.
         Example:
           luca install --only-tools
@@ -180,6 +185,7 @@ struct InstallCommand: AsyncParsableCommand {
     @Flag(help: ArgumentHelp(
         "Install only skills; skip binary tools.",
         discussion: """
+        For spec-based installs only (no identifier argument).
         Cannot be combined with --only-tools.
         Example:
           luca install --only-skills
@@ -256,7 +262,12 @@ struct InstallCommand: AsyncParsableCommand {
             try gitHookInstaller.installPostCheckoutHook()
         }
 
-        let installMode: InstallMode = onlyTools ? .toolsOnly : onlySkills ? .skillsOnly : .all
+        let installMode: InstallMode
+        if let id = identifier {
+            installMode = id.contains("@") ? .toolsOnly : .skillsOnly
+        } else {
+            installMode = onlyTools ? .toolsOnly : onlySkills ? .skillsOnly : .all
+        }
 
         switch installMode {
         case .toolsOnly:
@@ -275,6 +286,20 @@ struct InstallCommand: AsyncParsableCommand {
     
     func validate() throws {
         guard !(onlyTools && onlySkills) else {
+            throw InstallCommandError.invalidCombinationOfArguments(Arguments(
+                spec: spec,
+                identifier: identifier,
+                asset: asset,
+                name: name,
+                version: version,
+                url: try toolUrl(for: url),
+                binaryPath: binaryPath,
+                desiredBinaryName: desiredBinaryName,
+                checksum: checksum,
+                algorithm: algorithm
+            ))
+        }
+        if identifier != nil && (onlyTools || onlySkills) {
             throw InstallCommandError.invalidCombinationOfArguments(Arguments(
                 spec: spec,
                 identifier: identifier,
@@ -363,7 +388,7 @@ struct InstallCommand: AsyncParsableCommand {
     }
     
     private func skillInstallationType(for arguments: Arguments, fileManager: FileManaging, noora: Noorable) throws -> SkillInstallationType {
-        if experimental && onlySkills, let identifier = arguments.identifier {
+        if experimental, let identifier = arguments.identifier {
             return .individual(
                 repository: identifier,
                 skillNames: skills,
