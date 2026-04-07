@@ -76,4 +76,47 @@ struct SkillFrontmatterParserTests {
             _ = try sut.skillName(from: content)
         }
     }
+
+    @Test
+    func test_skillName_onlyOpeningDelimiter_throwsInvalidFrontmatter() throws {
+        let content = Data("---\nname: foo\nno closing delimiter".utf8)
+
+        #expect(throws: SkillFrontmatterParser.SkillFrontmatterParserError.invalidFrontmatter) {
+            _ = try sut.skillName(from: content)
+        }
+    }
+
+    @Test
+    func test_skillName_delimiterAtEndOfFile_throwsInvalidFrontmatter() throws {
+        let content = Data("---".utf8)
+
+        #expect(throws: SkillFrontmatterParser.SkillFrontmatterParserError.invalidFrontmatter) {
+            _ = try sut.skillName(from: content)
+        }
+    }
+
+    @Test
+    func test_skillName_emptyFrontmatter_throwsInvalidFrontmatter() throws {
+        let content = Data("---\n\n---\n\n# Content".utf8)
+
+        #expect(throws: SkillFrontmatterParser.SkillFrontmatterParserError.invalidFrontmatter) {
+            _ = try sut.skillName(from: content)
+        }
+    }
+
+    @Test
+    func test_skillName_yamlList_throwsInvalidFrontmatter() throws {
+        let content = """
+        ---
+        - item1
+        - item2
+        ---
+
+        # Content
+        """.data(using: .utf8)!
+
+        #expect(throws: SkillFrontmatterParser.SkillFrontmatterParserError.invalidFrontmatter) {
+            _ = try sut.skillName(from: content)
+        }
+    }
 }

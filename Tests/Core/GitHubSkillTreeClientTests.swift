@@ -99,4 +99,148 @@ struct GitHubSkillTreeClientTests {
             try await sut.downloadSkill(repository: "owner/repo", path: "skills/my-skill/SKILL.md")
         }
     }
+
+    // MARK: - SSH URL parsing
+
+    @Test
+    func test_skillPaths_sshUrl_parsesCorrectly() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let paths = try await sut.skillPaths(repository: "git@github.com:owner/repo.git")
+        #expect(paths.contains("skills/my-skill/SKILL.md"))
+    }
+
+    @Test
+    func test_skillPaths_sshUrlWithoutGitSuffix_parsesCorrectly() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let paths = try await sut.skillPaths(repository: "git@github.com:owner/repo")
+        #expect(paths.contains("skills/my-skill/SKILL.md"))
+    }
+
+    @Test
+    func test_skillPaths_sshUrl_invalidFormat_noColon_throws() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        await #expect(throws: GitHubSkillTreeClientError.invalidURL) {
+            try await sut.skillPaths(repository: "git@github.com")
+        }
+    }
+
+    @Test
+    func test_skillPaths_sshUrl_invalidFormat_missingRepo_throws() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        await #expect(throws: GitHubSkillTreeClientError.invalidURL) {
+            try await sut.skillPaths(repository: "git@github.com:owner")
+        }
+    }
+
+    // MARK: - HTTPS URL parsing
+
+    @Test
+    func test_skillPaths_httpsUrl_parsesCorrectly() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let paths = try await sut.skillPaths(repository: "https://github.com/owner/repo")
+        #expect(paths.contains("skills/my-skill/SKILL.md"))
+    }
+
+    @Test
+    func test_skillPaths_httpsUrlWithGitSuffix_parsesCorrectly() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let paths = try await sut.skillPaths(repository: "https://github.com/owner/repo.git")
+        #expect(paths.contains("skills/my-skill/SKILL.md"))
+    }
+
+    @Test
+    func test_skillPaths_httpsUrl_invalidFormat_missingRepo_throws() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        await #expect(throws: GitHubSkillTreeClientError.invalidURL) {
+            try await sut.skillPaths(repository: "https://github.com/owner")
+        }
+    }
+
+    // MARK: - GitHub Enterprise Server
+
+    @Test
+    func test_skillPaths_gitHubEnterprise_usesEnterpriseApiUrl() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let paths = try await sut.skillPaths(repository: "https://github.enterprise.com/owner/repo")
+        #expect(paths.contains("skills/my-skill/SKILL.md"))
+    }
+
+    @Test
+    func test_downloadSkill_gitHubEnterprise_usesEnterpriseRawUrl() async throws {
+        let expectedData = Data("# Skill".utf8)
+        let dataDownloader = DataDownloaderMock(result: .rawData(expectedData, 200))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let data = try await sut.downloadSkill(repository: "https://github.enterprise.com/owner/repo", path: "SKILL.md")
+        #expect(data == expectedData)
+    }
+
+    @Test
+    func test_downloadSkill_sshUrl_parsesCorrectly() async throws {
+        let expectedData = Data("# Skill".utf8)
+        let dataDownloader = DataDownloaderMock(result: .rawData(expectedData, 200))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let data = try await sut.downloadSkill(repository: "git@github.com:owner/repo.git", path: "SKILL.md")
+        #expect(data == expectedData)
+    }
+
+    @Test
+    func test_downloadSkill_gitHubEnterpriseSsh_usesEnterpriseRawUrl() async throws {
+        let expectedData = Data("# Skill".utf8)
+        let dataDownloader = DataDownloaderMock(result: .rawData(expectedData, 200))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let data = try await sut.downloadSkill(repository: "git@ghe.corp.com:owner/repo.git", path: "SKILL.md")
+        #expect(data == expectedData)
+    }
+
+    // MARK: - Non-HTTP response
+
+    @Test
+    func test_skillPaths_nonHTTPResponse_throwsUnexpectedResponse() async throws {
+        let dataDownloader = DataDownloaderMock(result: .nonHTTPResponse)
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        await #expect(throws: GitHubSkillTreeClientError.unexpectedResponse(statusCode: 0)) {
+            try await sut.skillPaths(repository: "owner/repo")
+        }
+    }
+
+    @Test
+    func test_downloadSkill_nonHTTPResponse_throwsUnexpectedResponse() async throws {
+        let dataDownloader = DataDownloaderMock(result: .nonHTTPResponse)
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        await #expect(throws: GitHubSkillTreeClientError.unexpectedResponse(statusCode: 0)) {
+            try await sut.downloadSkill(repository: "owner/repo", path: "SKILL.md")
+        }
+    }
+
+    // MARK: - Invalid shorthand
+
+    @Test
+    func test_skillPaths_invalidShorthand_throws() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeMixed", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        await #expect(throws: GitHubSkillTreeClientError.invalidURL) {
+            try await sut.skillPaths(repository: "just-a-name")
+        }
+    }
+
+    // MARK: - Root-level SKILL.md
+
+    @Test
+    func test_skillPaths_rootSkillMd_includedButNotAsSkillDirectory() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeWithRootSkill", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let paths = try await sut.skillPaths(repository: "owner/repo")
+        #expect(paths.contains("SKILL.md"))
+        #expect(paths.contains("skills/foo/SKILL.md"))
+        // Root README should not be included
+        #expect(!paths.contains("README.md"))
+    }
 }

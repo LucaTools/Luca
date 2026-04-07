@@ -94,6 +94,54 @@ struct GitRepositorySkillFetcherTests {
         #expect(cloneURL == "https://github.com/owner/repo")
     }
 
+    // MARK: - test_skillPaths_httpsUrl_passedVerbatim
+
+    @Test
+    func test_skillPaths_httpsUrl_passedVerbatim() async throws {
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCode = 0
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        _ = try await sut.skillPaths(repository: "https://github.com/owner/repo")
+
+        let cloneURL = runner.recordedArguments.first?[4]
+        #expect(cloneURL == "https://github.com/owner/repo")
+    }
+
+    // MARK: - test_skillPaths_httpUrl_passedVerbatim
+
+    @Test
+    func test_skillPaths_httpUrl_passedVerbatim() async throws {
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCode = 0
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        _ = try await sut.skillPaths(repository: "http://github.com/owner/repo")
+
+        let cloneURL = runner.recordedArguments.first?[4]
+        #expect(cloneURL == "http://github.com/owner/repo")
+    }
+
+    // MARK: - test_skillPaths_excludesPyPackagesDirectory
+
+    @Test
+    func test_skillPaths_excludesPyPackagesDirectory() async throws {
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCode = 0
+        runner.filesToCreate = [
+            "skills/foo/SKILL.md": "# Foo",
+            "skills/foo/__pypackages__/module.py": "code"
+        ]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        let paths = try await sut.skillPaths(repository: "owner/repo")
+
+        #expect(paths.contains("skills/foo/SKILL.md"))
+        #expect(!paths.contains("skills/foo/__pypackages__/module.py"))
+    }
+
     // MARK: - test_skillPaths_sshUrl_passedVerbatim
 
     @Test

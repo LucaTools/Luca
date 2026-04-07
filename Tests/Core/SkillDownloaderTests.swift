@@ -337,6 +337,83 @@ struct SkillDownloaderTests {
         #expect(results[0].files[0].relativePath == "SKILL.md")
         #expect(results[0].files[0].content == skillContent)
     }
+
+    // MARK: - test_download_fileReadFailed_fromSkillPaths
+
+    @Test
+    func test_download_fileReadFailed_fromSkillPaths() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .failure(GitRepositorySkillFetcherError.fileReadFailed(path: "some/path"))
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "git@github.com:owner/repo.git", skills: [])
+
+        await #expect(throws: SkillDownloader.SkillDownloaderError.downloadFailed(path: "some/path")) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
+
+    // MARK: - test_download_rateLimitExceeded_429
+
+    @Test
+    func test_download_rateLimitExceeded_429() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .failure(GitHubSkillTreeClientError.unexpectedResponse(statusCode: 429))
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "owner/repo", skills: [])
+
+        await #expect(throws: SkillDownloader.SkillDownloaderError.rateLimitExceeded) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
+
+    // MARK: - test_download_unexpectedStatusCode_rethrows
+
+    @Test
+    func test_download_unexpectedStatusCode_rethrows() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .failure(GitHubSkillTreeClientError.unexpectedResponse(statusCode: 500))
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "owner/repo", skills: [])
+
+        await #expect(throws: GitHubSkillTreeClientError.unexpectedResponse(statusCode: 500)) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
+
+    // MARK: - test_download_nonUnexpectedResponseError_rethrows
+
+    @Test
+    func test_download_nonUnexpectedResponseError_rethrows() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .failure(GitHubSkillTreeClientError.decodingFailed)
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "owner/repo", skills: [])
+
+        await #expect(throws: GitHubSkillTreeClientError.decodingFailed) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
+
+    // MARK: - test_download_auxiliaryFileDownloadFailed
+
+    @Test
+    func test_download_auxiliaryFileDownloadFailed() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .success([
+            "skills/foo/SKILL.md",
+            "skills/foo/resources/template.md"
+        ])
+        // Provide SKILL.md content but NOT the auxiliary file
+        fetcher.downloadResults = [
+            "skills/foo/SKILL.md": Data("foo skill".utf8)
+        ]
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "owner/repo", skills: [])
+
+        await #expect(throws: SkillDownloader.SkillDownloaderError.downloadFailed(path: "skills/foo/resources/template.md")) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
 }
 
 // MARK: - Private Mock

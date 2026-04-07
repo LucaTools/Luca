@@ -588,6 +588,56 @@ struct InstallerTests {
         #expect(fileManager.fileExists(atPath: template.path))
     }
 
+    @Test(arguments: [true, false])
+    func test_installSkillsSpec_noSkills_printsEmptyMessage(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        let skillInstallerMock = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_no_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillInstaller: skillInstallerMock,
+            skillDownloader: skillDownloaderMock,
+            specLoader: specLoader
+        )
+
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), useNpx: false)
+
+        #expect(skillInstallerMock.calls.isEmpty)
+        #expect(skillDownloaderMock.downloadCalled == false)
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSkillsIndividual_noAgents_usesAllAgents(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        skillDownloaderMock.downloadResult = .success([
+            ("my-skill", [SkillFile(relativePath: "SKILL.md", content: Data("content".utf8))])
+        ])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock
+        )
+
+        try await installer.install(
+            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil),
+            useNpx: false
+        )
+
+        #expect(skillSymLinkerMock.lastAgents == AgentRegistry.all)
+    }
+
     private func spec(for fixture: Fixture) throws -> Spec {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))

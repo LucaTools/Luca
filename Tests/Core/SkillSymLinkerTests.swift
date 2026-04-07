@@ -76,6 +76,50 @@ struct SkillSymLinkerTests {
         #expect(isDirectory.boolValue)
     }
 
+    @Test
+    func test_setSymLink_directoryCreationFails_throwsAgentDirectoryCreationFailed() throws {
+        let skillName = "find-skills"
+        let agents = [
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
+        ]
+
+        let symLinkerFileManager = FailingDirectoryCreationFileManagerMock()
+        let sut = SkillSymLinker(fileManager: symLinkerFileManager)
+
+        do {
+            try sut.setSymLink(skillName: skillName, agents: agents)
+            Issue.record("Expected error to be thrown")
+        } catch let error as SkillSymLinker.SkillSymLinkerError {
+            if case .agentDirectoryCreationFailed = error {
+                // Expected
+            } else {
+                Issue.record("Expected agentDirectoryCreationFailed, got \(error)")
+            }
+        }
+    }
+
+    @Test
+    func test_setSymLink_symLinkCreationFails_throwsSymLinkCreationFailed() throws {
+        let skillName = "find-skills"
+        let agents = [
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
+        ]
+
+        let symLinkerFileManager = FailingSymLinkCreationFileManagerMock(fileManager: fileManager)
+        let sut = SkillSymLinker(fileManager: symLinkerFileManager)
+
+        do {
+            try sut.setSymLink(skillName: skillName, agents: agents)
+            Issue.record("Expected error to be thrown")
+        } catch let error as SkillSymLinker.SkillSymLinkerError {
+            if case .symLinkCreationFailed = error {
+                // Expected
+            } else {
+                Issue.record("Expected symLinkCreationFailed, got \(error)")
+            }
+        }
+    }
+
     // MARK: - Private
 
     private func symLinkExists(atPath path: String) -> Bool {
@@ -133,4 +177,44 @@ private class SkillSymLinkerFileManagerMock: SkillSymLinkerFileManaging {
     func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] {
         try fileManager.attributesOfItem(atPath: path)
     }
+}
+
+private class FailingDirectoryCreationFileManagerMock: SkillSymLinkerFileManaging {
+
+    var currentDirectoryPath: String { "/tmp/\(UUID().uuidString)" }
+
+    func fileExists(atPath path: String) -> Bool { false }
+    func removeItem(at url: URL) throws {}
+    func createDirectory(at url: URL, withIntermediateDirectories: Bool) throws {
+        throw NSError(domain: "test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Permission denied"])
+    }
+    func createSymbolicLink(at url: URL, withDestinationURL destinationURL: URL) throws {}
+    func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] { [:] }
+}
+
+private class FailingSymLinkCreationFileManagerMock: SkillSymLinkerFileManaging {
+
+    private let fileManager: FileManager
+    private var _currentDirectoryPath: String?
+
+    init(fileManager: FileManager) {
+        self.fileManager = fileManager
+    }
+
+    var currentDirectoryPath: String {
+        if let _currentDirectoryPath { return _currentDirectoryPath }
+        let path = fileManager.temporaryDirectory.appending(component: UUID().uuidString).path
+        _currentDirectoryPath = path
+        return path
+    }
+
+    func fileExists(atPath path: String) -> Bool { false }
+    func removeItem(at url: URL) throws {}
+    func createDirectory(at url: URL, withIntermediateDirectories: Bool) throws {
+        try fileManager.createDirectory(at: url, withIntermediateDirectories: withIntermediateDirectories)
+    }
+    func createSymbolicLink(at url: URL, withDestinationURL destinationURL: URL) throws {
+        throw NSError(domain: "test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Symlink failed"])
+    }
+    func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] { [:] }
 }

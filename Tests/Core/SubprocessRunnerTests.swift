@@ -47,6 +47,30 @@ struct SubprocessRunnerTests {
         #expect(status == 0)
     }
 
+    // MARK: - Environment
+
+    @Test
+    func test_run_environmentVariablesAreMergedIntoProcess() async throws {
+        // The subprocess should see the custom environment variable
+        let status = try await runner.run(
+            executableURL: sh,
+            arguments: ["-c", "test \"$MY_TEST_VAR\" = \"hello\""],
+            environment: ["MY_TEST_VAR": "hello"]
+        )
+        #expect(status == 0)
+    }
+
+    @Test
+    func test_run_emptyEnvironment_inheritsParentEnvironment() async throws {
+        // With empty environment, the process inherits the parent's environment
+        let status = try await runner.run(
+            executableURL: sh,
+            arguments: ["-c", "test -n \"$PATH\""],
+            environment: [:]
+        )
+        #expect(status == 0)
+    }
+
     // MARK: - Invalid executable
 
     @Test
