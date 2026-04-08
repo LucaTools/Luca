@@ -4,48 +4,69 @@ import Foundation
 
 /// Installs a post-checkout Git hook into the current repository.
 public struct GitHookInstaller {
-    
+
+    /// Identifier embedded in the hook script to recognise Luca-managed hooks.
+    static let hookIdentifier = "LUCA POST-CHECKOUT GIT HOOK"
+
     private let fileManager: GitHookInstallerFileManaging
     private let printer: Printing
-    
+
     public init(fileManager: GitHookInstallerFileManaging, printer: Printing) {
         self.fileManager = fileManager
         self.printer = printer
     }
-    
-    /// Copies the Luca post-checkout hook into `.git/hooks/`, if not already present.
+
+    /// Copies the Luca post-checkout hook into `.git/hooks/`.
+    ///
+    /// - If no hook exists, installs the hook.
+    /// - If a Luca-managed hook exists (detected by ``hookIdentifier``), replaces it.
+    /// - If a non-Luca hook exists, skips to preserve user customisations.
     public func installPostCheckoutHook() throws {
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         let gitDirectory = currentDirectory.appending(component: ".git")
-        
+
         // Skip if not a git repository
         guard fileManager.fileExists(atPath: gitDirectory.path) else {
             return
         }
-        
+
         let sourceHookPath = fileManager.homeDirectoryForCurrentUser
             .appending(components: Constants.toolFolder, "post-checkout")
-        
+
         // Warn and continue if source hook doesn't exist
         guard fileManager.fileExists(atPath: sourceHookPath.path) else {
             printer.printFormatted("\(.raw("⚠️ Post-checkout hook source not found at \(sourceHookPath.path)"))")
             return
         }
-        
+
         let hooksDirectory = gitDirectory.appending(component: "hooks")
         let destinationHookPath = hooksDirectory.appending(component: "post-checkout")
-        
-        // Skip if hook already exists (preserve existing hook)
-        guard !fileManager.fileExists(atPath: destinationHookPath.path) else {
-            return
+
+        if fileManager.fileExists(atPath: destinationHookPath.path) {
+            // Check if the existing hook is a Luca-managed hook
+            let existingContent = try fileManager.readString(at: destinationHookPath)
+            guard existingContent.contains(Self.hookIdentifier) else {
+                // Non-Luca hook — preserve it
+                return
+            }
+
+            // Luca hook — check if it needs updating
+            let sourceContent = try fileManager.readString(at: sourceHookPath)
+            guard existingContent != sourceContent else {
+                // Already up to date
+                return
+            }
+
+            // Replace outdated Luca hook
+            try fileManager.removeItem(at: destinationHookPath)
+            try fileManager.copyItem(at: sourceHookPath, to: destinationHookPath)
+            try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: destinationHookPath.path)
+            printer.printFormatted("\(.info("🪝 Updated post-checkout hook"))")
+        } else {
+            // No hook exists — install
+            try fileManager.copyItem(at: sourceHookPath, to: destinationHookPath)
+            try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: destinationHookPath.path)
+            printer.printFormatted("\(.info("🪝 Installed post-checkout hook"))")
         }
-        
-        // Copy hook file
-        try fileManager.copyItem(at: sourceHookPath, to: destinationHookPath)
-        
-        // Set executable permissions (0o755)
-        try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: destinationHookPath.path)
-        
-        printer.printFormatted("\(.info("🪝 Installed post-checkout hook"))")
     }
 }
