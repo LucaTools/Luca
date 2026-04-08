@@ -176,8 +176,8 @@ Skills are agentic plugins for AI coding agents (Claude Code, Cursor, GitHub Cop
 ---
 skills:
   - name: swift-testing-expert         # Install a specific skill by name
-    repository: vercel-labs/agent-skills
-  - name: find-skills
+    repository: AvdLee/Swift-Testing-Agent-Skill
+  - name: web-design-guidelines
     repository: vercel-labs/agent-skills
   - repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill  # Omit 'name' to install all skills from a repository
 
@@ -192,7 +192,7 @@ Then run:
 luca install
 ```
 
-Skills are installed into agent-specific directories (e.g. `.claude/skills/`, `.cursor/skills/`) in the current project.
+Skills are installed into `.luca/skills/` in the current project and symlinked into agent-specific directories (e.g. `.claude/skills/`, `.cursor/skills/`).
 
 ### Installing skills directly from a repository
 
@@ -203,7 +203,7 @@ Install skills directly from a repository without a Lucafile:
 luca install vercel-labs/agent-skills
 
 # Install specific skills by name
-luca install vercel-labs/agent-skills --skill find-skills --skill swift-testing-expert
+luca install vercel-labs/agent-skills --skill web-design-guidelines --skill deploy-to-vercel
 
 # Target specific agents only
 luca install vercel-labs/agent-skills --agent claude-code --agent cursor
@@ -220,14 +220,14 @@ luca install vercel-labs/agent-skills --use-npx
 ```bash
 luca installed --skills
 
-find-skills
+web-design-guidelines
 swift-testing-expert
 ```
 
 ### Uninstalling skills
 
 ```bash
-luca uninstall find-skills
+luca uninstall swift-testing-expert
 ```
 
 ### Combining tools and skills
