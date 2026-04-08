@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202-green.svg)](LICENSE)
 [![codecov](https://codecov.io/github/LucaTools/Luca/graph/badge.svg)](https://app.codecov.io/github/LucaTools/Luca)
 
-Luca is a lightweight tool manager for macOS and Linux that helps developers install, manage, and activate specific versions of development tools in their projects. It creates project-specific tool environments without polluting your global PATH.
+Luca is a lightweight tool and skills manager for macOS and Linux. It helps developers install, manage, and activate specific versions of development tools in their projects, and install agentic skills for AI coding agents (Claude Code, Cursor, GitHub Copilot, and more). It creates project-specific tool environments without polluting your global PATH.
 
 ## Features
 
@@ -15,6 +15,7 @@ Luca is a lightweight tool manager for macOS and Linux that helps developers ins
 - **Zero configuration**: Just create a Lucafile and run `luca install`
 - **No PATH pollution**: Tools are symlinked locally in your project directory
 - **Idempotent operations**: Safe to run multiple times
+- **Skill management**: Install and manage agentic skills for AI coding agents (Claude Code, Cursor, GitHub Copilot, and more)
 
 ## Installation
 
@@ -167,7 +168,80 @@ Remove a symlink from the current project's `.luca/tools` directory:
 luca unlink swiftlint
 ```
 
+### Installing skills using a Lucafile
+
+Skills are agentic plugins for AI coding agents (Claude Code, Cursor, GitHub Copilot, and others). Add a `skills:` section to your Lucafile:
+
+```yaml
+---
+skills:
+  - name: swift-testing-expert         # Install a specific skill by name
+    repository: AvdLee/Swift-Testing-Agent-Skill
+  - name: web-design-guidelines
+    repository: vercel-labs/agent-skills
+  - repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill  # Omit 'name' to install all skills from a repository
+
+agents:                                # Optional — omit to target all supported agents
+  - claude-code
+  - cursor
+```
+
+Then run:
+
+```bash
+luca install
+```
+
+Skills are installed into `.luca/skills/` in the current project and symlinked into agent-specific directories (e.g. `.claude/skills/`, `.cursor/skills/`).
+
+### Installing skills directly from a repository
+
+Install skills directly from a repository without a Lucafile:
+
+```bash
+# Install all skills from a repository
+luca install vercel-labs/agent-skills
+
+# Install specific skills by name
+luca install vercel-labs/agent-skills --skill web-design-guidelines --skill deploy-to-vercel
+
+# Target specific agents only
+luca install vercel-labs/agent-skills --agent claude-code --agent cursor
+```
+
+If you prefer to use [Vercel Labs' skills tool](https://github.com/vercel-labs/skills) instead of Luca's native pipeline, pass `--use-npx` (requires Node.js and npx):
+
+```bash
+luca install vercel-labs/agent-skills --use-npx
+```
+
+### Listing installed skills
+
+```bash
+luca installed --skills
+
+web-design-guidelines
+swift-testing-expert
+```
+
+### Uninstalling skills
+
+```bash
+luca uninstall swift-testing-expert
+```
+
+### Combining tools and skills
+
+A Lucafile can define both `tools:` and `skills:` together. By default, `luca install` installs everything. Use `--only-tools` or `--only-skills` to install only one category:
+
+```bash
+luca install --only-tools   # Install binary tools, skip skills
+luca install --only-skills  # Install skills, skip binary tools
+```
+
 ## How It Works
+
+### Binary tools
 
 Luca performs the following steps:
 
@@ -176,6 +250,15 @@ Luca performs the following steps:
 3. Extracts the binaries to `~/.luca/tools/{tool-name}/{version}/`
 4. Creates symlinks in `.luca/tools/` in your current directory
 5. Tools can then be accessed via `.luca/tools/{binary-name}`
+
+### Agentic skills
+
+For skills, Luca:
+
+1. Reads the skill specifications from your Lucafile (or accepts a repository directly)
+2. Clones or pulls the skill repository
+3. Stores skill files in `.luca/skills/` in the current project and symlinks them into agent-specific directories (e.g. `.claude/skills/`, `.cursor/skills/`)
+4. Skills are immediately available to the configured AI coding agents
 
 ## Lucafile Format
 
@@ -191,6 +274,15 @@ tools:
     desiredBinaryName: toolname              # Name of the binary stored locally. Requires `url` to point to an executable file, ignored otherwise. (optional)
     checksum: e0a6540d01434f436335a9...      # The checksum hash of asset associated with the tool (optional)
     algorithm: (md5|sha1|sha256|sha512)      # The algorithm used to generate the checksum (optional)
+
+skills:
+  - name: skill-name                         # Name of the specific skill to install (optional — omit to install all skills from the repository)
+    repository: owner/repo                   # GitHub shorthand (owner/repo) or full HTTPS/Git URL
+
+agents:                                      # Agent identifiers to install skills for (optional — omit to target all supported agents)
+  - claude-code
+  - cursor
+  - github-copilot
 ```
 
 ## Uninstallation

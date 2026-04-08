@@ -22,6 +22,12 @@ public struct FileManagerWrapper: FileManaging {
         URL(fileURLWithPath: currentDirectoryPath)
             .appending(components: Constants.toolFolder, Constants.symlinksFolder)
     }
+
+    /// Folder containing project-local skills cache (per working directory).
+    public var skillsCacheFolder: URL {
+        URL(fileURLWithPath: currentDirectoryPath)
+            .appending(components: Constants.toolFolder, Constants.skillsFolder)
+    }
     
     public var homeDirectoryForCurrentUser: URL {
         fileManager.homeDirectoryForCurrentUser
@@ -34,7 +40,12 @@ public struct FileManagerWrapper: FileManaging {
     public func fileExists(atPath path: String) -> Bool {
         fileManager.fileExists(atPath: path)
     }
-    
+
+    @discardableResult
+    public func createFile(atPath path: String, contents data: Data?) -> Bool {
+        fileManager.createFile(atPath: path, contents: data)
+    }
+
     public func removeItem(at path: URL) throws {
         try fileManager.removeItem(at: path)
     }

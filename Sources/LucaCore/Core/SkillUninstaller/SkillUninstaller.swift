@@ -1,0 +1,54 @@
+//  SkillUninstaller.swift
+
+import Foundation
+
+/// Removes a skill from the project-local skills cache and all agent symlinks.
+public struct SkillUninstaller {
+
+    /// Errors that can be thrown during skill uninstallation.
+    public enum SkillUninstallerError: Error, LocalizedError, Equatable {
+        case skillNotFound(name: String)
+
+        public var errorDescription: String? {
+            switch self {
+            case .skillNotFound(let name):
+                return "Skill '\(name)' is not installed."
+            }
+        }
+    }
+
+    private let fileManager: SkillUninstallerFileManaging
+    private let printer: Printing
+
+    public init(fileManager: SkillUninstallerFileManaging, printer: Printing) {
+        self.fileManager = fileManager
+        self.printer = printer
+    }
+
+    /// Removes the skill cache folder and any agent symlinks pointing to it.
+    /// - Parameters:
+    ///   - skillName: The name of the skill to uninstall.
+    ///   - agents: The agents whose symlinks should be cleaned up.
+    public func uninstall(skillName: String, agents: [AgentInfo]) throws {
+        let skillFolder = fileManager.skillsCacheFolder.appending(component: skillName)
+
+        guard fileManager.fileExists(atPath: skillFolder.path) else {
+            throw SkillUninstallerError.skillNotFound(name: skillName)
+        }
+
+        printer.printFormatted("\(.raw("🗑️ Uninstalling skill \(skillName)..."))")
+
+        try fileManager.removeItem(at: skillFolder)
+
+        for agent in agents {
+            let symlinkPath = URL(fileURLWithPath: fileManager.currentDirectoryPath)
+                .appending(components: agent.projectSkillsPath, skillName)
+                .path
+            if fileManager.fileExists(atPath: symlinkPath) {
+                try fileManager.removeItem(atPath: symlinkPath)
+            }
+        }
+
+        printer.printFormatted("\(.primary("🙌 Skill \(skillName) has been uninstalled."))")
+    }
+}

@@ -19,6 +19,11 @@ class FileManagerWrapperMock: FileManaging {
         URL(fileURLWithPath: currentDirectoryPath)
             .appending(components: Constants.toolFolder, Constants.symlinksFolder)
     }
+
+    var skillsCacheFolder: URL {
+        URL(fileURLWithPath: currentDirectoryPath)
+            .appending(components: Constants.toolFolder, Constants.skillsFolder)
+    }
     
     init(fileManager: FileManager = .default) {
         self.fileManager = fileManager
@@ -48,7 +53,12 @@ class FileManagerWrapperMock: FileManaging {
     func fileExists(atPath path: String) -> Bool {
         fileManager.fileExists(atPath: path)
     }
-    
+
+    @discardableResult
+    func createFile(atPath path: String, contents data: Data?) -> Bool {
+        fileManager.createFile(atPath: path, contents: data)
+    }
+
     func removeItem(at path: URL) throws {
         try fileManager.removeItem(at: path)
     }

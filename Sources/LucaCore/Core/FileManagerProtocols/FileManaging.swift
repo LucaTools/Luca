@@ -10,17 +10,22 @@ public protocol FileManaging:
     FileTypeDetectorFileManaging,
     GitHookInstallerFileManaging,
     GitIgnoreFileManaging,
+    InstalledSkillsListerFileManaging,
     InstalledToolsFileManaging,
     PermissionManagerFileManaging,
     SelfUpdaterFileManaging,
+    SkillSymLinkerFileManaging,
+    SkillUninstallerFileManaging,
     SpecFinderFileManaging,
     SymLinkFileManaging,
     UnarchiverFileManaging {
     var toolsFolder: URL { get }
     var symlinksFolder: URL { get }
+    var skillsCacheFolder: URL { get }
     var homeDirectoryForCurrentUser: URL { get }
     var currentDirectoryPath: String { get }
     func fileExists(atPath: String) -> Bool
+    @discardableResult func createFile(atPath path: String, contents data: Data?) -> Bool
     func removeItem(at: URL) throws
     func removeItem(atPath: String) throws
     func moveItem(at: URL, to: URL) throws

@@ -121,6 +121,38 @@ struct SkillsInfoFactoryTests {
         #expect(info.agents == ["claude-code", "github-copilot"])
     }
 
+    // MARK: - Individual installation type
+
+    @Test
+    func test_skillsInfoForInstallationType_individual_allSkills() async throws {
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: Spec(tools: nil, skills: nil, agents: nil)))
+
+        let info = try await sut.skillsInfoForInstallationType(
+            .individual(repository: "owner/repo", skillNames: [], agents: nil)
+        )
+
+        #expect(info.skillSets.count == 1)
+        let skillSet = try #require(info.skillSets.first)
+        #expect(skillSet.repository == "owner/repo")
+        #expect(skillSet.skills.isEmpty)
+        #expect(info.agents == nil)
+    }
+
+    @Test
+    func test_skillsInfoForInstallationType_individual_filteredSkills() async throws {
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: Spec(tools: nil, skills: nil, agents: nil)))
+
+        let info = try await sut.skillsInfoForInstallationType(
+            .individual(repository: "owner/repo", skillNames: ["skill-a"], agents: ["claude-code"])
+        )
+
+        #expect(info.skillSets.count == 1)
+        let skillSet = try #require(info.skillSets.first)
+        #expect(skillSet.repository == "owner/repo")
+        #expect(skillSet.skills == ["skill-a"])
+        #expect(info.agents == ["claude-code"])
+    }
+
     // MARK: - Empty skills
 
     @Test

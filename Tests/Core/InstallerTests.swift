@@ -419,7 +419,7 @@ struct InstallerTests {
             specLoader: specLoader
         )
 
-        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)))
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), useNpx: true)
 
         #expect(skillInstaller.calls.count == 2)
         let installedRepositories = Set(skillInstaller.calls.map(\.skillSet.repository))
@@ -452,6 +452,190 @@ struct InstallerTests {
         try await installer.install(installationType: ToolInstallationType.spec(specPath: URL(fileURLWithPath: path)))
 
         #expect(skillInstaller.calls.isEmpty)
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSkillsSpec_usesNativePipeline(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        skillDownloaderMock.downloadResult = .success([
+            ("find-skills", [SkillFile(relativePath: "SKILL.md", content: Data("content".utf8))])
+        ])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+        let skillInstallerMock = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillInstaller: skillInstallerMock,
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock,
+            specLoader: specLoader
+        )
+
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), useNpx: false)
+
+        #expect(skillDownloaderMock.downloadCalled == true)
+        #expect(skillSymLinkerMock.setSymLinkCalled == true)
+        #expect(skillInstallerMock.calls.isEmpty)
+
+        let skillFile = fileManager.skillsCacheFolder.appending(components: "find-skills", "SKILL.md")
+        #expect(fileManager.fileExists(atPath: skillFile.path))
+
+        let expectedAgentIds = ["claude-code", "github-copilot", "opencode"]
+        let actualAgentIds = skillSymLinkerMock.lastAgents?.map(\.id) ?? []
+        #expect(actualAgentIds.sorted() == expectedAgentIds.sorted())
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSkillsSpec_useNpx_usesNpxPipeline(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        let skillSymLinkerMock = SkillSymLinkerMock()
+        let skillInstallerMock = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillInstaller: skillInstallerMock,
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock,
+            specLoader: specLoader
+        )
+
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), useNpx: true)
+
+        #expect(skillInstallerMock.calls.count == 2)
+        #expect(skillDownloaderMock.downloadCalled == false)
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSkillsIndividual_usesNativePipeline(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        skillDownloaderMock.downloadResult = .success([
+            ("find-skills", [SkillFile(relativePath: "SKILL.md", content: Data("content".utf8))])
+        ])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+        let skillInstallerMock = SkillInstallerMock()
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillInstaller: skillInstallerMock,
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock
+        )
+
+        try await installer.install(
+            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil),
+            useNpx: false
+        )
+
+        #expect(skillDownloaderMock.downloadCalled == true)
+        #expect(skillSymLinkerMock.setSymLinkCalled == true)
+        #expect(skillInstallerMock.calls.isEmpty)
+        #expect(skillSymLinkerMock.lastAgents == AgentRegistry.all)
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSkillsSpec_writesAuxiliaryFiles(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        skillDownloaderMock.downloadResult = .success([
+            ("find-skills", [
+                SkillFile(relativePath: "SKILL.md", content: Data("skill".utf8)),
+                SkillFile(relativePath: "resources/template.md", content: Data("template".utf8))
+            ])
+        ])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+        let skillInstallerMock = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillInstaller: skillInstallerMock,
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock,
+            specLoader: specLoader
+        )
+
+        try await installer.install(
+            installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)),
+            useNpx: false
+        )
+
+        let skillMd = fileManager.skillsCacheFolder.appending(components: "find-skills", "SKILL.md")
+        let template = fileManager.skillsCacheFolder
+            .appending(components: "find-skills", "resources", "template.md")
+        #expect(fileManager.fileExists(atPath: skillMd.path))
+        #expect(fileManager.fileExists(atPath: template.path))
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSkillsSpec_noSkills_printsEmptyMessage(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        let skillInstallerMock = SkillInstallerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_no_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillInstaller: skillInstallerMock,
+            skillDownloader: skillDownloaderMock,
+            specLoader: specLoader
+        )
+
+        try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), useNpx: false)
+
+        #expect(skillInstallerMock.calls.isEmpty)
+        #expect(skillDownloaderMock.downloadCalled == false)
+    }
+
+    @Test(arguments: [true, false])
+    func test_installSkillsIndividual_noAgents_usesAllAgents(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        skillDownloaderMock.downloadResult = .success([
+            ("my-skill", [SkillFile(relativePath: "SKILL.md", content: Data("content".utf8))])
+        ])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock
+        )
+
+        try await installer.install(
+            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil),
+            useNpx: false
+        )
+
+        #expect(skillSymLinkerMock.lastAgents == AgentRegistry.all)
     }
 
     private func spec(for fixture: Fixture) throws -> Spec {

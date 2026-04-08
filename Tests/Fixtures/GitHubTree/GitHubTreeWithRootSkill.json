@@ -1,0 +1,9 @@
+{
+  "tree": [
+    { "path": "SKILL.md", "type": "blob" },
+    { "path": "README.md", "type": "blob" },
+    { "path": "skills/foo/SKILL.md", "type": "blob" },
+    { "path": "skills/foo/helper.md", "type": "blob" }
+  ],
+  "truncated": false
+}

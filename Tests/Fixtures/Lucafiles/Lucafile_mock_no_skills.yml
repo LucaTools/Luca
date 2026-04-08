@@ -1,0 +1,8 @@
+---
+tools:
+  - name: MockToolA
+    binaryPath: bin/MockMachOTool
+    version: 1.0.0
+    url: https://example.com/mock/MockToolA.zip
+
+version: 0.0.1

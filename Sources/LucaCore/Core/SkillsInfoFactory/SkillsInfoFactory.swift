@@ -47,6 +47,9 @@ struct SkillsInfoFactory {
                 agents: spec.agents,
                 skillSets: skillSets
             )
+        case .individual(let repository, let skillNames, let agents):
+            let skillSet = SkillSet(repository: repository, skills: skillNames)
+            return SkillsInfo(agents: agents, skillSets: [skillSet])
         }
     }
 }

@@ -9,7 +9,8 @@ import Noora
 /// 1. Loads the tool or skill spec (Lucafile or inline parameters)
 /// 2. Unlinks orphaned tools no longer present in the spec
 /// 3. Delegates per-tool download, installation, and reinstallation to ``ToolInstalling``
-/// 4. Delegates skill installation to ``SkillInstalling``
+/// 4. Delegates skill installation via the native pipeline (``SkillDownloading`` + ``SkillSymLinking``)
+///    or the npx-based ``SkillInstalling`` path, depending on the `useNpx` flag
 ///
 /// ## Usage
 ///
@@ -27,8 +28,8 @@ import Noora
 /// ### Installing Tools
 /// - ``install(installationType:)``
 ///
-/// ### Installation Types
-/// - ``InstallationType``
+/// ### Installing Skills
+/// - ``install(installationType:useNpx:)``
 public struct Installer {
 
     private let fileManager: FileManaging
@@ -40,6 +41,8 @@ public struct Installer {
     private let noora: Noorable
     private let toolInstaller: ToolInstalling
     private let skillInstaller: SkillInstalling
+    private let skillDownloader: SkillDownloading
+    private let skillSymLinker: SkillSymLinking
     private let specLoader: SpecLoading
 
     public init(
@@ -57,6 +60,8 @@ public struct Installer {
             noora: noora,
             toolInstaller: nil,
             skillInstaller: nil,
+            skillDownloader: nil,
+            skillSymLinker: nil,
             specLoader: nil
         )
     }
@@ -69,6 +74,8 @@ public struct Installer {
         noora: Noorable = Noora(),
         toolInstaller: ToolInstalling? = nil,
         skillInstaller: SkillInstalling? = nil,
+        skillDownloader: SkillDownloading? = nil,
+        skillSymLinker: SkillSymLinking? = nil,
         specLoader: SpecLoading? = nil
     ) {
         self.fileManager = fileManager
@@ -84,6 +91,8 @@ public struct Installer {
             printer: printer
         )
         self.skillInstaller = skillInstaller ?? SkillInstaller()
+        self.skillDownloader = skillDownloader ?? SkillDownloader()
+        self.skillSymLinker = skillSymLinker ?? SkillSymLinker(fileManager: fileManager)
         self.specLoader = specLoader ?? SpecLoader(fileManager: .default)
     }
 
@@ -103,14 +112,17 @@ public struct Installer {
     
     /// Installs skills based on the specified installation type.
     ///
-    /// - Parameter installationType: Specifies how to determine which skills to install.
-    ///   Can be `.spec` to read from a Lucafile.
+    /// - Parameters:
+    ///   - installationType: Specifies how to determine which skills to install.
+    ///     Can be `.spec` to read from a Lucafile, or `.individual` to install directly from a repository.
+    ///   - useNpx: When `true`, routes installation through the npx-based ``SkillInstalling`` path
+    ///     instead of Luca's native pipeline (``SkillDownloading`` + ``SkillSymLinking``).
     /// - Throws: An error if downloading, extracting, or linking fails.
-    public func install(installationType: SkillInstallationType) async throws {
+    public func install(installationType: SkillInstallationType, useNpx: Bool = false) async throws {
         if quiet {
-            try await installQuietly(installationType: installationType)
+            try await installQuietly(installationType: installationType, useNpx: useNpx)
         } else {
-            try await installVerbose(installationType: installationType)
+            try await installVerbose(installationType: installationType, useNpx: useNpx)
         }
     }
     
@@ -178,26 +190,58 @@ public struct Installer {
         }
     }
     
-    private func installQuietly(installationType: SkillInstallationType) async throws {
-        let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
-        let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
-        for skillSet in skillsInfo.skillSets {
-            try await install(skillSet, agents: skillsInfo.agents)
+    private func installQuietly(installationType: SkillInstallationType, useNpx: Bool) async throws {
+        try await noora.progressStep(
+            message: "Installing skills",
+            successMessage: "Skills have been installed for the current project",
+            errorMessage: "Failed to install skills",
+            showSpinner: true
+        ) { updateMessage in
+            let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
+
+            updateMessage("Detecting skills to install")
+            let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
+            // Compute resolvedAgents once (same for all SkillSets)
+            let resolvedAgents: [AgentInfo]
+            if let agentIds = skillsInfo.agents {
+                resolvedAgents = AgentRegistry.agents(for: agentIds)
+            } else {
+                resolvedAgents = AgentRegistry.all
+            }
+            for skillSet in skillsInfo.skillSets {
+                updateMessage("Installing skills from \(skillSet.repository)")
+                try await install(skillSet, agents: skillsInfo.agents, useNpx: useNpx, resolvedAgents: resolvedAgents)
+            }
+            if !useNpx {
+                let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
+                try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
+            }
         }
     }
-    
-    private func installVerbose(installationType: SkillInstallationType) async throws {
+
+    private func installVerbose(installationType: SkillInstallationType, useNpx: Bool) async throws {
         let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
-        
+
         printer.printFormatted("\(.info("🧠 Detecting skills to install..."))")
-        
+
         let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
         if !skillsInfo.skillSets.isEmpty {
             printer.printFormatted("\(.info("🧠 Installing skills for the current project."))")
             printer.printFormatted("")
+            // Compute resolvedAgents once (same for all SkillSets)
+            let resolvedAgents: [AgentInfo]
+            if let agentIds = skillsInfo.agents {
+                resolvedAgents = AgentRegistry.agents(for: agentIds)
+            } else {
+                resolvedAgents = AgentRegistry.all
+            }
             for skillSet in skillsInfo.skillSets {
-                try await install(skillSet, agents: skillsInfo.agents)
+                try await install(skillSet, agents: skillsInfo.agents, useNpx: useNpx, resolvedAgents: resolvedAgents)
                 printer.printFormatted("")
+            }
+            if !useNpx {
+                let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
+                try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
             }
             printer.printFormatted("\(.success("🚀 Skills have been installed for the current project."))")
         } else {
@@ -205,9 +249,24 @@ public struct Installer {
         }
     }
 
-    private func install(_ skillSet: SkillSet, agents: [String]?) async throws {
+    private func install(_ skillSet: SkillSet, agents: [String]?, useNpx: Bool, resolvedAgents: [AgentInfo]) async throws {
         printer.printFormatted("\(.raw("🧩 Installing skills from \(skillSet.repository)..."))")
-        try await skillInstaller.install(skillSet: skillSet, agents: agents)
+        if useNpx {
+            try await skillInstaller.install(skillSet: skillSet, agents: agents)
+        } else {
+            let skills = try await skillDownloader.download(skillSet: skillSet)
+            for (name, files) in skills {
+                let skillFolder = fileManager.skillsCacheFolder.appending(component: name)
+                try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
+                for skillFile in files {
+                    let filePath = skillFolder.appendingPathComponent(skillFile.relativePath)
+                    let parentDir = filePath.deletingLastPathComponent()
+                    try fileManager.createDirectory(at: parentDir, withIntermediateDirectories: true)
+                    _ = fileManager.createFile(atPath: filePath.path, contents: skillFile.content)
+                }
+                try skillSymLinker.setSymLink(skillName: name, agents: resolvedAgents)
+            }
+        }
         printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed for the current project."))")
     }
 

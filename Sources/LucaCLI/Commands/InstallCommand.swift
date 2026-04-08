@@ -27,7 +27,7 @@ struct InstallCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(
         commandName: "install",
-        abstract: "Install tools from a spec file or GitHub releases.",
+        abstract: "Install tools or skills from a spec file or GitHub releases.",
         discussion: """
         Supports three installation modes:
         - Spec file: Install all tools defined in a Lucafile
@@ -52,13 +52,17 @@ struct InstallCommand: AsyncParsableCommand {
     var spec: String?
     
     @Argument(help: ArgumentHelp(
-        "Tool to install in 'org/repo@version' format.",
+        "Tool ('org/repo@version') or skill ('org/repo' or URL) to install.",
         discussion: """
-        Examples:
+        Tool examples:
           luca install TogglesPlatform/Toggles@1.0.0
           luca install krzysztofzablocki/Sourcery@2.2.7 --asset sourcery-2.2.7.zip
+
+        Skill examples:
+          luca install AvdLee/Swift-Concurrency-Agent-Skill
+          luca install vercel-labs/agent-skills --skill find-skills
         """,
-        valueName: "org/repo@version"
+        valueName: "identifier"
     ))
     var identifier: String?
     
@@ -170,6 +174,7 @@ struct InstallCommand: AsyncParsableCommand {
     @Flag(help: ArgumentHelp(
         "Install only binary tools; skip skills.",
         discussion: """
+        For spec-based installs only (no identifier argument).
         Cannot be combined with --only-skills.
         Example:
           luca install --only-tools
@@ -180,12 +185,50 @@ struct InstallCommand: AsyncParsableCommand {
     @Flag(help: ArgumentHelp(
         "Install only skills; skip binary tools.",
         discussion: """
+        For spec-based installs only (no identifier argument).
         Cannot be combined with --only-tools.
         Example:
           luca install --only-skills
         """
     ))
     var onlySkills: Bool = false
+
+    @Flag(name: .customLong("use-npx"), help: ArgumentHelp(
+        "Use Vercel Labs' npx-based skills tool instead of the native pipeline.",
+        discussion: """
+        Routes skill installation through `npx skills add` (Vercel Labs' skills tool)
+        instead of Luca's built-in native pipeline.
+        Requires Node.js and npx to be available.
+        Example:
+          luca install --only-skills --use-npx
+          luca install vercel-labs/agent-skills --use-npx
+        """
+    ))
+    var useNpx: Bool = false
+
+    @Option(name: .customLong("skill"), help: ArgumentHelp(
+        "Specific skill name to install (repeatable).",
+        discussion: """
+        Install only the named skills from the repository.
+        Can be specified multiple times.
+        Example:
+          luca install AvdLee/Swift-Concurrency-Agent-Skill --skill swift-concurrency
+        """,
+        valueName: "name"
+    ))
+    var skills: [String] = []
+
+    @Option(name: .customLong("agent"), help: ArgumentHelp(
+        "Agent to install skills for (repeatable).",
+        discussion: """
+        Override the agents: list from the Lucafile.
+        Can be specified multiple times.
+        Example:
+          luca install --only-skills --agent claude-code --agent cursor
+        """,
+        valueName: "agent-id"
+    ))
+    var agents: [String] = []
 
     func run() async throws {
         let noora = Noora(terminal: Terminal(signalBehavior: .none))
@@ -220,7 +263,12 @@ struct InstallCommand: AsyncParsableCommand {
             try gitHookInstaller.installPostCheckoutHook()
         }
 
-        let installMode: InstallMode = onlyTools ? .toolsOnly : onlySkills ? .skillsOnly : .all
+        let installMode: InstallMode
+        if let id = identifier {
+            installMode = id.contains("@") ? .toolsOnly : .skillsOnly
+        } else {
+            installMode = onlyTools ? .toolsOnly : onlySkills ? .skillsOnly : .all
+        }
 
         switch installMode {
         case .toolsOnly:
@@ -228,12 +276,12 @@ struct InstallCommand: AsyncParsableCommand {
             try await installer.install(installationType: toolInstallationType)
         case .skillsOnly:
             let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
-            try await installer.install(installationType: skillInstallationType)
+            try await installer.install(installationType: skillInstallationType, useNpx: useNpx)
         case .all:
             let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager, noora: noora)
             try await installer.install(installationType: toolInstallationType)
             let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
-            try await installer.install(installationType: skillInstallationType)
+            try await installer.install(installationType: skillInstallationType, useNpx: useNpx)
         }
     }
     
@@ -252,9 +300,23 @@ struct InstallCommand: AsyncParsableCommand {
                 algorithm: algorithm
             ))
         }
+        if identifier != nil && (onlyTools || onlySkills) {
+            throw InstallCommandError.invalidCombinationOfArguments(Arguments(
+                spec: spec,
+                identifier: identifier,
+                asset: asset,
+                name: name,
+                version: version,
+                url: try toolUrl(for: url),
+                binaryPath: binaryPath,
+                desiredBinaryName: desiredBinaryName,
+                checksum: checksum,
+                algorithm: algorithm
+            ))
+        }
     }
     
-    // mARK: - Private
+    // MARK: - Private
     
     /// Path to the spec file: either explicit via `--spec` or default to `Constants.specFile` (or `Lucafile.yml`) in current directory.
     /// When no exact `Lucafile` or `Lucafile.yml` exists, discovers files with the `Lucafile` prefix and prompts the user to pick one.
@@ -313,6 +375,13 @@ struct InstallCommand: AsyncParsableCommand {
     }
     
     private func skillInstallationType(for arguments: Arguments, fileManager: FileManaging, noora: Noorable) throws -> SkillInstallationType {
+        if let identifier = arguments.identifier {
+            return .individual(
+                repository: identifier,
+                skillNames: skills,
+                agents: agents.isEmpty ? nil : agents
+            )
+        }
         switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.desiredBinaryName, arguments.checksum, arguments.algorithm) {
         case (let spec, .none, .none, .none, .none, .none, .none, .none, .none, .none):
             let specPath = try specPath(providedSpec: spec, fileManager: fileManager, noora: noora)

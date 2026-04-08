@@ -16,4 +16,6 @@ public struct Constants {
     public static let toolFolder = ".luca"
     /// Subfolder under `toolFolder` where versioned tool installations live.
     public static let toolsFolder = "tools"
+    /// Skills cache subfolder name, used for the project-local `.luca/skills/` directory.
+    public static let skillsFolder = "skills"
 }

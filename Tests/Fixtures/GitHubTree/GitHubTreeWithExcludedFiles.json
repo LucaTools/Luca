@@ -1,0 +1,11 @@
+{
+  "tree": [
+    { "path": "skills/foo/SKILL.md", "type": "blob" },
+    { "path": "skills/foo/AGENTS.md", "type": "blob" },
+    { "path": "skills/foo/metadata.json", "type": "blob" },
+    { "path": "skills/foo/resources/template.md", "type": "blob" },
+    { "path": "skills/foo/__pycache__/module.pyc", "type": "blob" },
+    { "path": "skills/foo/.git/config", "type": "blob" }
+  ],
+  "truncated": false
+}

@@ -119,4 +119,48 @@ struct ErrorDescriptionTests {
         #expect(ArchitectureValidator.ArchitectureValidatorError.unableToReadBinary(path: "/some/path").errorDescription != nil)
         #expect(ArchitectureValidator.ArchitectureValidatorError.unknownArchitecture(path: "/some/path").errorDescription != nil)
     }
+
+    @Test
+    func gitHubSkillTreeClientError_errorDescription() {
+        #expect(GitHubSkillTreeClientError.invalidURL.errorDescription != nil)
+        #expect(GitHubSkillTreeClientError.unexpectedResponse(statusCode: 404).errorDescription != nil)
+        #expect(GitHubSkillTreeClientError.decodingFailed.errorDescription != nil)
+        #expect(GitHubSkillTreeClientError.treeTruncated.errorDescription != nil)
+    }
+
+    @Test
+    func skillFrontmatterParserError_errorDescription() {
+        #expect(SkillFrontmatterParser.SkillFrontmatterParserError.missingNameField.errorDescription != nil)
+        #expect(SkillFrontmatterParser.SkillFrontmatterParserError.invalidFrontmatter.errorDescription != nil)
+    }
+
+    @Test
+    func skillDownloaderError_errorDescription() {
+        #expect(SkillDownloader.SkillDownloaderError.invalidRepository("owner/repo").errorDescription != nil)
+        #expect(SkillDownloader.SkillDownloaderError.gitNotFound.errorDescription != nil)
+        #expect(SkillDownloader.SkillDownloaderError.cloneFailed(repository: "owner/repo").errorDescription != nil)
+        #expect(SkillDownloader.SkillDownloaderError.repositoryNotFound("owner/repo").errorDescription != nil)
+        #expect(SkillDownloader.SkillDownloaderError.rateLimitExceeded.errorDescription != nil)
+        #expect(SkillDownloader.SkillDownloaderError.noSkillsFound(repository: "owner/repo").errorDescription != nil)
+        #expect(SkillDownloader.SkillDownloaderError.skillNotFound(name: "my-skill", repository: "owner/repo").errorDescription != nil)
+        #expect(SkillDownloader.SkillDownloaderError.downloadFailed(path: "/some/path").errorDescription != nil)
+    }
+
+    @Test
+    func skillSymLinkerError_errorDescription() {
+        #expect(SkillSymLinker.SkillSymLinkerError.agentDirectoryCreationFailed(path: "/some/path").errorDescription != nil)
+        #expect(SkillSymLinker.SkillSymLinkerError.symLinkCreationFailed(from: "/source", to: "/dest").errorDescription != nil)
+    }
+
+    @Test
+    func skillUninstallerError_errorDescription() {
+        #expect(SkillUninstaller.SkillUninstallerError.skillNotFound(name: "my-skill").errorDescription != nil)
+    }
+
+    @Test
+    func gitRepositorySkillFetcherError_errorDescription() {
+        #expect(GitRepositorySkillFetcherError.gitNotFound.errorDescription != nil)
+        #expect(GitRepositorySkillFetcherError.cloneFailed(repository: "owner/repo", exitCode: 128).errorDescription != nil)
+        #expect(GitRepositorySkillFetcherError.fileReadFailed(path: "/some/path").errorDescription != nil)
+    }
 }
