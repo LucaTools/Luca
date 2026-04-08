@@ -19,6 +19,7 @@ struct LucaCommand: AsyncParsableCommand {
                 UnlinkCommand.self
             ]),
             CommandGroup(name: "Listing", subcommands: [
+                AgentsCommand.self,
                 InstalledCommand.self
             ]),
             CommandGroup(name: "Update", subcommands: [
