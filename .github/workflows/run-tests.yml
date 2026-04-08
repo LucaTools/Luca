@@ -12,7 +12,6 @@ on:
       - opened
       - reopened
       - synchronize
-      - ready_for_review
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
