@@ -345,4 +345,58 @@ struct SelfUpdaterTests {
             try await sut.updateToLatest(currentVersion: "1.0.0")
         }
     }
+
+    // MARK: - Script refresh
+
+    @Test
+    func test_updateIfNeeded_refreshesScripts() async throws {
+        let scriptContent = "#!/bin/sh\necho 'script'"
+        let (sut, fileManager, _, _) = makeSUT(
+            subprocessExitCodes: [0],
+            dataDownloader: DataDownloaderMock(result: .rawData(Data(scriptContent.utf8), 200))
+        )
+        fileManager.stubbedVersionFileContent = "1.0.0"
+        fileManager.stubbedIsWritable = true
+
+        try await sut.updateIfNeeded(currentVersion: "0.0.1")
+
+        let writtenNames = fileManager.writtenStrings.map(\.url.lastPathComponent)
+        #expect(writtenNames.contains("post-checkout"))
+        #expect(writtenNames.contains("shell_hook.sh"))
+    }
+
+    @Test
+    func test_updateIfNeeded_scriptRefreshFailure_doesNotFailUpdate() async throws {
+        // Default dataDownloader returns .statusCode(500), so script refresh is skipped.
+        let (sut, fileManager, _, _) = makeSUT(subprocessExitCodes: [0])
+        fileManager.stubbedVersionFileContent = "1.0.0"
+        fileManager.stubbedIsWritable = true
+
+        try await sut.updateIfNeeded(currentVersion: "0.0.1")
+
+        // Binary update still succeeded
+        #expect(fileManager.movedItems.count == 1)
+        // No scripts written due to non-200 response
+        #expect(fileManager.writtenStrings.isEmpty)
+    }
+
+    @Test
+    func test_updateToLatest_alreadyUpToDate_stillRefreshesScripts() async throws {
+        let data = latestReleaseData(tagName: "1.0.0")
+        // Mock returns release JSON for first call but same for script downloads;
+        // the important thing is scripts are attempted (written strings populated).
+        let (sut, fileManager, _, _) = makeSUT(
+            subprocessExitCodes: [0],
+            dataDownloader: DataDownloaderMock(result: .rawData(data, 200))
+        )
+
+        try await sut.updateToLatest(currentVersion: "1.0.0")
+
+        // Binary was already up to date — no install
+        #expect(fileManager.movedItems.isEmpty)
+        // Scripts still refreshed
+        let writtenNames = fileManager.writtenStrings.map(\.url.lastPathComponent)
+        #expect(writtenNames.contains("post-checkout"))
+        #expect(writtenNames.contains("shell_hook.sh"))
+    }
 }
