@@ -30,6 +30,12 @@ public struct GitHookInstaller {
             return
         }
 
+        // In a git worktree, `.git` is a file (not a directory) pointing to the main repo.
+        // Hooks live in the main repo; skip installation to avoid failing in a worktree context.
+        guard (try? fileManager.attributesOfItem(atPath: gitDirectory.path)[.type] as? FileAttributeType) == .typeDirectory else {
+            return
+        }
+
         let sourceHookPath = fileManager.homeDirectoryForCurrentUser
             .appending(components: Constants.toolFolder, "post-checkout")
 

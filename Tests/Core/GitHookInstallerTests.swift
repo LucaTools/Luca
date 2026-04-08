@@ -40,6 +40,22 @@ final class GitHookInstallerTests: XCTestCase {
         XCTAssertTrue(printer.printedMessages.isEmpty)
     }
 
+    // MARK: - Git Worktree
+
+    func test_installPostCheckoutHook_whenGitWorktree_doesNothing() throws {
+        // Given: `.git` is a file (worktree), not a directory
+        let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
+        try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
+        let gitFile = currentDirectory.appending(component: ".git")
+        _ = fileManager.createFile(atPath: gitFile.path, contents: Data("gitdir: /some/main/repo/.git/worktrees/feature\n".utf8))
+
+        // When
+        try sut.installPostCheckoutHook()
+
+        // Then
+        XCTAssertTrue(printer.printedMessages.isEmpty)
+    }
+
     // MARK: - Source Hook Missing
 
     func test_installPostCheckoutHook_whenSourceHookMissing_printsWarning() throws {

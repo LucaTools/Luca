@@ -12,4 +12,5 @@ public protocol GitHookInstallerFileManaging {
     func readString(at url: URL) throws -> String
     func writeString(_ content: String, to url: URL) throws
     func setAttributes(_ attributes: [FileAttributeKey: Any], ofItemAtPath path: String) throws
+    func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any]
 }
