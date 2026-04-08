@@ -11,7 +11,7 @@ public struct AgentRegistry {
 
     /// Complete list of known AI coding agents.
     public static let all: [AgentInfo] = [
-        AgentInfo(id: "adal",           projectSkillsPath: ".adal/skills",         globalSkillsPath: "~/.adal/skills"),
+        AgentInfo(id: "adal",           projectSkillsPath: ".adal/skills",          globalSkillsPath: "~/.adal/skills"),
         AgentInfo(id: "amp",            projectSkillsPath: ".agents/skills",        globalSkillsPath: "~/.config/agents/skills"),
         AgentInfo(id: "antigravity",    projectSkillsPath: ".agents/skills",        globalSkillsPath: "~/.gemini/antigravity/skills"),
         AgentInfo(id: "augment",        projectSkillsPath: ".augment/skills",       globalSkillsPath: "~/.augment/skills"),
