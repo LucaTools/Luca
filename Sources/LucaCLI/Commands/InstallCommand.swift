@@ -59,7 +59,7 @@ struct InstallCommand: AsyncParsableCommand {
           luca install krzysztofzablocki/Sourcery@2.2.7 --asset sourcery-2.2.7.zip
 
         Skill examples:
-          luca install vercel-labs/agent-skills
+          luca install AvdLee/Swift-Concurrency-Agent-Skill
           luca install vercel-labs/agent-skills --skill find-skills
         """,
         valueName: "identifier"
@@ -212,7 +212,7 @@ struct InstallCommand: AsyncParsableCommand {
         Install only the named skills from the repository.
         Can be specified multiple times.
         Example:
-          luca install vercel-labs/agent-skills --skill find-skills
+          luca install AvdLee/Swift-Concurrency-Agent-Skill --skill swift-concurrency
         """,
         valueName: "name"
     ))

@@ -26,7 +26,7 @@ struct UninstallCommand: AsyncParsableCommand {
           luca uninstall SwiftLint@0.61.0
 
         Skill examples:
-          luca uninstall find-skills
+          luca uninstall swift-concurrency
         """,
         valueName: "name[@version]"
     ))
