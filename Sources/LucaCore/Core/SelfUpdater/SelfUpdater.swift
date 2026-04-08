@@ -70,6 +70,8 @@ public struct SelfUpdater: SelfUpdating {
 
     // Force-unwrap is safe: built from compile-time constants only.
     private static let latestReleaseAPIURL = URL(string: "https://api.github.com/repos/LucaTools/Luca/releases/latest")!
+    private static let scriptsBaseURL = "https://raw.githubusercontent.com/LucaTools/LucaScripts/HEAD/"
+    private static let scriptNames = ["post-checkout", "shell_hook.sh"]
 
     // MARK: - Init
 
@@ -124,6 +126,7 @@ public struct SelfUpdater: SelfUpdating {
 
         try validate(version: targetVersion)
         try await performUpdate(from: currentVersion, to: targetVersion)
+        await refreshScripts()
     }
 
     /// Fetches the latest release from GitHub and installs it if it differs from `currentVersion`.
@@ -146,11 +149,13 @@ public struct SelfUpdater: SelfUpdating {
 
         guard targetVersion != currentVersion else {
             printer.printFormatted("\(.primary("✅ luca \(currentVersion) is already up to date."))")
+            await refreshScripts()
             return
         }
 
         try validate(version: targetVersion)
         try await performUpdate(from: currentVersion, to: targetVersion)
+        await refreshScripts()
     }
 
     // MARK: - Private
@@ -215,6 +220,38 @@ public struct SelfUpdater: SelfUpdating {
         // Force-unwrap is safe: the URL is built from compile-time constants
         // plus a semver-validated version string that cannot contain illegal URL characters.
         return URL(string: "https://github.com/LucaTools/Luca/releases/download/\(version)/\(asset)")!
+    }
+
+    /// Downloads the latest scripts from GitHub and writes them to `~/.luca/`.
+    ///
+    /// Errors are caught per-script and logged as warnings so that a refresh failure
+    /// does not prevent the update from succeeding.
+    private func refreshScripts() async {
+        for name in Self.scriptNames {
+            await refreshScript(named: name)
+        }
+    }
+
+    private func refreshScript(named name: String) async {
+        do {
+            // Force-unwrap is safe: base URL and script names are compile-time constants.
+            let url = URL(string: Self.scriptsBaseURL + name)!
+            let request = URLRequest(url: url)
+            let (data, response) = try await dataDownloader.data(for: request)
+
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+                return
+            }
+
+            guard let content = String(data: data, encoding: .utf8), !content.isEmpty else { return }
+
+            let scriptPath = fileManager.homeDirectoryForCurrentUser
+                .appending(components: Constants.toolFolder, name)
+            try fileManager.writeString(content, to: scriptPath)
+            try fileManager.setAttributes([.posixPermissions: NSNumber(value: 0o755)], ofItemAtPath: scriptPath.path)
+        } catch {
+            printer.printFormatted("\(.raw("⚠️ Could not refresh \(name): \(error.localizedDescription)"))")
+        }
     }
 
     private func install(binaryURL: URL, to destination: URL) async throws {

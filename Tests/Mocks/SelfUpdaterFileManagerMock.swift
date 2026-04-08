@@ -25,8 +25,13 @@ class SelfUpdaterFileManagerMock: SelfUpdaterFileManaging, @unchecked Sendable {
     private(set) var setAttributesCalls: [(path: String, attributes: [FileAttributeKey: Any])] = []
     private(set) var createdDirectories: [URL] = []
     private(set) var removedItems: [URL] = []
+    private(set) var writtenStrings: [(content: String, url: URL)] = []
 
     var currentDirectoryPath: String { stubbedCurrentDirectoryPath }
+
+    var homeDirectoryForCurrentUser: URL {
+        URL(fileURLWithPath: stubbedCurrentDirectoryPath).appendingPathComponent("home")
+    }
 
     func fileExists(atPath path: String) -> Bool {
         if path.hasSuffix(".luca-version") {
@@ -57,6 +62,10 @@ class SelfUpdaterFileManagerMock: SelfUpdaterFileManaging, @unchecked Sendable {
         if let error = stubbedMoveItemError {
             throw error
         }
+    }
+
+    func writeString(_ content: String, to url: URL) throws {
+        writtenStrings.append((content: content, url: url))
     }
 
     func setAttributes(_ attributes: [FileAttributeKey: Any], ofItemAtPath path: String) throws {
