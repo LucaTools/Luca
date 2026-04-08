@@ -262,7 +262,9 @@ For skills, Luca:
 
 ## Lucafile Format
 
-The Lucafile is a YAML file with the following structure:
+Luca looks for a spec file in the current directory using the following priority: `Lucafile`, `Lucafile.yml`, `Toolfile`, `Toolfile.yml`, `Skillfile`, `Skillfile.yml`. The alternative names are convenient when you want to keep tool and skill definitions in separate files, but the format is the same regardless of the file name — any spec file can contain both `tools:` and `skills:` sections.
+
+The spec file is a YAML file with the following structure:
 
 ```yaml
 ---

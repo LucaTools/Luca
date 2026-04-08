@@ -121,4 +121,93 @@ struct SpecFinderTests {
         // '-' (ASCII 45) sorts before '.' (ASCII 46), so Lucafile-dev < Lucafile.yml
         #expect(names == ["\(Constants.specFile)", "\(Constants.specFile)-dev", ymlName])
     }
+
+    // MARK: - Toolfile
+
+    @Test
+    func findSpecFiles_toolfile_returnsIt() throws {
+        let fileManager = FileManagerWrapperMock()
+        let directory = try makeDirectory(fileManager: fileManager)
+        try createFile(named: Constants.toolFile, in: directory, fileManager: fileManager)
+        let finder = SpecFinder(fileManager: fileManager)
+
+        let result = try finder.findSpecFiles(in: directory)
+
+        #expect(result.count == 1)
+        #expect(result[0].lastPathComponent == Constants.toolFile)
+    }
+
+    @Test
+    func findSpecFiles_toolfileYml_returnsIt() throws {
+        let fileManager = FileManagerWrapperMock()
+        let directory = try makeDirectory(fileManager: fileManager)
+        let ymlName = "\(Constants.toolFile).\(Constants.ymlExtension)"
+        try createFile(named: ymlName, in: directory, fileManager: fileManager)
+        let finder = SpecFinder(fileManager: fileManager)
+
+        let result = try finder.findSpecFiles(in: directory)
+
+        #expect(result.count == 1)
+        #expect(result[0].lastPathComponent == ymlName)
+    }
+
+    // MARK: - Skillfile
+
+    @Test
+    func findSpecFiles_skillfile_returnsIt() throws {
+        let fileManager = FileManagerWrapperMock()
+        let directory = try makeDirectory(fileManager: fileManager)
+        try createFile(named: Constants.skillFile, in: directory, fileManager: fileManager)
+        let finder = SpecFinder(fileManager: fileManager)
+
+        let result = try finder.findSpecFiles(in: directory)
+
+        #expect(result.count == 1)
+        #expect(result[0].lastPathComponent == Constants.skillFile)
+    }
+
+    @Test
+    func findSpecFiles_skillfileYml_returnsIt() throws {
+        let fileManager = FileManagerWrapperMock()
+        let directory = try makeDirectory(fileManager: fileManager)
+        let ymlName = "\(Constants.skillFile).\(Constants.ymlExtension)"
+        try createFile(named: ymlName, in: directory, fileManager: fileManager)
+        let finder = SpecFinder(fileManager: fileManager)
+
+        let result = try finder.findSpecFiles(in: directory)
+
+        #expect(result.count == 1)
+        #expect(result[0].lastPathComponent == ymlName)
+    }
+
+    // MARK: - Mixed spec files
+
+    @Test
+    func findSpecFiles_mixedSpecFiles_returnsAllSorted() throws {
+        let fileManager = FileManagerWrapperMock()
+        let directory = try makeDirectory(fileManager: fileManager)
+        try createFile(named: Constants.specFile, in: directory, fileManager: fileManager)
+        try createFile(named: "\(Constants.toolFile)-dev", in: directory, fileManager: fileManager)
+        try createFile(named: "\(Constants.skillFile).\(Constants.ymlExtension)", in: directory, fileManager: fileManager)
+        let finder = SpecFinder(fileManager: fileManager)
+
+        let result = try finder.findSpecFiles(in: directory)
+
+        let names = result.map { $0.lastPathComponent }
+        #expect(names == [Constants.specFile, "\(Constants.skillFile).\(Constants.ymlExtension)", "\(Constants.toolFile)-dev"])
+    }
+
+    @Test
+    func findSpecFiles_nonSpecFiles_excluded() throws {
+        let fileManager = FileManagerWrapperMock()
+        let directory = try makeDirectory(fileManager: fileManager)
+        try createFile(named: "Toolbox.md", in: directory, fileManager: fileManager)
+        try createFile(named: "Skillset.json", in: directory, fileManager: fileManager)
+        try createFile(named: "README.md", in: directory, fileManager: fileManager)
+        let finder = SpecFinder(fileManager: fileManager)
+
+        let result = try finder.findSpecFiles(in: directory)
+
+        #expect(result.isEmpty)
+    }
 }
