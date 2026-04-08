@@ -318,42 +318,44 @@ struct InstallCommand: AsyncParsableCommand {
     
     // MARK: - Private
     
-    /// Path to the spec file: either explicit via `--spec` or default to `Constants.specFile` (or `Lucafile.yml`) in current directory.
-    /// When no exact `Lucafile` or `Lucafile.yml` exists, discovers files with the `Lucafile` prefix and prompts the user to pick one.
+    /// Path to the spec file: either explicit via `--spec` or auto-discovered in the current directory.
+    ///
+    /// Checks for `Lucafile`, `Lucafile.yml`, `Toolfile`, `Toolfile.yml`, `Skillfile`, `Skillfile.yml` in that order.
+    /// When none of those exist, discovers files with any recognised prefix and prompts the user to pick one.
     private func specPath(providedSpec: String?, fileManager: FileManaging, noora: Noorable) throws -> URL {
         if let providedSpec {
             return URL(fileURLWithPath: providedSpec)
         }
 
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
-        let defaultPath = currentDirectory.appending(component: Constants.specFile)
 
-        // If Lucafile exists, use it as the default.
-        if fileManager.fileExists(atPath: defaultPath.path) {
-            return defaultPath
+        // Check each recognised name (plain then .yml) in priority order.
+        for name in Constants.specFiles {
+            let plainPath = currentDirectory.appending(component: name)
+            if fileManager.fileExists(atPath: plainPath.path) {
+                return plainPath
+            }
+            let ymlPath = currentDirectory.appending(component: "\(name).\(Constants.ymlExtension)")
+            if fileManager.fileExists(atPath: ymlPath.path) {
+                return ymlPath
+            }
         }
 
-        // If Lucafile.yml exists, use it as the default.
-        let ymlPath = currentDirectory.appending(component: "\(Constants.specFile).\(Constants.ymlExtension)")
-        if fileManager.fileExists(atPath: ymlPath.path) {
-            return ymlPath
-        }
-
-        // Auto-discover files with the Lucafile prefix.
+        // Auto-discover files with a recognised prefix.
         let finder = SpecFinder(fileManager: fileManager)
         let candidates = try finder.findSpecFiles(in: currentDirectory)
 
         switch candidates.count {
         case 0:
             // Return default path; will trigger a missing-spec error downstream.
-            return defaultPath
+            return currentDirectory.appending(component: Constants.specFile)
         case 1:
             return candidates[0]
         default:
             let options = candidates.map { $0.lastPathComponent }
             let selected: String = noora.singleChoicePrompt(
                 title: "Select spec",
-                question: "Multiple \(Constants.specFile) found. Which one do you want to use?",
+                question: "Multiple spec files found. Which one do you want to use?",
                 options: options
             )
             return currentDirectory.appending(component: selected)
