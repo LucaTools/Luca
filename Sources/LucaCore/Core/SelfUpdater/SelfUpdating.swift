@@ -15,4 +15,7 @@ public protocol SelfUpdating {
     ///
     /// - Parameter currentVersion: The version string of the running binary.
     func updateToLatest(currentVersion: String) async throws
+
+    /// Downloads the latest helper scripts (post-checkout, shell_hook.sh) to `~/.luca/`
+    func refreshScripts() async
 }
