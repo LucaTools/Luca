@@ -155,7 +155,17 @@ public struct SelfUpdater: SelfUpdating {
 
         try validate(version: targetVersion)
         try await performUpdate(from: currentVersion, to: targetVersion)
+        updateVersionFileIfPresent(targetVersion)
         await refreshScripts()
+    }
+
+    /// Writes `version` into `.luca-version` when the file already exists,
+    /// keeping the pin in sync after an explicit `luca update`.
+    private func updateVersionFileIfPresent(_ version: String) {
+        let versionFilePath = fileManager.currentDirectoryPath + "/.luca-version"
+        guard fileManager.fileExists(atPath: versionFilePath) else { return }
+        let url = URL(fileURLWithPath: versionFilePath)
+        try? fileManager.writeString(version + "\n", to: url)
     }
 
     // MARK: - Private

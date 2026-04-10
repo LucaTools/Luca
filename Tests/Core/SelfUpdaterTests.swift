@@ -399,4 +399,54 @@ struct SelfUpdaterTests {
         #expect(writtenNames.contains("post-checkout"))
         #expect(writtenNames.contains("shell_hook.sh"))
     }
+
+    // MARK: - updateToLatest — .luca-version sync
+
+    @Test
+    func test_updateToLatest_versionFileExists_updatesVersionFile() async throws {
+        let data = latestReleaseData(tagName: "2.0.0")
+        let (sut, fileManager, _, _) = makeSUT(
+            subprocessExitCodes: [0],
+            dataDownloader: DataDownloaderMock(result: .rawData(data, 200))
+        )
+        fileManager.stubbedVersionFileContent = "1.0.0"
+        fileManager.stubbedIsWritable = true
+
+        try await sut.updateToLatest(currentVersion: "1.0.0")
+
+        let versionFileWrites = fileManager.writtenStrings.filter { $0.url.lastPathComponent == ".luca-version" }
+        #expect(versionFileWrites.count == 1)
+        #expect(versionFileWrites.first?.content == "2.0.0\n")
+    }
+
+    @Test
+    func test_updateToLatest_noVersionFile_doesNotCreateOne() async throws {
+        let data = latestReleaseData(tagName: "2.0.0")
+        let (sut, fileManager, _, _) = makeSUT(
+            subprocessExitCodes: [0],
+            dataDownloader: DataDownloaderMock(result: .rawData(data, 200))
+        )
+        fileManager.stubbedVersionFileContent = nil
+        fileManager.stubbedIsWritable = true
+
+        try await sut.updateToLatest(currentVersion: "1.0.0")
+
+        let versionFileWrites = fileManager.writtenStrings.filter { $0.url.lastPathComponent == ".luca-version" }
+        #expect(versionFileWrites.isEmpty)
+    }
+
+    @Test
+    func test_updateToLatest_alreadyUpToDate_doesNotWriteVersionFile() async throws {
+        let data = latestReleaseData(tagName: "1.0.0")
+        let (sut, fileManager, _, _) = makeSUT(
+            subprocessExitCodes: [0],
+            dataDownloader: DataDownloaderMock(result: .rawData(data, 200))
+        )
+        fileManager.stubbedVersionFileContent = "1.0.0"
+
+        try await sut.updateToLatest(currentVersion: "1.0.0")
+
+        let versionFileWrites = fileManager.writtenStrings.filter { $0.url.lastPathComponent == ".luca-version" }
+        #expect(versionFileWrites.isEmpty)
+    }
 }
