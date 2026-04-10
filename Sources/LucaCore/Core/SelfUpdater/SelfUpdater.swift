@@ -226,7 +226,7 @@ public struct SelfUpdater: SelfUpdating {
     ///
     /// Errors are caught per-script and logged as warnings so that a refresh failure
     /// does not prevent the update from succeeding.
-    private func refreshScripts() async {
+    public func refreshScripts() async {
         for name in Self.scriptNames {
             await refreshScript(named: name)
         }
