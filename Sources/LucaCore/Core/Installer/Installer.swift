@@ -129,24 +129,24 @@ public struct Installer {
     // MARK: - Private
     
     private func installQuietly(installationType: ToolInstallationType) async throws {
+        let dataDownloader = DataDownloader(session: .shared)
+        let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
+        let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
+        let tools = try await toolFactory.toolsForInstallationType(installationType)
+
+        // Unlink orphaned tools only when installing from a spec
+        if case .spec = installationType {
+            try unlinkOrphanedTools(specTools: tools)
+        }
+
+        guard !tools.isEmpty else { return }
+
         try await noora.progressStep(
             message: "Installing tools",
             successMessage: "Tools have been installed for the current project",
             errorMessage: "Failed to install tools",
             showSpinner: true
         ) { updateMessage in
-            let dataDownloader = DataDownloader(session: .shared)
-            let releaseInfoProvider = ReleaseInfoProvider(dataDownloader: dataDownloader)
-            let toolFactory = ToolFactory(releaseInfoProvider: releaseInfoProvider, specLoader: specLoader)
-            
-            updateMessage("Detecting tools to install")
-            let tools = try await toolFactory.toolsForInstallationType(installationType)
-            
-            // Unlink orphaned tools only when installing from a spec
-            if case .spec = installationType {
-                try unlinkOrphanedTools(specTools: tools)
-            }
-            
             for tool in tools {
                 updateMessage("Installing \(tool.name) \(tool.version)")
                 if isToolInstalled(tool) {
@@ -191,16 +191,16 @@ public struct Installer {
     }
     
     private func installQuietly(installationType: SkillInstallationType, useNpx: Bool) async throws {
+        let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
+        let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
+        guard !skillsInfo.skillSets.isEmpty else { return }
+
         try await noora.progressStep(
             message: "Installing skills",
             successMessage: "Skills have been installed for the current project",
             errorMessage: "Failed to install skills",
             showSpinner: true
         ) { updateMessage in
-            let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
-
-            updateMessage("Detecting skills to install")
-            let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
             // Compute resolvedAgents once (same for all SkillSets)
             let resolvedAgents: [AgentInfo]
             if let agentIds = skillsInfo.agents {
