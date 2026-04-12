@@ -1,26 +1,33 @@
 # ``LucaCore``
 
-A lightweight tool manager for macOS and Linux that helps developers install, manage, and activate specific versions of development tools.
+The core library powering Luca's tool and skill management capabilities.
 
 ## Overview
 
-Luca helps you manage command-line tools by downloading, verifying, and installing binaries from GitHub releases. Define your tools in a `Lucafile` and let Luca handle the rest.
+LucaCore provides the protocols, models, and services that power the
+`luca` command-line tool. It handles downloading, extracting, validating,
+and symlinking development tool binaries, as well as installing agentic
+skills from Git repositories.
 
-### Key Features
+All components follow a protocol-oriented design with dependency injection,
+making them independently testable and composable.
 
-- **Version-specific installations**: Install specific versions of tools needed for your project
-- **Project isolation**: Each project can have its own set of active tools
-- **Simple specification**: Define required tools in a simple YAML file (Lucafile)
-- **Zero configuration**: Just create a Lucafile and run `luca install`
-- **No PATH pollution**: Tools are symlinked locally in your project directory
-- **Idempotent operations**: Safe to run multiple times
+### Architecture
+
+- **Installation pipeline**: ``Installer`` orchestrates downloading
+  (``Downloader``), extraction (``Unarchiver``), validation
+  (``ChecksumValidator``, ``ArchitectureValidator``), and symlinking
+  (``SymLinker``)
+- **Specification loading**: ``SpecLoader`` parses Lucafile YAML into
+  ``Spec`` and ``Skill`` models
+- **Skill management**: ``SkillInstaller`` handles agentic skill
+  installation from Git repositories
+- **Tool lifecycle**: ``InstalledToolsLister``, ``LinkedToolsLister``,
+  ``Uninstaller``, and ``Unlinker`` manage the full tool lifecycle
+- **Git integration**: ``GitHookInstaller`` and ``GitIgnoreManager``
+  automate project setup
 
 ## Topics
-
-### Essentials
-
-- <doc:GettingStarted>
-- <doc:Lucafile>
 
 ### Contributing
 

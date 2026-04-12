@@ -1,0 +1,9 @@
+Id               Project Skills Path
+───────────────  ─────────────────────
+claude-code      .claude/skills
+cursor           .agents/skills
+gemini-cli       .agents/skills
+github-copilot   .agents/skills
+opencode         .agents/skills
+windsurf         .windsurf/skills
+...

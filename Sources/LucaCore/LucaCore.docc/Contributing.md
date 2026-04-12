@@ -64,6 +64,10 @@ swift test
 ### Build Documentation Locally
 
 ```bash
+# Preview the CLI documentation (end-user guides & tutorials)
+swift package --disable-sandbox preview-documentation --target LucaCLI
+
+# Preview the core library documentation (API reference)
 swift package --disable-sandbox preview-documentation --target LucaCore
 ```
 

@@ -30,7 +30,7 @@ curl -fsSL https://luca.tools/install.sh | bash
 Optionally define per-project `.luca-version` files containing the desired version before running the above command
 
 ```bash
-echo "1.0.0" > .luca-version
+echo "0.15.0" > .luca-version
 ```
 
 ### From Source

@@ -1,0 +1,120 @@
+@Tutorial(time: 5) {
+    @Intro(title: "Installing Agentic Skills") {
+        Learn how to install AI coding agent skills using Luca.
+
+        In this tutorial, you'll configure a Lucafile with skills,
+        install them for specific agents, and manage your installed skills.
+    }
+
+    @Section(title: "Configure Agents") {
+        @ContentAndMedia {
+            Before installing skills, specify which AI coding agents you
+            use. Luca installs skill files into agent-specific directories
+            so each agent can discover them automatically.
+        }
+
+        @Steps {
+            @Step {
+                Run `luca agents` to list all known agent identifiers and
+                their project skill paths.
+
+                @Code(name: "Terminal", file: "luca-agents.sh")
+            }
+
+            @Step {
+                Review the output to find the identifiers for the agents
+                you use.
+
+                @Code(name: "Output", file: "agents-output.txt")
+            }
+
+            @Step {
+                Open your Lucafile and add an `agents:` key listing the
+                agents you want to target. If you omit this key, Luca
+                installs skills for all known agents.
+
+                @Code(name: "Lucafile", file: "Lucafile-skills-01.yml")
+            }
+        }
+    }
+
+    @Section(title: "Add Skills to Your Lucafile") {
+        @ContentAndMedia {
+            Define the skills your project needs in the `skills:` section
+            of your Lucafile. Each skill references a Git repository
+            containing one or more SKILL.md files.
+        }
+
+        @Steps {
+            @Step {
+                Add a `skills:` section with a skill name and repository
+                reference. The repository can be an `owner/repo` shorthand,
+                an HTTPS URL, or an SSH URL.
+
+                @Code(name: "Lucafile", file: "Lucafile-skills-02.yml")
+            }
+
+            @Step {
+                For projects with many skills from the same source, use a
+                `repos:` dictionary to define short alias names. Any
+                `repository:` value matching an alias key is resolved to
+                the full reference at parse time.
+
+                @Code(name: "Lucafile", file: "Lucafile-skills-03.yml")
+            }
+        }
+    }
+
+    @Section(title: "Install Skills") {
+        @ContentAndMedia {
+            Install skills from your Lucafile or directly from a repository
+            on the command line.
+        }
+
+        @Steps {
+            @Step {
+                Run `luca install --only-skills` to install just the skills
+                defined in your Lucafile, skipping binary tools.
+
+                @Code(name: "Terminal", file: "luca-install-skills.sh")
+            }
+
+            @Step {
+                You can also install a skill directly from a repository
+                without modifying your Lucafile. Use the `--skill` and
+                `--agent` flags to specify what to install and where.
+
+                @Code(name: "Terminal", file: "luca-install-skill-direct.sh")
+            }
+        }
+    }
+
+    @Section(title: "Manage Installed Skills") {
+        @ContentAndMedia {
+            List and remove installed skills using familiar Luca commands.
+        }
+
+        @Steps {
+            @Step {
+                View all installed skills with the `--skills` flag on the
+                `installed` command.
+
+                @Code(name: "Terminal", file: "luca-installed-skills.sh")
+            }
+
+            @Step {
+                The output lists the name of each installed skill.
+
+                @Code(name: "Output", file: "installed-skills-output.txt")
+            }
+
+            @Step {
+                Remove a skill you no longer need with `luca uninstall`.
+                This removes the skill from the cache and all agent
+                symlinks.
+
+                @Code(name: "Terminal", file: "luca-uninstall-skill.sh")
+            }
+        }
+    }
+}
