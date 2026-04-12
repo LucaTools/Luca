@@ -40,6 +40,7 @@ public struct SelfUpdater: SelfUpdating {
         case binaryNotFound
         case installFailed(String)
         case latestVersionFetchFailed(Int)
+        case versionNotFound(String)
 
         var errorDescription: String? {
             switch self {
@@ -55,6 +56,8 @@ public struct SelfUpdater: SelfUpdating {
                 return "Failed to install updated binary to '\(path)'. Try running the install script manually."
             case .latestVersionFetchFailed(let status):
                 return "Failed to fetch the latest Luca release from GitHub (HTTP \(status))."
+            case .versionNotFound(let v):
+                return "Version '\(v)' does not exist on GitHub. Check the version string in your .luca-version file."
             }
         }
     }
@@ -70,6 +73,12 @@ public struct SelfUpdater: SelfUpdating {
 
     // Force-unwrap is safe: built from compile-time constants only.
     private static let latestReleaseAPIURL = URL(string: "https://api.github.com/repos/LucaTools/Luca/releases/latest")!
+
+    // Force-unwrap is safe: base URL is a compile-time constant;
+    // version is semver-validated before this is called.
+    private static func releaseTagAPIURL(for version: String) -> URL {
+        URL(string: "https://api.github.com/repos/LucaTools/Luca/releases/tags/\(version)")!
+    }
     private static let scriptsBaseURL = "https://raw.githubusercontent.com/LucaTools/LucaScripts/HEAD/"
     private static let scriptNames = ["post-checkout", "shell_hook.sh"]
 
@@ -170,7 +179,21 @@ public struct SelfUpdater: SelfUpdating {
 
     // MARK: - Private
 
+    private func checkVersionExists(_ version: String) async throws {
+        var request = URLRequest(url: Self.releaseTagAPIURL(for: version))
+        request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+        request.setValue("luca.tools.cli", forHTTPHeaderField: "User-Agent")
+
+        let (_, response) = try await dataDownloader.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 404 {
+            throw SelfUpdaterError.versionNotFound(version)
+        }
+    }
+
     private func performUpdate(from currentVersion: String, to targetVersion: String) async throws {
+        try await checkVersionExists(targetVersion)
+
         printer.printFormatted("\(.raw("🔄 Updating Luca \(currentVersion) → \(targetVersion)..."))")
 
         let (tempZipURL, _) = try await fileDownloader.download(from: downloadURL(for: targetVersion))
