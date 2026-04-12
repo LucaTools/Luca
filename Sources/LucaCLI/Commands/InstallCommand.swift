@@ -38,6 +38,8 @@ struct InstallCommand: AsyncParsableCommand {
         """
     )
 
+    @OptionGroup var commonFlags: CommonFlags
+
     @Option(name: .long, help: ArgumentHelp(
         "Path to the spec file.",
         discussion: """
