@@ -20,6 +20,8 @@ struct AgentsCommand: AsyncParsableCommand {
         """
     )
 
+    @OptionGroup var commonFlags: CommonFlags
+
     func run() async throws {
         let noora = Noora(terminal: Terminal(signalBehavior: .none))
         let printer = Printer(noora: noora)

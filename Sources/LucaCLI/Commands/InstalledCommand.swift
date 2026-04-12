@@ -17,6 +17,8 @@ struct InstalledCommand: AsyncParsableCommand {
         """
     )
     
+    @OptionGroup var commonFlags: CommonFlags
+
     @Flag(help: ArgumentHelp(
         "List installed skills instead of binary tools."
     ))

@@ -14,8 +14,9 @@ struct LucaEntryPoint {
         let arguments = CommandLine.arguments.dropFirst()
         let isVersionRequest = arguments.count == 1 && arguments.contains("--version")
         let isUpdateCommand = arguments.first == "update"
+        let isNoAutoUpdate = arguments.contains("--no-auto-update")
 
-        if !isVersionRequest, !isUpdateCommand {
+        if !isVersionRequest, !isUpdateCommand, !isNoAutoUpdate {
             let fileManager = FileManagerWrapper()
             let noora = Noora(terminal: Terminal(signalBehavior: .none))
             let printer = Printer(noora: noora)

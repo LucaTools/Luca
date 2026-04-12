@@ -17,6 +17,8 @@ struct UnlinkCommand: AsyncParsableCommand {
         """
     )
     
+    @OptionGroup var commonFlags: CommonFlags
+
     @Argument(help: ArgumentHelp(
         "Name of the symlink to remove.",
         discussion: """

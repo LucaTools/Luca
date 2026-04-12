@@ -18,6 +18,8 @@ struct UninstallCommand: AsyncParsableCommand {
         """
     )
 
+    @OptionGroup var commonFlags: CommonFlags
+
     @Argument(help: ArgumentHelp(
         "Tool or skill name to uninstall.",
         discussion: """

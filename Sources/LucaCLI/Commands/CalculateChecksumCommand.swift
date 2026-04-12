@@ -16,6 +16,8 @@ struct CalculateChecksumCommand: AsyncParsableCommand {
         """
     )
     
+    @OptionGroup var commonFlags: CommonFlags
+
     @Argument(help: ArgumentHelp(
         "Path to the file to hash.",
         discussion: """
