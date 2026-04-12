@@ -1,0 +1,17 @@
+---
+repos:
+  vercel: vercel-labs/agent-skills
+  vanderlee: git@github.com:AvdLee/Swift-Testing-Agent-Skill.git
+
+skills:
+  - name: frontend-design
+    repository: vercel
+  - name: skill-creator
+    repository: vercel
+  - name: swift-testing-expert
+    repository: vanderlee
+  - name: swift-concurrency
+    repository: https://github.com/AvdLee/Swift-Concurrency-Agent-Skill.git
+
+agents:
+  - claude-code

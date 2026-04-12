@@ -160,11 +160,33 @@ The optional `skills:` key installs agentic skills from Git repositories via `np
 | Field | Required | Description |
 |-------|----------|-------------|
 | `name` | Yes | Name of the skill to install; omit to install all |
-| `repository` | Yes | `owner/repo` shorthand or a full HTTPS URL |
+| `repository` | Yes | `owner/repo` shorthand, full HTTPS/GIT URL, or a `repos` alias key |
+
+### Repository Aliases
+
+The optional `repos:` dictionary defines short alias names for repository references. Any `repository:` value in a skill entry that matches an alias key is replaced with the corresponding URL at parse time.
+
+```yaml
+repos:
+  vercel: vercel-labs/agent-skills
+  vanderlee: git@github.com:AvdLee/Swift-Testing-Agent-Skill.git
+
+skills:
+  - name: frontend-design
+    repository: vercel          # resolved to: vercel-labs/agent-skills
+  - name: skill-creator
+    repository: vercel          # resolved to: vercel-labs/agent-skills
+  - name: swift-testing-expert
+    repository: vanderlee       # resolved to: git@github.com:AvdLee/Swift-Testing-Agent-Skill.git
+  - name: swift-concurrency
+    repository: https://github.com/AvdLee/Swift-Concurrency-Agent-Skill.git  # not an alias, used verbatim
+```
+
+If a `repository` value is not a key in `repos`, it is used verbatim as a repository reference.
 
 ### Skills Examples
 
-Install specific skills from a GitHub repository:
+Install specific skills using direct repository references:
 
 ```yaml
 skills:
@@ -176,12 +198,11 @@ skills:
     repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill
 ```
 
-Install all skills from a custom Git host:
+Install all skills from a repository (omit `name`):
 
 ```yaml
 skills:
-  - name: swift-testing-expert
-    repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill
+  - repository: git@github.com:some-org/skills.git
 ```
 
 ### Selective Installation

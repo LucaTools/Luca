@@ -55,6 +55,42 @@ struct SpecLoaderTests {
     }
 
     @Test
+    func test_loadSpec_withRepos_resolvesAliasesInSkills() throws {
+        let sut = SpecLoader(fileManager: .default)
+
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_mock_with_repos", withExtension: "yml"))
+
+        let spec = try sut.loadSpec(at: path)
+        let skills = try #require(spec.skills)
+
+        #expect(skills.count == 4)
+        #expect(skills[0].name == "frontend-design")
+        #expect(skills[0].repository == "vercel-labs/agent-skills")
+        #expect(skills[1].name == "skill-creator")
+        #expect(skills[1].repository == "vercel-labs/agent-skills")
+        #expect(skills[2].name == "swift-testing-expert")
+        #expect(skills[2].repository == "git@github.com:AvdLee/Swift-Testing-Agent-Skill.git")
+        #expect(skills[3].name == "swift-concurrency")
+        #expect(skills[3].repository == "https://github.com/AvdLee/Swift-Concurrency-Agent-Skill.git")
+    }
+
+    @Test
+    func test_loadSpec_withRepos_unknownRepositoryValueUsedVerbatim() throws {
+        let sut = SpecLoader(fileManager: .default)
+
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_mock_with_repos", withExtension: "yml"))
+
+        let spec = try sut.loadSpec(at: path)
+        let skills = try #require(spec.skills)
+
+        // The direct URL (not an alias key) must pass through unchanged
+        let directSkill = try #require(skills.first(where: { $0.name == "swift-concurrency" }))
+        #expect(directSkill.repository == "https://github.com/AvdLee/Swift-Concurrency-Agent-Skill.git")
+    }
+
+    @Test
     func test_loadSpec_invalidYAML_errorDescriptionIsReadable() throws {
         let sut = SpecLoader(fileManager: .default)
 
