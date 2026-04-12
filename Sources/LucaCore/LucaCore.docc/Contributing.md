@@ -120,7 +120,6 @@ Request a code review from one of the maintainers.
 - [ ] Update documentation if interface changes
 - [ ] Add tests for new functionality
 - [ ] Ensure all tests pass
-- [ ] Update CHANGELOG.md with your changes
 
 ## Architecture Overview
 

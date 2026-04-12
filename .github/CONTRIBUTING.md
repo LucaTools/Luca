@@ -94,8 +94,7 @@ Fixes #123
 ## Pull Request Process
 
 1. Update the README.md or documentation with details of changes to the interface, if applicable
-2. Update the CHANGELOG.md with details of your changes
-3. The pull request will be merged once it has been approved by a maintainer
+2. The pull request will be merged once it has been approved by a maintainer
 
 ## Release Process
 
