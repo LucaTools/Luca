@@ -81,6 +81,18 @@ struct SelfUpdaterTests {
         }
     }
 
+    @Test
+    func test_updateIfNeeded_versionNotFound_throwsVersionNotFound() async throws {
+        let (sut, fileManager, _, _) = makeSUT(
+            dataDownloader: DataDownloaderMock(result: .statusCode(404))
+        )
+        fileManager.stubbedVersionFileContent = "1.0.0"
+
+        await #expect(throws: SelfUpdater.SelfUpdaterError.versionNotFound("1.0.0")) {
+            try await sut.updateIfNeeded(currentVersion: "0.0.1")
+        }
+    }
+
     // MARK: - Writable destination
 
     @Test
@@ -230,7 +242,8 @@ struct SelfUpdaterTests {
             .cannotResolveExecutablePath,
             .extractionFailed(1),
             .binaryNotFound,
-            .installFailed("/usr/local/bin/luca")
+            .installFailed("/usr/local/bin/luca"),
+            .versionNotFound("1.0.0")
         ]
         for error in errors {
             #expect(error.errorDescription != nil)
