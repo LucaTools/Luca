@@ -22,10 +22,6 @@ Luca helps you manage command-line tools by downloading, verifying, and installi
 - <doc:GettingStarted>
 - <doc:Lucafile>
 
-### Tutorials
-
-- <doc:Luca>
-
 ### Contributing
 
 - <doc:Contributing>
