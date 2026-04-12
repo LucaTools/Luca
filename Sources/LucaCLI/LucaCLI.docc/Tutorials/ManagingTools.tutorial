@@ -1,96 +1,96 @@
 @Tutorial(time: 5) {
     @Intro(title: "Managing Your Tools") {
         Learn how to list, inspect, and remove tools managed by Luca.
-        
-        In this tutorial, you'll learn the commands for viewing installed tools, 
-        checking which tools are linked in your project, and removing tools you 
+
+        In this tutorial, you'll learn the commands for viewing installed tools,
+        checking which tools are linked in your project, and removing tools you
         no longer need.
     }
-    
+
     @Section(title: "List Installed Tools") {
         @ContentAndMedia {
-            Luca keeps track of all tools installed on your system. You can view 
+            Luca keeps track of all tools installed on your system. You can view
             them along with their installed versions.
         }
-        
+
         @Steps {
             @Step {
-                Run `luca installed` to see all tools and versions that have been 
+                Run `luca installed` to see all tools and versions that have been
                 installed globally.
-                
+
                 @Code(name: "Terminal", file: "luca-installed.sh")
             }
-            
+
             @Step {
-                The output shows each tool name with its installed versions listed 
+                The output shows each tool name with its installed versions listed
                 below it.
-                
+
                 @Code(name: "Output", file: "installed-output.txt")
             }
         }
     }
-    
+
     @Section(title: "List Linked Tools") {
         @ContentAndMedia {
-            Each project can have different tools linked. Use `luca linked` to 
+            Each project can have different tools linked. Use `luca linked` to
             see which tools are active in your current project.
         }
-        
+
         @Steps {
             @Step {
                 Navigate to your project directory and run `luca linked`.
-                
+
                 @Code(name: "Terminal", file: "luca-linked.sh")
             }
-            
+
             @Step {
-                The output shows detailed information about each linked tool, 
+                The output shows detailed information about each linked tool,
                 including its version, binary name, and storage location.
-                
+
                 @Code(name: "Output", file: "linked-output.txt")
             }
         }
     }
-    
+
     @Section(title: "Unlink Tools") {
         @ContentAndMedia {
-            Remove a tool's symlink from your project without uninstalling it 
-            globally. This is useful when you no longer need a tool in a 
+            Remove a tool's symlink from your project without uninstalling it
+            globally. This is useful when you no longer need a tool in a
             specific project.
         }
-        
+
         @Steps {
             @Step {
                 Use `luca unlink` with the binary name to remove the symlink.
-                
+
                 @Code(name: "Terminal", file: "luca-unlink.sh")
             }
-            
+
             @Step {
-                The tool remains installed globally and can be re-linked later 
+                The tool remains installed globally and can be re-linked later
                 by running `luca install` again.
             }
         }
     }
-    
+
     @Section(title: "Uninstall Tools") {
         @ContentAndMedia {
-            Completely remove a tool version from your system. This removes 
+            Completely remove a tool version from your system. This removes
             the tool from the global installation directory.
         }
-        
+
         @Steps {
             @Step {
-                To uninstall a specific version, use `luca uninstall` with the 
+                To uninstall a specific version, use `luca uninstall` with the
                 tool name and version.
-                
+
                 @Code(name: "Terminal", file: "luca-uninstall.sh")
             }
-            
+
             @Step {
-                If you don't specify a version, Luca will prompt you to select 
+                If you don't specify a version, Luca will prompt you to select
                 which version to uninstall.
-                
+
                 @Code(name: "Terminal", file: "luca-uninstall-prompt.sh")
             }
         }
