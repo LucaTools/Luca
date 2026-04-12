@@ -34,27 +34,13 @@ jobs:
 
       - name: Build DocC
         run: |
-          # Build each target into its own directory to avoid the second run
-          # clearing the first run's output (swift-docc-plugin clears the
-          # output directory before each generation).
-          swift package --allow-writing-to-directory ./docs-lucacore \
-            generate-documentation --target LucaCore \
-            --disable-indexing \
-            --output-path ./docs-lucacore \
-            --transform-for-static-hosting \
-            --hosting-base-path Luca
-
           swift package --allow-writing-to-directory ./docs \
-            generate-documentation --target LucaCLI \
+            generate-documentation \
+            --enable-experimental-combined-documentation \
             --disable-indexing \
             --output-path ./docs \
             --transform-for-static-hosting \
             --hosting-base-path Luca
-
-          # Merge LucaCore's target-specific subdirectories into the LucaCLI
-          # output. Each target occupies its own path so there is no conflict.
-          cp -r ./docs-lucacore/documentation/lucacore ./docs/documentation/
-          cp -r ./docs-lucacore/data/documentation/lucacore ./docs/data/documentation/
 
           # Redirect root to CLI documentation (primary user-facing entry point)
           echo '<script>window.location.href += "/documentation/lucacli"</script>' > docs/index.html
