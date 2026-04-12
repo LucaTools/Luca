@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v6
 
       - name: Select Xcode
         uses: LucaTools/select-xcode@v1
@@ -58,4 +58,4 @@ jobs:
 
       - id: deployment
         name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
