@@ -64,7 +64,7 @@ jobs:
         run: zip -r ${{ env.TOOL_NAME }}-macOS.zip ${{ env.PRODUCT_NAME }}
 
       - name: Upload macOS universal binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macOS-universal-binary
           path: ${{ steps.create-macos-universal-binary.outputs.binary-folder }}/${{ env.TOOL_NAME }}-macOS.zip
@@ -112,7 +112,7 @@ jobs:
           zip -r ${{ env.TOOL_NAME }}-Linux.zip ${{ env.PRODUCT_NAME }}
 
       - name: Upload Linux binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Linux-binary
           path: .github/.build/${{ env.TOOL_NAME }}-Linux.zip
@@ -175,7 +175,7 @@ jobs:
           zip -r "${{ env.TOOL_NAME }}.artifactbundle.zip" "$BUNDLE"
 
       - name: Upload artifactbundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifactbundle
           path: ${{ env.TOOL_NAME }}.artifactbundle.zip
