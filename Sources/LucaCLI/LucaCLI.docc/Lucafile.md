@@ -153,7 +153,7 @@ Add `.luca/tools/` to your `.gitignore` file. Luca can manage this automatically
 
 ## Skills
 
-The optional `skills:` key installs agentic skills from Git repositories via `npx skills add`.
+The optional `skills:` key installs agentic skills from Git repositories.
 
 ### Skills Fields
 
@@ -219,7 +219,3 @@ luca install --only-skills    # skip binary tools
 ## Related
 
 - <doc:GettingStarted>
-- ``Spec``
-- ``Skill``
-- ``SkillInstaller``
-- ``SpecLoader``

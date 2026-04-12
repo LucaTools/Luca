@@ -1,8 +1,9 @@
 @Tutorials(name: "Luca") {
     @Intro(title: "Meet Luca") {
-        Learn how to use Luca to manage your development tools efficiently.
-        Luca helps you install, version, and organize command-line tools
-        specific to each of your projects.
+        Learn how to use Luca to manage your development tools and agentic
+        skills efficiently. Luca helps you install, version, and organize
+        command-line tools and AI coding agent skills specific to each of
+        your projects.
     }
 
     @Chapter(name: "Getting Started") {
@@ -15,5 +16,11 @@
         Learn how to list, update, and remove tools from your projects.
 
         @TutorialReference(tutorial: "doc:ManagingTools")
+    }
+
+    @Chapter(name: "Working with Skills") {
+        Install and manage agentic skills for AI coding agents in your projects.
+
+        @TutorialReference(tutorial: "doc:InstallingSkills")
     }
 }

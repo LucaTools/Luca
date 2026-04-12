@@ -1,14 +1,19 @@
 # ``LucaCLI``
 
-The `luca` command-line tool for managing development tools in your projects.
+The `luca` command-line tool for managing development tools and agentic skills in your projects.
 
 ## Overview
 
-Luca helps you manage command-line tools by downloading, verifying, and installing
-binaries from GitHub releases. Define your tools in a `Lucafile` and let Luca handle
-the rest.
+Luca helps you manage command-line tools and AI coding agent skills. Define your
+tools and skills in a `Lucafile` and let Luca handle downloading, verifying, and
+installing them.
 
 ## Topics
+
+### Essentials
+
+- <doc:GettingStarted>
+- <doc:Lucafile>
 
 ### Tutorials
 

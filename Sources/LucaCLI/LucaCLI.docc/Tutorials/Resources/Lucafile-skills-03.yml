@@ -1,0 +1,21 @@
+---
+tools:
+  - name: SwiftLint
+    binaryPath: SwiftLintBinary.artifactbundle/swiftlint-0.61.0-macos/bin/swiftlint
+    version: 0.61.0
+    url: https://github.com/realm/SwiftLint/releases/download/0.61.0/SwiftLintBinary.artifactbundle.zip
+
+repos:
+  vercel: vercel-labs/agent-skills
+
+agents:
+  - claude-code
+  - cursor
+
+skills:
+  - name: swift-testing-expert
+    repository: AvdLee/Swift-Testing-Agent-Skill
+  - name: frontend-design
+    repository: vercel
+  - name: skill-creator
+    repository: vercel

@@ -1,10 +1,10 @@
 # Getting Started with Luca
 
-Learn how to install Luca and set up your first project with managed tools.
+Learn how to install Luca and set up your first project with managed tools and agentic skills.
 
 ## Overview
 
-Luca is a lightweight tool manager for macOS and Linux that helps developers install, manage, and activate specific versions of development tools in their projects. It creates project-specific tool environments without polluting your global PATH.
+Luca is a lightweight tool and skill manager for macOS and Linux that helps developers install, manage, and activate specific versions of development tools and AI coding agent skills in their projects. It creates project-specific environments without polluting your global PATH.
 
 ## Installation
 
@@ -21,7 +21,7 @@ curl -fsSL https://luca.tools/install.sh | bash
 To pin a specific version of Luca for your project, create a `.luca-version` file before running the install script:
 
 ```bash
-echo "1.0.0" > .luca-version
+echo "0.15.0" > .luca-version
 ```
 
 ### Building from Source

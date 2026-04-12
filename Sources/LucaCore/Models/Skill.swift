@@ -5,7 +5,6 @@ import Foundation
 /// A skill definition.
 ///
 /// A `Skill` represents an agentic skill hosted in a Git repository.
-/// Luca installs skills by delegating to `npx skills add`.
 ///
 /// ### Properties
 /// - ``name``
