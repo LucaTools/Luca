@@ -172,6 +172,40 @@ struct ToolInstallerTests {
         #expect(!fileManager.fileExists(atPath: wrongPath.path), "Binary must NOT be stored under tool name")
     }
 
+    /// Regression test: when an archive tool has both `binaryPath` and `desiredBinaryName` set
+    /// (e.g. Phrase CLI where `binaryPath: "phrase_macosx_arm64"`, `desiredBinaryName: "phrase"`),
+    /// the symlink must use `desiredBinaryName`, not the in-archive binary name.
+    @Test
+    func test_install_archiveWithDesiredBinaryName_usesDesiredNameForSymlink() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolInstaller = makeToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockMachO_Universal_Release", type: "zip")))
+        )
+        let toolName = "Phrase"
+        let version = "2.59.0"
+        let desiredBinaryName = "phrase"
+
+        let tool = Tool(
+            name: toolName,
+            version: version,
+            url: URL(string: "https://example.com/phrase_macosx_arm64.zip")!,
+            binaryPath: "bin/MockMachOTool",
+            desiredBinaryName: desiredBinaryName,
+            checksum: nil,
+            algorithm: nil,
+            ignoreArchCheck: nil
+        )
+        try await toolInstaller.install(tool: tool)
+
+        let symLinkPath = fileManager.symlinksFolder.appending(component: desiredBinaryName)
+        #expect(fileManager.fileExists(atPath: symLinkPath.path), "Symlink must be named '\(desiredBinaryName)'")
+
+        let wrongSymLink = fileManager.symlinksFolder.appending(component: "MockMachOTool")
+        #expect(!fileManager.fileExists(atPath: wrongSymLink.path), "Symlink must NOT use the in-archive binary name")
+    }
+
     @Test
     func test_install_unknownFileType_throws() async throws {
         let fileManager = FileManagerWrapperMock()
