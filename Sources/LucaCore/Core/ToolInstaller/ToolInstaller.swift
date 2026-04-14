@@ -121,24 +121,34 @@ struct ToolInstaller: ToolInstalling {
         let unarchiver = Unarchiver(fileManager: fileManager, fileTypeDetector: fileTypeDetector)
         try unarchiver.unarchive(filePath: downloadedFile, installationDestination: installationDestination)
 
-        let binaryPath: String = try {
+        let extractedBinaryPath: String = try {
             if let binaryPath = tool.binaryPath { return binaryPath }
             return try binaryFinder.findBinary(atPath: installationDestination.path)
         }()
 
-        let fullBinaryPath = installationDestination.appending(path: binaryPath).path
+        let fullBinaryPath = installationDestination.appending(path: extractedBinaryPath).path
         try validateArchitectureIfNeeded(
             tool: tool,
             binaryPath: fullBinaryPath,
             installationDestination: installationDestination
         )
 
+        let binaryPath: String
+        if let desiredBinaryName = tool.desiredBinaryName, desiredBinaryName != extractedBinaryPath {
+            let sourceURL = installationDestination.appending(path: extractedBinaryPath)
+            let destinationURL = installationDestination.appending(path: desiredBinaryName)
+            try fileManager.moveItem(at: sourceURL, to: destinationURL)
+            binaryPath = desiredBinaryName
+        } else {
+            binaryPath = extractedBinaryPath
+        }
+
         let resolvedTool = Tool(
             name: tool.name,
             version: tool.version,
             url: tool.url,
             binaryPath: binaryPath,
-            desiredBinaryName: nil,
+            desiredBinaryName: tool.desiredBinaryName,
             checksum: tool.checksum,
             algorithm: tool.algorithm,
             ignoreArchCheck: nil
