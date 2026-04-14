@@ -158,6 +158,11 @@ struct ErrorDescriptionTests {
     }
 
     @Test
+    func installerError_errorDescription() {
+        #expect(Installer.InstallerError.runningFromHomeDirectory.errorDescription != nil)
+    }
+
+    @Test
     func gitRepositorySkillFetcherError_errorDescription() {
         #expect(GitRepositorySkillFetcherError.gitNotFound.errorDescription != nil)
         #expect(GitRepositorySkillFetcherError.cloneFailed(repository: "owner/repo", exitCode: 128).errorDescription != nil)

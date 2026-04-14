@@ -400,6 +400,30 @@ struct InstallerTests {
         }
     }
     
+    @Test(arguments: [true, false])
+    func test_install_fromHomeDirectory_throwsError(quiet: Bool) async throws {
+        let homeDirFileManager = HomeDirFileManagerMock()
+        let installer = Installer(
+            fileManager: homeDirFileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock()
+        )
+        await #expect(throws: Installer.InstallerError.runningFromHomeDirectory) {
+            try await installer.install(
+                installationType: .individualInline(
+                    name: "SomeTool",
+                    version: "1.0.0",
+                    url: URL(string: "https://example.com/tool")!,
+                    binaryPath: nil,
+                    desiredBinaryName: nil,
+                    checksum: nil,
+                    algorithm: nil
+                )
+            )
+        }
+    }
+
     // MARK: - Skills
 
     @Test(arguments: [true, false])
@@ -647,6 +671,12 @@ struct InstallerTests {
 }
 
 // MARK: - Private mocks
+
+private class HomeDirFileManagerMock: FileManagerWrapperMock {
+    override var currentDirectoryPath: String {
+        homeDirectoryForCurrentUser.path
+    }
+}
 
 private struct FixtureSpecLoader: SpecLoading {
     let fixture: Fixture

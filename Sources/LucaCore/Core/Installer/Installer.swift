@@ -32,6 +32,17 @@ import Noora
 /// - ``install(installationType:useNpx:)``
 public struct Installer {
 
+    enum InstallerError: Error, LocalizedError, Equatable {
+        case runningFromHomeDirectory
+
+        var errorDescription: String? {
+            switch self {
+            case .runningFromHomeDirectory:
+                return "Cannot install tools from the home directory. Please run luca install from within a project directory."
+            }
+        }
+    }
+
     private let fileManager: FileManaging
     private let printer: Printing
     private let linkedToolsLister: LinkedToolsLister
@@ -103,6 +114,9 @@ public struct Installer {
     ///   to install directly from a GitHub release.
     /// - Throws: An error if downloading, extracting, or linking fails.
     public func install(installationType: ToolInstallationType) async throws {
+        guard fileManager.currentDirectoryPath != fileManager.homeDirectoryForCurrentUser.path else {
+            throw InstallerError.runningFromHomeDirectory
+        }
         if quiet {
             try await installQuietly(installationType: installationType)
         } else {
