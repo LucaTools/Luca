@@ -1,0 +1,11 @@
+---
+skills:
+  - name: frontend-design
+    repository: vercel-labs/agent-skills
+    version: v1.2.0
+  - name: swift-testing-expert
+    repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill
+    version: abc1234567890abcd
+
+agents:
+  - claude-code

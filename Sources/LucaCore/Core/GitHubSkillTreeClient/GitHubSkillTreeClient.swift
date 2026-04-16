@@ -61,9 +61,9 @@ struct GitHubSkillTreeClient: SkillRepositoryFetching {
 
     // MARK: - SkillRepositoryFetching
 
-    func skillPaths(repository: String) async throws -> [String] {
+    func skillPaths(repository: String, ref: String?) async throws -> [String] {
         let (owner, repo, host) = try parseRepository(repository)
-        let urlString = apiURL(host: host, owner: owner, repo: repo)
+        let urlString = apiURL(host: host, owner: owner, repo: repo, ref: ref)
         guard let url = URL(string: urlString) else {
             throw GitHubSkillTreeClientError.invalidURL
         }
@@ -115,9 +115,9 @@ struct GitHubSkillTreeClient: SkillRepositoryFetching {
         }
     }
 
-    func downloadSkill(repository: String, path: String) async throws -> Data {
+    func downloadSkill(repository: String, path: String, ref: String?) async throws -> Data {
         let (owner, repo, host) = try parseRepository(repository)
-        let urlString = rawURL(host: host, owner: owner, repo: repo, path: path)
+        let urlString = rawURL(host: host, owner: owner, repo: repo, path: path, ref: ref)
         guard let url = URL(string: urlString) else {
             throw GitHubSkillTreeClientError.invalidURL
         }
@@ -144,21 +144,23 @@ struct GitHubSkillTreeClient: SkillRepositoryFetching {
     ///
     /// Uses `api.github.com` for `github.com`; falls back to the GitHub Enterprise Server
     /// REST API base (`https://{host}/api/v3`) for any other hostname.
-    private func apiURL(host: String, owner: String, repo: String) -> String {
+    private func apiURL(host: String, owner: String, repo: String, ref: String?) -> String {
         let base = host == "github.com"
             ? "https://api.github.com"
             : "https://\(host)/api/v3"
-        return "\(base)/repos/\(owner)/\(repo)/git/trees/HEAD?recursive=1"
+        let treeRef = ref ?? "HEAD"
+        return "\(base)/repos/\(owner)/\(repo)/git/trees/\(treeRef)?recursive=1"
     }
 
     /// Returns the raw-content URL for the given host.
     ///
     /// Uses `raw.githubusercontent.com` for `github.com`; falls back to the GitHub Enterprise
-    /// Server raw endpoint (`https://{host}/{owner}/{repo}/raw/HEAD/{path}`) for any other hostname.
-    private func rawURL(host: String, owner: String, repo: String, path: String) -> String {
+    /// Server raw endpoint (`https://{host}/{owner}/{repo}/raw/{ref}/{path}`) for any other hostname.
+    private func rawURL(host: String, owner: String, repo: String, path: String, ref: String?) -> String {
+        let treeRef = ref ?? "HEAD"
         return host == "github.com"
-            ? "https://raw.githubusercontent.com/\(owner)/\(repo)/HEAD/\(path)"
-            : "https://\(host)/\(owner)/\(repo)/raw/HEAD/\(path)"
+            ? "https://raw.githubusercontent.com/\(owner)/\(repo)/\(treeRef)/\(path)"
+            : "https://\(host)/\(owner)/\(repo)/raw/\(treeRef)/\(path)"
     }
 
     // MARK: - Private Repository Parsing

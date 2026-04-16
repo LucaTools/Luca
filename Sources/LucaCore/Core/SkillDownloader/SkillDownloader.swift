@@ -81,12 +81,14 @@ struct SkillDownloader: SkillDownloading {
 
         let allPaths: [String]
         do {
-            allPaths = try await skillFetcher.skillPaths(repository: skillSet.repository)
+            allPaths = try await skillFetcher.skillPaths(repository: skillSet.repository, ref: skillSet.version)
         } catch let fetcherError as GitRepositorySkillFetcherError {
             switch fetcherError {
             case .gitNotFound:
                 throw SkillDownloaderError.gitNotFound
             case .cloneFailed(let repo, _):
+                throw SkillDownloaderError.cloneFailed(repository: repo)
+            case .checkoutFailed(let repo, _, _):
                 throw SkillDownloaderError.cloneFailed(repository: repo)
             case .fileReadFailed(let path):
                 throw SkillDownloaderError.downloadFailed(path: path)
@@ -126,7 +128,7 @@ struct SkillDownloader: SkillDownloading {
         for skillMdPath in skillMdPaths {
             let content: Data
             do {
-                content = try await skillFetcher.downloadSkill(repository: skillSet.repository, path: skillMdPath)
+                content = try await skillFetcher.downloadSkill(repository: skillSet.repository, path: skillMdPath, ref: skillSet.version)
             } catch {
                 throw SkillDownloaderError.downloadFailed(path: skillMdPath)
             }
@@ -179,7 +181,7 @@ struct SkillDownloader: SkillDownloading {
                     content = entry.cachedSkillMdContent
                 } else {
                     do {
-                        content = try await skillFetcher.downloadSkill(repository: skillSet.repository, path: filePath)
+                        content = try await skillFetcher.downloadSkill(repository: skillSet.repository, path: filePath, ref: skillSet.version)
                     } catch {
                         throw SkillDownloaderError.downloadFailed(path: filePath)
                     }

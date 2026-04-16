@@ -533,12 +533,12 @@ private final class SkillRepositoryFetchingMock: SkillRepositoryFetching, @unche
     var downloadResults: [String: Data] = [:]
     var lastRepository: String?
 
-    func skillPaths(repository: String) async throws -> [String] {
+    func skillPaths(repository: String, ref: String?) async throws -> [String] {
         lastRepository = repository
         return try skillPathsResult.get()
     }
 
-    func downloadSkill(repository: String, path: String) async throws -> Data {
+    func downloadSkill(repository: String, path: String, ref: String?) async throws -> Data {
         guard let data = downloadResults[path] else {
             throw GitRepositorySkillFetcherError.fileReadFailed(path: path)
         }

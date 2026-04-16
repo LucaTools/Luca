@@ -22,9 +22,14 @@ struct SkillsInfoFactory {
             let skills = spec.skills ?? []
 
             // Phase 1: separate repos that want all skills (nil name) from repos with named skills.
+            // Track the first non-nil version encountered per repo.
             var allSkillsRepos = Set<String>()
             var namedSkillsByRepo = [String: [String]]()
+            var versionByRepo = [String: String]()
             for skill in skills {
+                if versionByRepo[skill.repository] == nil, let version = skill.version {
+                    versionByRepo[skill.repository] = version
+                }
                 if let name = skill.name {
                     namedSkillsByRepo[skill.repository, default: []].append(name)
                 } else {
@@ -42,13 +47,13 @@ struct SkillsInfoFactory {
                 skillSetsByRepo[repo] = names
             }
 
-            let skillSets = skillSetsByRepo.map { SkillSet(repository: $0.key, skills: $0.value) }
+            let skillSets = skillSetsByRepo.map { SkillSet(repository: $0.key, skills: $0.value, version: versionByRepo[$0.key]) }
             return SkillsInfo(
                 agents: spec.agents,
                 skillSets: skillSets
             )
-        case .individual(let repository, let skillNames, let agents):
-            let skillSet = SkillSet(repository: repository, skills: skillNames)
+        case .individual(let repository, let skillNames, let agents, let ref):
+            let skillSet = SkillSet(repository: repository, skills: skillNames, version: ref)
             return SkillsInfo(agents: agents, skillSets: [skillSet])
         }
     }

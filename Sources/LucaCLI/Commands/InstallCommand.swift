@@ -232,6 +232,19 @@ struct InstallCommand: AsyncParsableCommand {
     ))
     var agents: [String] = []
 
+    @Option(name: .customLong("ref"), help: ArgumentHelp(
+        "Git tag or commit SHA to pin the skill repository to.",
+        discussion: """
+        Pins skill installation to a specific git tag or commit SHA1.
+        When omitted, the default branch HEAD is used.
+        Examples:
+          luca install vercel-labs/agent-skills --ref v1.2.0
+          luca install owner/repo --ref abc1234
+        """,
+        valueName: "ref"
+    ))
+    var ref: String?
+
     func run() async throws {
         let noora = Noora(terminal: Terminal(signalBehavior: .none))
         let printer: Printing = quiet ? QuietPrinter() : Printer(noora: noora)
@@ -383,7 +396,8 @@ struct InstallCommand: AsyncParsableCommand {
             return .individual(
                 repository: identifier,
                 skillNames: skills,
-                agents: agents.isEmpty ? nil : agents
+                agents: agents.isEmpty ? nil : agents,
+                ref: ref
             )
         }
         switch (arguments.spec, arguments.identifier, arguments.asset, arguments.name, arguments.version, arguments.url, arguments.binaryPath, arguments.desiredBinaryName, arguments.checksum, arguments.algorithm) {
