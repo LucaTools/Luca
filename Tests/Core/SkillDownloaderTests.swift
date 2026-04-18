@@ -164,6 +164,20 @@ struct SkillDownloaderTests {
         }
     }
 
+    // MARK: - test_download_checkoutFailed_mapsToCloneFailed
+
+    @Test
+    func test_download_checkoutFailed_mapsToCloneFailed() async throws {
+        let fetcher = SkillRepositoryFetchingMock()
+        fetcher.skillPathsResult = .failure(GitRepositorySkillFetcherError.checkoutFailed(repository: "owner/repo", ref: "abc1234", exitCode: 128))
+        let sut = SkillDownloader(skillFetcher: fetcher)
+        let skillSet = SkillSet(repository: "owner/repo", skills: [])
+
+        await #expect(throws: SkillDownloader.SkillDownloaderError.cloneFailed(repository: "owner/repo")) {
+            try await sut.download(skillSet: skillSet)
+        }
+    }
+
     // MARK: - test_download_noSkillsFound
 
     @Test

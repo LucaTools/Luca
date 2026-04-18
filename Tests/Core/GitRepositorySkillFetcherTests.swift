@@ -282,6 +282,20 @@ struct GitRepositorySkillFetcherTests {
         }
     }
 
+    // MARK: - test_skillPaths_cloneFailedDuringCommitShaFetch_throwsCloneFailedError
+
+    @Test
+    func test_skillPaths_cloneFailedDuringCommitShaFetch_throwsCloneFailedError() async throws {
+        let sha = "abc1234def567890"
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCodes = [128]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        await #expect(throws: GitRepositorySkillFetcherError.cloneFailed(repository: "owner/repo", exitCode: 128)) {
+            try await sut.skillPaths(repository: "owner/repo", ref: sha)
+        }
+    }
+
     // MARK: - test_skillPaths_sameRepoAndRefSharesCache
 
     @Test
