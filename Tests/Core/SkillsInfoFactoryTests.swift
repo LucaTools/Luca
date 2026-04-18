@@ -128,7 +128,7 @@ struct SkillsInfoFactoryTests {
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: Spec(tools: nil, skills: nil, agents: nil)))
 
         let info = try await sut.skillsInfoForInstallationType(
-            .individual(repository: "owner/repo", skillNames: [], agents: nil)
+            .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: nil)
         )
 
         #expect(info.skillSets.count == 1)
@@ -143,7 +143,7 @@ struct SkillsInfoFactoryTests {
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: Spec(tools: nil, skills: nil, agents: nil)))
 
         let info = try await sut.skillsInfoForInstallationType(
-            .individual(repository: "owner/repo", skillNames: ["skill-a"], agents: ["claude-code"])
+            .individual(repository: "owner/repo", skillNames: ["skill-a"], agents: ["claude-code"], ref: nil)
         )
 
         #expect(info.skillSets.count == 1)
@@ -151,6 +151,60 @@ struct SkillsInfoFactoryTests {
         #expect(skillSet.repository == "owner/repo")
         #expect(skillSet.skills == ["skill-a"])
         #expect(info.agents == ["claude-code"])
+    }
+
+    // MARK: - Version propagation
+
+    @Test
+    func test_skillsInfoForInstallationType_skillWithVersion_propagatesVersionToSkillSet() async throws {
+        let spec = Spec(tools: nil, skills: [
+            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills", version: "v1.2.0")
+        ], agents: nil)
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
+
+        let info = try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
+
+        let skillSet = try #require(info.skillSets.first)
+        #expect(skillSet.version == "v1.2.0")
+    }
+
+    @Test
+    func test_skillsInfoForInstallationType_skillWithNoVersion_versionIsNil() async throws {
+        let spec = Spec(tools: nil, skills: [
+            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills")
+        ], agents: nil)
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
+
+        let info = try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
+
+        let skillSet = try #require(info.skillSets.first)
+        #expect(skillSet.version == nil)
+    }
+
+    @Test
+    func test_skillsInfoForInstallationType_multipleSkillsSameRepoFirstVersionWins() async throws {
+        let spec = Spec(tools: nil, skills: [
+            Skill(name: "skill-a", repository: "vercel-labs/agent-skills", version: "v1.0.0"),
+            Skill(name: "skill-b", repository: "vercel-labs/agent-skills", version: "v2.0.0")
+        ], agents: nil)
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
+
+        let info = try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
+
+        let skillSet = try #require(info.skillSets.first)
+        #expect(skillSet.version == "v1.0.0")
+    }
+
+    @Test
+    func test_skillsInfoForInstallationType_individual_withRef_propagatedToSkillSet() async throws {
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: Spec(tools: nil, skills: nil, agents: nil)))
+
+        let info = try await sut.skillsInfoForInstallationType(
+            .individual(repository: "owner/repo", skillNames: ["skill-a"], agents: nil, ref: "abc1234")
+        )
+
+        let skillSet = try #require(info.skillSets.first)
+        #expect(skillSet.version == "abc1234")
     }
 
     // MARK: - Empty skills

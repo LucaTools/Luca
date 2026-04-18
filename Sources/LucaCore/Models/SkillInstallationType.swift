@@ -7,5 +7,5 @@ public enum SkillInstallationType {
     /// Install all skills listed in a Lucafile at the given path.
     case spec(specPath: URL)
     /// Install specific skills directly from a GitHub repository.
-    case individual(repository: String, skillNames: [String], agents: [String]?)
+    case individual(repository: String, skillNames: [String], agents: [String]?, ref: String?)
 }

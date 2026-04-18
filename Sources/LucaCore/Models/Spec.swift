@@ -28,10 +28,12 @@ typealias Agent = String
 /// skills:
 ///   - name: frontend-design
 ///     repository: vercel
+///     version: v1.2.0
 ///   - name: skill-creator
 ///     repository: vercel
 ///   - name: swift-testing-expert
 ///     repository: vanderlee
+///     version: abc1234
 ///   - name: swift-concurrency
 ///     repository: https://github.com/AvdLee/Swift-Concurrency-Agent-Skill.git
 /// ```
@@ -69,7 +71,7 @@ struct Spec: Codable {
         let rawSkills = try container.decodeIfPresent([Skill].self, forKey: .skills)
         if let rawSkills, let repos {
             skills = rawSkills.map { skill in
-                Skill(name: skill.name, repository: repos[skill.repository] ?? skill.repository)
+                Skill(name: skill.name, repository: repos[skill.repository] ?? skill.repository, version: skill.version)
             }
         } else {
             skills = rawSkills

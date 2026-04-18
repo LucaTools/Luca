@@ -28,7 +28,7 @@ struct GitRepositorySkillFetcherTests {
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
         await #expect(throws: GitRepositorySkillFetcherError.cloneFailed(repository: "owner/repo", exitCode: 128)) {
-            try await sut.skillPaths(repository: "owner/repo")
+            try await sut.skillPaths(repository: "owner/repo", ref: nil)
         }
     }
 
@@ -37,14 +37,14 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_clonesOnlyOncePerRepository() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = [
             "skills/foo/SKILL.md": "# Foo"
         ]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        _ = try await sut.skillPaths(repository: "owner/repo")
-        _ = try await sut.skillPaths(repository: "owner/repo")
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: nil)
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: nil)
 
         #expect(runner.runCallCount == 1)
     }
@@ -54,11 +54,11 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_disablesGitTerminalPrompt() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        _ = try await sut.skillPaths(repository: "owner/repo")
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: nil)
 
         let env = try #require(runner.recordedEnvironments.first)
         #expect(env["GIT_TERMINAL_PROMPT"] == "0")
@@ -69,11 +69,11 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_clonesWithQuietFlag() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        _ = try await sut.skillPaths(repository: "owner/repo")
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: nil)
 
         let args = try #require(runner.recordedArguments.first)
         #expect(args.contains("--quiet"))
@@ -84,11 +84,11 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_shorthandUrl_expandsToHttps() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        _ = try await sut.skillPaths(repository: "owner/repo")
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: nil)
 
         let cloneURL = runner.recordedArguments.first?[4]
         #expect(cloneURL == "https://github.com/owner/repo")
@@ -99,11 +99,11 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_httpsUrl_passedVerbatim() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        _ = try await sut.skillPaths(repository: "https://github.com/owner/repo")
+        _ = try await sut.skillPaths(repository: "https://github.com/owner/repo", ref: nil)
 
         let cloneURL = runner.recordedArguments.first?[4]
         #expect(cloneURL == "https://github.com/owner/repo")
@@ -114,11 +114,11 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_httpUrl_passedVerbatim() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        _ = try await sut.skillPaths(repository: "http://github.com/owner/repo")
+        _ = try await sut.skillPaths(repository: "http://github.com/owner/repo", ref: nil)
 
         let cloneURL = runner.recordedArguments.first?[4]
         #expect(cloneURL == "http://github.com/owner/repo")
@@ -129,14 +129,14 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_excludesPyPackagesDirectory() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = [
             "skills/foo/SKILL.md": "# Foo",
             "skills/foo/__pypackages__/module.py": "code"
         ]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        let paths = try await sut.skillPaths(repository: "owner/repo")
+        let paths = try await sut.skillPaths(repository: "owner/repo", ref: nil)
 
         #expect(paths.contains("skills/foo/SKILL.md"))
         #expect(!paths.contains("skills/foo/__pypackages__/module.py"))
@@ -147,11 +147,11 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_sshUrl_passedVerbatim() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        _ = try await sut.skillPaths(repository: "git@github.je-labs.com:ai-platform/skills.git")
+        _ = try await sut.skillPaths(repository: "git@github.je-labs.com:ai-platform/skills.git", ref: nil)
 
         let cloneURL = runner.recordedArguments.first?[4]
         #expect(cloneURL == "git@github.je-labs.com:ai-platform/skills.git")
@@ -162,7 +162,7 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_returnsSkillMdAndAuxiliaryFiles() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = [
             "skills/foo/SKILL.md": "# Foo",
             "skills/foo/resources/template.md": "template",
@@ -170,7 +170,7 @@ struct GitRepositorySkillFetcherTests {
         ]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        let paths = try await sut.skillPaths(repository: "owner/repo")
+        let paths = try await sut.skillPaths(repository: "owner/repo", ref: nil)
 
         #expect(paths.contains("skills/foo/SKILL.md"))
         #expect(paths.contains("skills/foo/resources/template.md"))
@@ -182,7 +182,7 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_excludesMetadataJsonAndExcludedDirectories() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = [
             "skills/foo/SKILL.md": "# Foo",
             "skills/foo/metadata.json": "{}",
@@ -191,7 +191,7 @@ struct GitRepositorySkillFetcherTests {
         ]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        let paths = try await sut.skillPaths(repository: "owner/repo")
+        let paths = try await sut.skillPaths(repository: "owner/repo", ref: nil)
 
         #expect(paths.contains("skills/foo/SKILL.md"))
         #expect(paths.contains("skills/foo/resources/helper.md"))
@@ -204,11 +204,11 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_downloadSkill_returnsFileContent() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo skill content"]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
-        let data = try await sut.downloadSkill(repository: "owner/repo", path: "skills/foo/SKILL.md")
+        let data = try await sut.downloadSkill(repository: "owner/repo", path: "skills/foo/SKILL.md", ref: nil)
 
         #expect(data == Data("# Foo skill content".utf8))
     }
@@ -218,23 +218,123 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_downloadSkill_missingFile_throwsFileReadFailed() async throws {
         let runner = SeedingSubprocessRunnerMock()
-        runner.exitCode = 0
+        runner.exitCodes = [0]
         runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
         let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
 
         await #expect(throws: GitRepositorySkillFetcherError.fileReadFailed(path: "skills/bar/SKILL.md")) {
-            try await sut.downloadSkill(repository: "owner/repo", path: "skills/bar/SKILL.md")
+            try await sut.downloadSkill(repository: "owner/repo", path: "skills/bar/SKILL.md", ref: nil)
         }
+    }
+
+    // MARK: - test_skillPaths_withTag_usesDepth1AndBranchFlag
+
+    @Test
+    func test_skillPaths_withTag_usesDepth1AndBranchFlag() async throws {
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCodes = [0]
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: "v1.2.0")
+
+        let args = try #require(runner.recordedArguments.first)
+        #expect(args.contains("--depth"))
+        #expect(args.contains("1"))
+        #expect(args.contains("--branch"))
+        #expect(args.contains("v1.2.0"))
+    }
+
+    // MARK: - test_skillPaths_withCommitSha_doesFullCloneThenCheckout
+
+    @Test
+    func test_skillPaths_withCommitSha_doesFullCloneThenCheckout() async throws {
+        let sha = "abc1234def567890"
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCodes = [0, 0]
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: sha)
+
+        #expect(runner.runCallCount == 2)
+        let cloneArgs = runner.recordedArguments[0]
+        #expect(!cloneArgs.contains("--depth"))
+        #expect(!cloneArgs.contains("--branch"))
+        let checkoutArgs = runner.recordedArguments[1]
+        #expect(checkoutArgs.contains("-C"))
+        #expect(checkoutArgs.contains("checkout"))
+        #expect(checkoutArgs.contains(sha))
+    }
+
+    // MARK: - test_skillPaths_checkoutFailed_throwsCheckoutFailedError
+
+    @Test
+    func test_skillPaths_checkoutFailed_throwsCheckoutFailedError() async throws {
+        let sha = "abc1234def567890"
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCodes = [0, 128]
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        await #expect(throws: GitRepositorySkillFetcherError.checkoutFailed(repository: "owner/repo", ref: sha, exitCode: 128)) {
+            try await sut.skillPaths(repository: "owner/repo", ref: sha)
+        }
+    }
+
+    // MARK: - test_skillPaths_cloneFailedDuringCommitShaFetch_throwsCloneFailedError
+
+    @Test
+    func test_skillPaths_cloneFailedDuringCommitShaFetch_throwsCloneFailedError() async throws {
+        let sha = "abc1234def567890"
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCodes = [128]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        await #expect(throws: GitRepositorySkillFetcherError.cloneFailed(repository: "owner/repo", exitCode: 128)) {
+            try await sut.skillPaths(repository: "owner/repo", ref: sha)
+        }
+    }
+
+    // MARK: - test_skillPaths_sameRepoAndRefSharesCache
+
+    @Test
+    func test_skillPaths_sameRepoAndRefSharesCache() async throws {
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCodes = [0]
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: "v1.0.0")
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: "v1.0.0")
+
+        #expect(runner.runCallCount == 1)
+    }
+
+    // MARK: - test_skillPaths_sameRepoDifferentRef_clonesAgain
+
+    @Test
+    func test_skillPaths_sameRepoDifferentRef_clonesAgain() async throws {
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCodes = [0, 0]
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: "v1.0.0")
+        _ = try await sut.skillPaths(repository: "owner/repo", ref: "v2.0.0")
+
+        #expect(runner.runCallCount == 2)
     }
 }
 
 // MARK: - Private Mock
 
-/// A `SubprocessRunning` mock that, on a successful exit code, creates a directory tree at
-/// the destination path (the last argument) to simulate a `git clone`.
+/// A `SubprocessRunning` mock that, on a successful clone exit code, creates a directory tree at
+/// the destination path to simulate `git clone`, and returns a configurable sequence of exit codes.
 private final class SeedingSubprocessRunnerMock: SubprocessRunning, @unchecked Sendable {
 
-    var exitCode: Int32 = 0
+    /// Exit codes returned in order. If fewer codes are provided than calls made, the last code is reused.
+    var exitCodes: [Int32] = [0]
     /// Relative paths → file contents to write into the clone destination.
     var filesToCreate: [String: String] = [:]
     var recordedArguments: [[String]] = []
@@ -244,22 +344,23 @@ private final class SeedingSubprocessRunnerMock: SubprocessRunning, @unchecked S
     func run(executableURL: URL, arguments: [String], environment: [String: String]) async throws -> Int32 {
         recordedArguments.append(arguments)
         recordedEnvironments.append(environment)
+        let index = runCallCount
         runCallCount += 1
+        let code = index < exitCodes.count ? exitCodes[index] : exitCodes.last ?? 0
 
-        guard exitCode == 0, let destPath = arguments.last else {
-            return exitCode
+        // Seed files only for clone calls (first argument is "clone").
+        if arguments.first == "clone", code == 0, let destPath = arguments.last {
+            let destURL = URL(fileURLWithPath: destPath)
+            try? FileManager.default.createDirectory(at: destURL, withIntermediateDirectories: true)
+
+            for (relativePath, content) in filesToCreate {
+                let fileURL = destURL.appendingPathComponent(relativePath)
+                let parentURL = fileURL.deletingLastPathComponent()
+                try? FileManager.default.createDirectory(at: parentURL, withIntermediateDirectories: true)
+                try? Data(content.utf8).write(to: fileURL)
+            }
         }
 
-        let destURL = URL(fileURLWithPath: destPath)
-        try? FileManager.default.createDirectory(at: destURL, withIntermediateDirectories: true)
-
-        for (relativePath, content) in filesToCreate {
-            let fileURL = destURL.appendingPathComponent(relativePath)
-            let parentURL = fileURL.deletingLastPathComponent()
-            try? FileManager.default.createDirectory(at: parentURL, withIntermediateDirectories: true)
-            try? Data(content.utf8).write(to: fileURL)
-        }
-
-        return exitCode
+        return code
     }
 }

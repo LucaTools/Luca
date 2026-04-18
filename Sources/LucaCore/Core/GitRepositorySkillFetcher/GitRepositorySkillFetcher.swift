@@ -10,6 +10,8 @@ enum GitRepositorySkillFetcherError: Error, LocalizedError, Equatable {
     case gitNotFound
     /// The `git clone` command exited with a non-zero status.
     case cloneFailed(repository: String, exitCode: Int32)
+    /// The `git checkout` command for a commit SHA exited with a non-zero status.
+    case checkoutFailed(repository: String, ref: String, exitCode: Int32)
     /// A skill file could not be read from the cloned repository.
     case fileReadFailed(path: String)
 
@@ -19,6 +21,8 @@ enum GitRepositorySkillFetcherError: Error, LocalizedError, Equatable {
             return "Could not find git at /usr/bin/git. Please install git (e.g. Xcode Command Line Tools on macOS)."
         case .cloneFailed(let repo, let exitCode):
             return "Failed to clone '\(repo)' (exit code \(exitCode)). Ensure the URL is correct and that you have access — for SSH repositories, verify that your SSH key is loaded and authorised for this host."
+        case .checkoutFailed(let repo, let ref, let exitCode):
+            return "Failed to check out '\(ref)' in '\(repo)' (exit code \(exitCode)). Ensure the commit SHA or tag exists in the repository."
         case .fileReadFailed(let path):
             return "Failed to read '\(path)' from the cloned repository."
         }
@@ -51,7 +55,7 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
     // MARK: - Properties
 
     private let subprocessRunner: SubprocessRunning
-    /// Maps repository URL → local clone directory.
+    /// Maps `"repository@ref"` (or `"repository@HEAD"` when no ref) → local clone directory.
     private var cloneCache: [String: URL] = [:]
 
     // MARK: - Init
@@ -68,13 +72,13 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
 
     // MARK: - SkillRepositoryFetching
 
-    func skillPaths(repository: String) async throws -> [String] {
-        let cloneDir = try await clone(repository)
+    func skillPaths(repository: String, ref: String?) async throws -> [String] {
+        let cloneDir = try await clone(repository, ref: ref)
         return enumerateSkillPaths(in: cloneDir)
     }
 
-    func downloadSkill(repository: String, path: String) async throws -> Data {
-        let cloneDir = try await clone(repository)
+    func downloadSkill(repository: String, path: String, ref: String?) async throws -> Data {
+        let cloneDir = try await clone(repository, ref: ref)
         let fileURL = cloneDir.resolvingSymlinksInPath().appendingPathComponent(path)
         do {
             return try Data(contentsOf: fileURL)
@@ -85,8 +89,9 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
 
     // MARK: - Private
 
-    private func clone(_ repository: String) async throws -> URL {
-        if let cached = cloneCache[repository] {
+    private func clone(_ repository: String, ref: String?) async throws -> URL {
+        let cacheKey = "\(repository)@\(ref ?? "HEAD")"
+        if let cached = cloneCache[cacheKey] {
             return cached
         }
 
@@ -98,18 +103,47 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
             .appendingPathComponent(UUID().uuidString)
         let gitURL = cloneURL(for: repository)
 
-        let exitCode = try await subprocessRunner.run(
-            executableURL: Self.gitExecutableURL,
-            arguments: ["clone", "--quiet", "--depth", "1", gitURL, tempDir.path],
-            environment: ["GIT_TERMINAL_PROMPT": "0"]
-        )
+        if let ref, isCommitSHA(ref) {
+            let cloneExitCode = try await subprocessRunner.run(
+                executableURL: Self.gitExecutableURL,
+                arguments: ["clone", "--quiet", gitURL, tempDir.path],
+                environment: ["GIT_TERMINAL_PROMPT": "0"]
+            )
+            guard cloneExitCode == 0 else {
+                throw GitRepositorySkillFetcherError.cloneFailed(repository: repository, exitCode: cloneExitCode)
+            }
+            let checkoutExitCode = try await subprocessRunner.run(
+                executableURL: Self.gitExecutableURL,
+                arguments: ["-C", tempDir.path, "checkout", ref],
+                environment: ["GIT_TERMINAL_PROMPT": "0"]
+            )
+            guard checkoutExitCode == 0 else {
+                throw GitRepositorySkillFetcherError.checkoutFailed(repository: repository, ref: ref, exitCode: checkoutExitCode)
+            }
+        } else {
+            var arguments = ["clone", "--quiet", "--depth", "1"]
+            if let ref {
+                arguments += ["--branch", ref]
+            }
+            arguments += [gitURL, tempDir.path]
 
-        guard exitCode == 0 else {
-            throw GitRepositorySkillFetcherError.cloneFailed(repository: repository, exitCode: exitCode)
+            let exitCode = try await subprocessRunner.run(
+                executableURL: Self.gitExecutableURL,
+                arguments: arguments,
+                environment: ["GIT_TERMINAL_PROMPT": "0"]
+            )
+            guard exitCode == 0 else {
+                throw GitRepositorySkillFetcherError.cloneFailed(repository: repository, exitCode: exitCode)
+            }
         }
 
-        cloneCache[repository] = tempDir
+        cloneCache[cacheKey] = tempDir
         return tempDir
+    }
+
+    /// Returns `true` when `ref` looks like a commit SHA (7–40 hexadecimal characters).
+    private func isCommitSHA(_ ref: String) -> Bool {
+        ref.count >= 7 && ref.count <= 40 && ref.allSatisfy(\.isHexDigit)
     }
 
     /// Returns a git-clonable URL for the given repository reference.

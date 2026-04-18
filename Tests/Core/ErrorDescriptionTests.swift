@@ -166,6 +166,7 @@ struct ErrorDescriptionTests {
     func gitRepositorySkillFetcherError_errorDescription() {
         #expect(GitRepositorySkillFetcherError.gitNotFound.errorDescription != nil)
         #expect(GitRepositorySkillFetcherError.cloneFailed(repository: "owner/repo", exitCode: 128).errorDescription != nil)
+        #expect(GitRepositorySkillFetcherError.checkoutFailed(repository: "owner/repo", ref: "abc1234", exitCode: 128).errorDescription != nil)
         #expect(GitRepositorySkillFetcherError.fileReadFailed(path: "/some/path").errorDescription != nil)
     }
 }
