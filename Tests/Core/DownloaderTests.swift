@@ -55,16 +55,15 @@ struct DownloaderTests {
     }
 
     @Test
-    func test_downloadRelease_unsupportedFileType_throws() async throws {
-        let tempURL = FileManager.default.temporaryDirectory.appending(component: "tool.dmg")
+    func test_downloadRelease_executable_platformExtension_succeeds() async throws {
+        let tempURL = FileManager.default.temporaryDirectory.appending(component: "tool.darwin")
         let fileDownloader = FileDownloadingMock(result: .success(tempURL))
         let sut = Downloader(fileDownloader: fileDownloader)
 
-        let url = try #require(URL(string: "https://example.com/releases/tool.dmg"))
+        let url = try #require(URL(string: "https://example.com/releases/tool.darwin"))
+        let result = try await sut.downloadRelease(at: url)
 
-        await #expect(throws: Downloader.DownloaderError.unsupportedFileType(url)) {
-            _ = try await sut.downloadRelease(at: url)
-        }
+        #expect(result == tempURL)
     }
 
     @Test

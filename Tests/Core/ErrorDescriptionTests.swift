@@ -34,12 +34,6 @@ struct ErrorDescriptionTests {
     }
 
     @Test
-    func downloaderError_errorDescription() {
-        let url = URL(string: "https://example.com/tool.dmg")!
-        #expect(Downloader.DownloaderError.unsupportedFileType(url).errorDescription != nil)
-    }
-
-    @Test
     func toolInstallerError_errorDescription() {
         #expect(ToolInstaller.ToolInstallerError.unknownFileType("/some/file").errorDescription != nil)
     }
