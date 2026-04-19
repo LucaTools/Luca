@@ -424,6 +424,59 @@ struct InstallerTests {
         }
     }
 
+    /// Regression: when a tool has both `binaryPath` (in-archive name) and `desiredBinaryName`
+    /// (on-disk name after rename), `isToolInstalled` must check `desiredBinaryName` first.
+    /// Previously it checked `binaryPath` first, so the renamed binary was never found and every
+    /// run triggered a full re-download, eventually failing with "item already exists".
+    @Test(arguments: [true, false])
+    func test_reinstall_withDesiredBinaryName_doesNotRedownload(quiet: Bool) async throws {
+        let fileManager = FileManagerWrapperMock()
+        var downloadCount = 0
+        let countingDownloader = CountingDownloaderMock(
+            inner: DownloaderMock(result: .fixture(Fixture(filename: "MockMachO_Universal_Release", type: "zip")))
+        ) { downloadCount += 1 }
+        let toolInstaller = ToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            printer: PrinterMock(),
+            downloader: countingDownloader
+        )
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            toolInstaller: toolInstaller
+        )
+
+        try await installer.install(installationType: .individualInline(
+            name: "Phrase",
+            version: "2.59.0",
+            url: URL(string: "https://example.com/phrase_macosx_arm64.zip")!,
+            binaryPath: "bin/MockMachOTool",
+            desiredBinaryName: "phrase",
+            checksum: nil,
+            algorithm: nil
+        ))
+        #expect(downloadCount == 1, "First install must download exactly once")
+
+        try await installer.install(installationType: .individualInline(
+            name: "Phrase",
+            version: "2.59.0",
+            url: URL(string: "https://example.com/phrase_macosx_arm64.zip")!,
+            binaryPath: "bin/MockMachOTool",
+            desiredBinaryName: "phrase",
+            checksum: nil,
+            algorithm: nil
+        ))
+        #expect(downloadCount == 1, "Second install must NOT re-download — tool is already installed as desiredBinaryName")
+
+        let binaryLocation = fileManager.toolsFolder.appending(components: "Phrase", "2.59.0", "phrase")
+        #expect(fileManager.fileExists(atPath: binaryLocation.path))
+        let symLink = fileManager.symlinksFolder.appending(component: "phrase")
+        #expect(fileManager.fileExists(atPath: symLink.path))
+    }
+
     // MARK: - Skills
 
     @Test(arguments: [true, false])
@@ -675,6 +728,21 @@ struct InstallerTests {
 private class HomeDirFileManagerMock: FileManagerWrapperMock {
     override var currentDirectoryPath: String {
         homeDirectoryForCurrentUser.path
+    }
+}
+
+private final class CountingDownloaderMock: Downloading {
+    private let inner: Downloading
+    private let onDownload: () -> Void
+
+    init(inner: Downloading, onDownload: @escaping () -> Void) {
+        self.inner = inner
+        self.onDownload = onDownload
+    }
+
+    func downloadRelease(at url: URL) async throws -> URL {
+        onDownload()
+        return try await inner.downloadRelease(at: url)
     }
 }
 
