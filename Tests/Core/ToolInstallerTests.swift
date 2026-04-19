@@ -458,6 +458,44 @@ struct ToolInstallerTests {
                 "reinstall must not use BinaryFinder when binaryPath is configured")
     }
 
+    /// Regression: `reinstall` must use `desiredBinaryName` (the renamed on-disk file),
+    /// not `binaryPath` (the in-archive name that no longer exists after the first install).
+    @Test
+    func test_reinstall_withDesiredBinaryName_usesDesiredNameForSymlink() throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolName = "Phrase"
+        let version = "2.59.0"
+        let desiredBinaryName = "phrase"
+
+        // Simulate the post-install state: binary exists under desiredBinaryName, not binaryPath.
+        let versionFolder = fileManager.toolsFolder.appending(components: toolName, version)
+        try fileManager.createDirectory(at: versionFolder, withIntermediateDirectories: true)
+        let binaryFile = versionFolder.appending(component: desiredBinaryName)
+        _ = fileManager.createFile(atPath: binaryFile.path, contents: Data([0x00]))
+
+        let toolInstaller = makeToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            downloader: DownloaderMock(result: .tempFile(Data()))
+        )
+
+        let tool = Tool(
+            name: toolName,
+            version: version,
+            url: URL(string: "https://example.com/phrase_macosx_arm64.zip")!,
+            binaryPath: "phrase_macosx_arm64",   // in-archive name; absent on disk after install
+            desiredBinaryName: desiredBinaryName,
+            checksum: nil,
+            algorithm: nil,
+            ignoreArchCheck: nil
+        )
+
+        try toolInstaller.reinstall(tool: tool)
+
+        let symLinkPath = fileManager.symlinksFolder.appending(component: desiredBinaryName)
+        #expect(fileManager.fileExists(atPath: symLinkPath.path), "Symlink must be named '\(desiredBinaryName)'")
+    }
+
     @Test
     func test_install_perToolIgnoreArchCheck_nil_fallsBackToGlobal_validates() async throws {
         // Per-tool ignoreArchCheck: nil falls back to global flag — global false → run check

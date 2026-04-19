@@ -92,6 +92,7 @@ struct ToolInstaller: ToolInstalling {
         let installationDestination = fileManager.toolsFolder
             .appending(components: tool.name, tool.version)
         let binaryPath: String = try {
+            if let desiredBinaryName = tool.desiredBinaryName { return desiredBinaryName }
             if let binaryPath = tool.binaryPath { return binaryPath }
             return try binaryFinder.findBinary(atPath: installationDestination.path)
         }()
