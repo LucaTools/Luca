@@ -288,13 +288,13 @@ public struct Installer {
         let expectedBinaryLocation: URL = {
             let versionFolder = fileManager.toolsFolder
                 .appending(components: tool.name, tool.version)
-            if let binaryPath = tool.binaryPath {
-                return versionFolder
-                    .appending(components: binaryPath)
-            }
             if let desiredBinaryName = tool.desiredBinaryName {
                 return versionFolder
                     .appending(component: desiredBinaryName)
+            }
+            if let binaryPath = tool.binaryPath {
+                return versionFolder
+                    .appending(components: binaryPath)
             }
             return versionFolder
         }()
