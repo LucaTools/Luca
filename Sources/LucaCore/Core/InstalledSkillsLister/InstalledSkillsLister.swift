@@ -11,9 +11,10 @@ public struct InstalledSkillsLister {
         self.fileManager = fileManager
     }
 
-    /// Returns a sorted list of installed skill names (subdirectory names under `.luca/skills/`).
-    public func installedSkills() throws -> [String] {
-        let skillsFolder = fileManager.skillsCacheFolder
+    /// Returns a sorted list of installed skill names.
+    /// - Parameter isGlobal: When `true`, lists from `~/.luca/skills/`; otherwise lists from `.luca/skills/` in CWD.
+    public func installedSkills(isGlobal: Bool = false) throws -> [String] {
+        let skillsFolder = isGlobal ? fileManager.globalSkillsCacheFolder : fileManager.skillsCacheFolder
 
         guard fileManager.fileExists(atPath: skillsFolder.path) else {
             return []

@@ -28,6 +28,11 @@ public struct FileManagerWrapper: FileManaging {
         URL(fileURLWithPath: currentDirectoryPath)
             .appending(components: Constants.toolFolder, Constants.skillsFolder)
     }
+
+    /// Folder containing global skills cache (in user's home directory).
+    public var globalSkillsCacheFolder: URL {
+        homeDirectoryForCurrentUser.appending(components: Constants.toolFolder, Constants.skillsFolder)
+    }
     
     public var homeDirectoryForCurrentUser: URL {
         fileManager.homeDirectoryForCurrentUser

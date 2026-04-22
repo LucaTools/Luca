@@ -93,6 +93,62 @@ struct SkillUninstallerTests {
         #expect(mockFM.removedPaths.count == 1)
         #expect(mockFM.removedPaths[0].contains("find-skills"))
     }
+
+    @Test
+    func test_uninstall_whenGlobal_removesFromGlobalCacheFolder() throws {
+        let fileManager = FileManagerWrapperMock()
+        let uninstaller = SkillUninstaller(fileManager: fileManager, printer: PrinterMock())
+
+        let skillName = "global-skill"
+        let skillFolder = fileManager.globalSkillsCacheFolder.appending(component: skillName)
+        try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
+
+        #expect(fileManager.fileExists(atPath: skillFolder.path))
+
+        try uninstaller.uninstall(skillName: skillName, agents: [], isGlobal: true)
+
+        #expect(!fileManager.fileExists(atPath: skillFolder.path))
+    }
+
+    @Test
+    func test_uninstall_whenGlobal_removesGlobalSymlinks() throws {
+        let fileManager = FileManagerWrapperMock()
+        let uninstaller = SkillUninstaller(fileManager: fileManager, printer: PrinterMock())
+
+        let skillName = "global-skill"
+        let agents = [
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
+        ]
+
+        // Create global skill cache folder
+        let skillFolder = fileManager.globalSkillsCacheFolder.appending(component: skillName)
+        try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
+
+        // Create the agent's global symlink
+        let agentGlobalDir = agents[0].resolvedGlobalSkillsPath(homeDirectory: fileManager.homeDirectoryForCurrentUser)
+        try fileManager.createDirectory(at: agentGlobalDir, withIntermediateDirectories: true)
+        let symlinkURL = agentGlobalDir.appending(component: skillName)
+        try fileManager.createSymbolicLink(at: symlinkURL, withDestinationURL: skillFolder)
+
+        #expect(fileManager.fileExists(atPath: symlinkURL.path))
+
+        try uninstaller.uninstall(skillName: skillName, agents: agents, isGlobal: true)
+
+        #expect(!fileManager.fileExists(atPath: skillFolder.path))
+        #expect(!fileManager.fileExists(atPath: symlinkURL.path))
+    }
+
+    @Test
+    func test_uninstall_whenGlobal_andSkillNotFound_throwsSkillNotFoundError() throws {
+        let fileManager = FileManagerWrapperMock()
+        let uninstaller = SkillUninstaller(fileManager: fileManager, printer: PrinterMock())
+
+        let skillName = "nonexistent-global-skill"
+
+        #expect(throws: SkillUninstaller.SkillUninstallerError.skillNotFound(name: skillName)) {
+            try uninstaller.uninstall(skillName: skillName, agents: [], isGlobal: true)
+        }
+    }
 }
 
 // MARK: - Private Mock
@@ -105,6 +161,15 @@ private final class SkillUninstallerFileManagerMock: SkillUninstallerFileManagin
 
     var skillsCacheFolder: URL {
         URL(fileURLWithPath: "/tmp/luca-test-\(ObjectIdentifier(self).hashValue)/skills")
+    }
+
+    var globalSkillsCacheFolder: URL {
+        URL(fileURLWithPath: currentDirectoryPath)
+            .appending(components: ".luca", "skills")
+    }
+
+    var homeDirectoryForCurrentUser: URL {
+        URL(fileURLWithPath: currentDirectoryPath)
     }
 
     var currentDirectoryPath: String { "/tmp/luca-test-\(ObjectIdentifier(self).hashValue)" }

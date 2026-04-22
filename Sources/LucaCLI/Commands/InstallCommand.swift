@@ -174,6 +174,19 @@ struct InstallCommand: AsyncParsableCommand {
     var quiet: Bool = false
 
     @Flag(help: ArgumentHelp(
+        "Install skills globally to ~/.config/luca/Lucafile and ~/.luca/skills/.",
+        discussion: """
+        Installs skills to the global Lucafile (~/.config/luca/Lucafile) and caches them in
+        ~/.luca/skills/, symlinking into each agent's global skills path.
+        Cannot be combined with --only-tools.
+        Example:
+          luca install --global
+          luca install --global --spec /path/to/Lucafile
+        """
+    ))
+    var global: Bool = false
+
+    @Flag(help: ArgumentHelp(
         "Install only binary tools; skip skills.",
         discussion: """
         For spec-based installs only (no identifier argument).
@@ -258,8 +271,26 @@ struct InstallCommand: AsyncParsableCommand {
             printer: printer,
             noora: noora
         )
+
+        if global && onlyTools {
+            throw ValidationError("--global cannot be combined with --only-tools. Global installation is skills-only.")
+        }
+
+        // When --global is set and no explicit --spec was provided, default to ~/.config/luca/Lucafile
+        let resolvedSpec: String?
+        if global && spec == nil {
+            let globalLucafileURL = fileManager.homeDirectoryForCurrentUser
+                .appending(components: ".config", "luca", "Lucafile")
+            // Ensure parent directory exists
+            let globalConfigDir = globalLucafileURL.deletingLastPathComponent()
+            try? fileManager.createDirectory(at: globalConfigDir, withIntermediateDirectories: true)
+            resolvedSpec = globalLucafileURL.path
+        } else {
+            resolvedSpec = spec
+        }
+
         let arguments = Arguments(
-            spec: spec,
+            spec: resolvedSpec,
             identifier: identifier,
             asset: asset,
             name: name,
@@ -270,12 +301,14 @@ struct InstallCommand: AsyncParsableCommand {
             checksum: checksum,
             algorithm: algorithm
         )
-        let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
-        try gitIgnoreManager.ensureGitIgnoreIncludesSymlinksFolder()
+        if !global {
+            let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
+            try gitIgnoreManager.ensureGitIgnoreIncludesSymlinksFolder()
 
-        if installPostCheckoutGitHook {
-            let gitHookInstaller = GitHookInstaller(fileManager: fileManager, printer: printer)
-            try gitHookInstaller.installPostCheckoutHook()
+            if installPostCheckoutGitHook {
+                let gitHookInstaller = GitHookInstaller(fileManager: fileManager, printer: printer)
+                try gitHookInstaller.installPostCheckoutHook()
+            }
         }
 
         let installMode: InstallMode
@@ -291,12 +324,12 @@ struct InstallCommand: AsyncParsableCommand {
             try await installer.install(installationType: toolInstallationType)
         case .skillsOnly:
             let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
-            try await installer.install(installationType: skillInstallationType, useNpx: useNpx)
+            try await installer.install(installationType: skillInstallationType, useNpx: useNpx, isGlobal: global)
         case .all:
             let toolInstallationType = try toolInstallationType(for: arguments, fileManager: fileManager, noora: noora)
             try await installer.install(installationType: toolInstallationType)
             let skillInstallationType = try skillInstallationType(for: arguments, fileManager: fileManager, noora: noora)
-            try await installer.install(installationType: skillInstallationType, useNpx: useNpx)
+            try await installer.install(installationType: skillInstallationType, useNpx: useNpx, isGlobal: global)
         }
     }
     

@@ -230,6 +230,49 @@ swift-testing-expert
 luca uninstall swift-testing-expert
 ```
 
+### Global skills
+
+Some skills are useful across all projects and shouldn't require a per-project `Lucafile` to install. The `--global` flag installs skills to your home directory, making them available in any project.
+
+**Install globally:**
+
+```bash
+# Install all skills from your global Lucafile (~/.config/luca/Lucafile)
+luca install --global
+
+# Install a specific skill globally from a repository
+luca install org/repo --skill my-skill --global
+
+# Use a custom global Lucafile instead of ~/.config/luca/Lucafile
+luca install --global --spec ~/my-global-skills.yaml
+```
+
+**Uninstall a global skill:**
+
+```bash
+luca uninstall my-skill --global
+```
+
+**List globally installed skills:**
+
+```bash
+luca installed --skills --global
+```
+
+**Global paths:**
+
+| Resource | Path |
+|---|---|
+| Global Lucafile | `~/.config/luca/Lucafile` |
+| Global skill cache | `~/.luca/skills/` |
+| Global agent dirs | Per agent (e.g. `~/.claude/skills/`, `~/.config/opencode/skills/`) — run `luca agents` for full list |
+
+**Notes:**
+- Running `luca install --global` again fetches the latest version of all skills (no separate update command needed)
+- Project-local skills take precedence over global skills when both exist for the same agent
+- `repos:` aliases in the global `Lucafile` are supported — the same spec parser is used
+- `--global` is skills-only; tools already install globally to `~/.luca/tools/` and don't need this flag
+
 ### Combining tools and skills
 
 A Lucafile can define both `tools:` and `skills:` together. By default, `luca install` installs everything. Use `--only-tools` or `--only-skills` to install only one category:

@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "Luca",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v14)],
     products: [
         .executable(name: "luca", targets: ["LucaCLI"]),
         .library(name: "LucaCore", targets: ["LucaCore"])
@@ -15,7 +15,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-crypto.git", exact: "4.0.0"),
         .package(url: "https://github.com/tuist/Noora", exact: "0.56.0"),
         .package(url: "https://github.com/jpsim/Yams.git", exact: "6.1.0"),
-        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.1.0")
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.1.0"),
     ],
     targets: [
         .executableTarget(

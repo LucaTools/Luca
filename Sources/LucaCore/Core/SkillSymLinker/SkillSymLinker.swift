@@ -44,12 +44,24 @@ struct SkillSymLinker: SkillSymLinking {
     /// - Parameters:
     ///   - skillName: The name of the skill to symlink.
     ///   - agents: The agents for which to create symlinks.
-    func setSymLink(skillName: String, agents: [AgentInfo]) throws {
-        let cwd = URL(fileURLWithPath: fileManager.currentDirectoryPath)
-        let skillSource = cwd.appending(components: Constants.toolFolder, Constants.skillsFolder, skillName)
+    ///   - isGlobal: When `true`, links from `~/.luca/skills/` to each agent's global skills path.
+    func setSymLink(skillName: String, agents: [AgentInfo], isGlobal: Bool = false) throws {
+        let skillSource: URL
+        if isGlobal {
+            skillSource = fileManager.globalSkillsCacheFolder.appending(component: skillName)
+        } else {
+            let cwd = URL(fileURLWithPath: fileManager.currentDirectoryPath)
+            skillSource = cwd.appending(components: Constants.toolFolder, Constants.skillsFolder, skillName)
+        }
 
         for agentInfo in agents {
-            let agentSkillsDir = cwd.appending(path: agentInfo.projectSkillsPath)
+            let agentSkillsDir: URL
+            if isGlobal {
+                agentSkillsDir = agentInfo.resolvedGlobalSkillsPath(homeDirectory: fileManager.homeDirectoryForCurrentUser)
+            } else {
+                let cwd = URL(fileURLWithPath: fileManager.currentDirectoryPath)
+                agentSkillsDir = cwd.appending(path: agentInfo.projectSkillsPath)
+            }
             let symLinkDestination = agentSkillsDir.appending(component: skillName)
 
             do {

@@ -50,4 +50,27 @@ struct InstalledSkillsListerTests {
         let skills = try lister.installedSkills()
         #expect(skills == ["valid-skill"])
     }
+
+    @Test
+    func test_installedSkills_whenGlobal_listsFromGlobalSkillsCacheFolder() throws {
+        let fileManager = FileManagerWrapperMock()
+        let lister = InstalledSkillsLister(fileManager: fileManager)
+
+        let skillName = "global-skill"
+        let skillFolder = fileManager.globalSkillsCacheFolder.appending(component: skillName)
+        try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
+
+        let skills = try lister.installedSkills(isGlobal: true)
+        #expect(skills == [skillName])
+    }
+
+    @Test
+    func test_installedSkills_whenGlobal_andNoGlobalFolder_returnsEmptyArray() throws {
+        let fileManager = FileManagerWrapperMock()
+        let lister = InstalledSkillsLister(fileManager: fileManager)
+
+        // globalSkillsCacheFolder does not exist — no directories created
+        let skills = try lister.installedSkills(isGlobal: true)
+        #expect(skills.isEmpty)
+    }
 }

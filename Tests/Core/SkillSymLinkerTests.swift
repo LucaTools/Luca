@@ -19,7 +19,7 @@ struct SkillSymLinkerTests {
         let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
-        try sut.setSymLink(skillName: skillName, agents: agents)
+        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
 
         for agentInfo in agents {
             let expectedSymLink = URL(fileURLWithPath: symLinkerFileManager.currentDirectoryPath)
@@ -40,7 +40,7 @@ struct SkillSymLinkerTests {
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
         // Create symlink the first time
-        try sut.setSymLink(skillName: skillName, agents: agents)
+        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
 
         let expectedSymLink = URL(fileURLWithPath: symLinkerFileManager.currentDirectoryPath)
             .appending(path: agents[0].projectSkillsPath)
@@ -48,7 +48,7 @@ struct SkillSymLinkerTests {
         #expect(symLinkExists(atPath: expectedSymLink.path))
 
         // Create symlink a second time (idempotent — should remove and recreate)
-        try sut.setSymLink(skillName: skillName, agents: agents)
+        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
 
         #expect(symLinkExists(atPath: expectedSymLink.path))
     }
@@ -70,7 +70,7 @@ struct SkillSymLinkerTests {
         var isDirectory: ObjCBool = false
         #expect(!fileManager.fileExists(atPath: agentSkillsDir.path, isDirectory: &isDirectory))
 
-        try sut.setSymLink(skillName: skillName, agents: agents)
+        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
 
         #expect(fileManager.fileExists(atPath: agentSkillsDir.path, isDirectory: &isDirectory))
         #expect(isDirectory.boolValue)
@@ -87,7 +87,7 @@ struct SkillSymLinkerTests {
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
         do {
-            try sut.setSymLink(skillName: skillName, agents: agents)
+            try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
             Issue.record("Expected error to be thrown")
         } catch let error as SkillSymLinker.SkillSymLinkerError {
             if case .agentDirectoryCreationFailed = error {
@@ -109,7 +109,7 @@ struct SkillSymLinkerTests {
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
         do {
-            try sut.setSymLink(skillName: skillName, agents: agents)
+            try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
             Issue.record("Expected error to be thrown")
         } catch let error as SkillSymLinker.SkillSymLinkerError {
             if case .symLinkCreationFailed = error {
@@ -118,6 +118,69 @@ struct SkillSymLinkerTests {
                 Issue.record("Expected symLinkCreationFailed, got \(error)")
             }
         }
+    }
+
+    @Test
+    func test_setSymLink_whenGlobal_usesGlobalSourcePath() throws {
+        let skillName = "global-skill"
+        let agents = [
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
+        ]
+
+        let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
+        let sut = SkillSymLinker(fileManager: symLinkerFileManager)
+
+        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: true)
+
+        let expectedSource = symLinkerFileManager.globalSkillsCacheFolder.appending(component: skillName)
+        let agentGlobalDir = agents[0].resolvedGlobalSkillsPath(homeDirectory: symLinkerFileManager.homeDirectoryForCurrentUser)
+        let symLinkDestination = agentGlobalDir.appending(component: skillName)
+
+        // Verify the symlink at the destination points back to the global source
+        let resolvedDestination = try fileManager.destinationOfSymbolicLink(atPath: symLinkDestination.path)
+        #expect(resolvedDestination == expectedSource.path)
+    }
+
+    @Test
+    func test_setSymLink_whenGlobal_usesGlobalDestinationPath() throws {
+        let skillName = "global-skill"
+        let agents = [
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
+        ]
+
+        let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
+        let sut = SkillSymLinker(fileManager: symLinkerFileManager)
+
+        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: true)
+
+        let agentGlobalDir = agents[0].resolvedGlobalSkillsPath(homeDirectory: symLinkerFileManager.homeDirectoryForCurrentUser)
+        let expectedSymLink = agentGlobalDir.appending(component: skillName)
+
+        #expect(symLinkExists(atPath: expectedSymLink.path))
+    }
+
+    @Test
+    func test_setSymLink_whenNotGlobal_usesProjectRelativePaths() throws {
+        let skillName = "local-skill"
+        let agents = [
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
+        ]
+
+        let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
+        let sut = SkillSymLinker(fileManager: symLinkerFileManager)
+
+        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
+
+        // Symlink should be at CWD/.claude/skills/<skillName>
+        let expectedSymLink = URL(fileURLWithPath: symLinkerFileManager.currentDirectoryPath)
+            .appending(path: agents[0].projectSkillsPath)
+            .appending(component: skillName)
+        #expect(symLinkExists(atPath: expectedSymLink.path))
+
+        // It should NOT exist under the global agent dir
+        let agentGlobalDir = agents[0].resolvedGlobalSkillsPath(homeDirectory: symLinkerFileManager.homeDirectoryForCurrentUser)
+        let globalSymLink = agentGlobalDir.appending(component: skillName)
+        #expect(!symLinkExists(atPath: globalSymLink.path))
     }
 
     // MARK: - Private
@@ -142,9 +205,22 @@ private class SkillSymLinkerFileManagerMock: SkillSymLinkerFileManaging {
     private(set) var fileManager: FileManager
 
     private var _currentDirectoryPath: String?
+    private var _homeDirectoryForCurrentUser: URL?
 
     init(fileManager: FileManager = .default) {
         self.fileManager = fileManager
+    }
+
+    var homeDirectoryForCurrentUser: URL {
+        if let existing = _homeDirectoryForCurrentUser { return existing }
+        let url = fileManager.temporaryDirectory.appending(component: UUID().uuidString)
+        try? fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+        _homeDirectoryForCurrentUser = url
+        return url
+    }
+
+    var globalSkillsCacheFolder: URL {
+        homeDirectoryForCurrentUser.appending(components: ".luca", "skills")
     }
 
     var currentDirectoryPath: String {
@@ -181,6 +257,8 @@ private class SkillSymLinkerFileManagerMock: SkillSymLinkerFileManaging {
 
 private class FailingDirectoryCreationFileManagerMock: SkillSymLinkerFileManaging {
 
+    var globalSkillsCacheFolder: URL { URL(fileURLWithPath: "/tmp/.luca/skills") }
+    var homeDirectoryForCurrentUser: URL { URL(fileURLWithPath: "/tmp") }
     var currentDirectoryPath: String { "/tmp/\(UUID().uuidString)" }
 
     func fileExists(atPath path: String) -> Bool { false }
@@ -196,9 +274,22 @@ private class FailingSymLinkCreationFileManagerMock: SkillSymLinkerFileManaging 
 
     private let fileManager: FileManager
     private var _currentDirectoryPath: String?
+    private var _homeDirectoryForCurrentUser: URL?
 
     init(fileManager: FileManager) {
         self.fileManager = fileManager
+    }
+
+    var homeDirectoryForCurrentUser: URL {
+        if let existing = _homeDirectoryForCurrentUser { return existing }
+        let url = fileManager.temporaryDirectory.appending(component: UUID().uuidString)
+        try? fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+        _homeDirectoryForCurrentUser = url
+        return url
+    }
+
+    var globalSkillsCacheFolder: URL {
+        homeDirectoryForCurrentUser.appending(components: ".luca", "skills")
     }
 
     var currentDirectoryPath: String {

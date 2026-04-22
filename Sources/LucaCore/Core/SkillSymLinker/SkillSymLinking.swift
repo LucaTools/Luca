@@ -7,5 +7,6 @@ protocol SkillSymLinking {
     /// - Parameters:
     ///   - skillName: The name of the skill to symlink.
     ///   - agents: The agents for which to create symlinks.
-    func setSymLink(skillName: String, agents: [AgentInfo]) throws
+    ///   - isGlobal: When `true`, links from `~/.luca/skills/` to each agent's global skills path.
+    func setSymLink(skillName: String, agents: [AgentInfo], isGlobal: Bool) throws
 }

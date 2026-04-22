@@ -8,7 +8,7 @@ final class SkillSymLinkerMock: SkillSymLinking, @unchecked Sendable {
     var lastAgents: [AgentInfo]?
     var shouldThrow: Bool = false
 
-    func setSymLink(skillName: String, agents: [AgentInfo]) throws {
+    func setSymLink(skillName: String, agents: [AgentInfo], isGlobal: Bool) throws {
         setSymLinkCalled = true
         lastSkillName = skillName
         lastAgents = agents

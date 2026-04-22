@@ -20,6 +20,9 @@ struct UninstallCommand: AsyncParsableCommand {
 
     @OptionGroup var commonFlags: CommonFlags
 
+    @Flag(help: "Uninstall a globally-installed skill from ~/.luca/skills/.")
+    var global: Bool = false
+
     @Argument(help: ArgumentHelp(
         "Tool or skill name to uninstall.",
         discussion: """
@@ -72,7 +75,7 @@ struct UninstallCommand: AsyncParsableCommand {
             // No tool found — attempt skill uninstall.
             let skillUninstaller = SkillUninstaller(fileManager: fileManager, printer: printer)
             do {
-                try skillUninstaller.uninstall(skillName: toolName, agents: AgentRegistry.all)
+                try skillUninstaller.uninstall(skillName: toolName, agents: AgentRegistry.all, isGlobal: global)
             } catch SkillUninstaller.SkillUninstallerError.skillNotFound {
                 printer.printFormatted("\(.info("No tool or skill named '\(toolName)' was found."))")
             }
