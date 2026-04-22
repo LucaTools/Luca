@@ -43,8 +43,9 @@ public struct SkillUninstaller {
 
         printer.printFormatted("\(.raw("🗑️ Uninstalling skill \(skillName)..."))")
 
-        try fileManager.removeItem(at: skillFolder)
-
+        // Remove symlinks first — before the cache folder is deleted.
+        // fileExists(atPath:) follows symlinks and returns false for dangling symlinks,
+        // so we must clean up agent symlinks while the target still exists.
         let homeDirectory = fileManager.homeDirectoryForCurrentUser
         for agent in agents {
             let symlinkPath: String
@@ -61,6 +62,8 @@ public struct SkillUninstaller {
                 try fileManager.removeItem(atPath: symlinkPath)
             }
         }
+
+        try fileManager.removeItem(at: skillFolder)
 
         printer.printFormatted("\(.primary("🙌 Skill \(skillName) has been uninstalled."))")
     }
