@@ -14,6 +14,7 @@ struct InstallCommand: AsyncParsableCommand {
     enum InstallCommandError: Error, LocalizedError {
         case cannotConstructUrl(String)
         case invalidCombinationOfArguments(Arguments)
+        case globalLucafileMissing(String)
 
         var errorDescription: String? {
             switch self {
@@ -21,6 +22,8 @@ struct InstallCommand: AsyncParsableCommand {
                 return "Cannot construct URL from String '\(value)'."
             case .invalidCombinationOfArguments(let arguments):
                 return "Invalid combination of arguments. Please rely on the documentation to see examples of invocations (e.g. use --help).\nGot the following parameters:\n\(String(describing: arguments))."
+            case .globalLucafileMissing(let path):
+                return "No global Lucafile found at \(path). Create one to get started."
             }
         }
     }
@@ -284,6 +287,9 @@ struct InstallCommand: AsyncParsableCommand {
             // Ensure parent directory exists
             let globalConfigDir = globalLucafileURL.deletingLastPathComponent()
             try fileManager.createDirectory(at: globalConfigDir, withIntermediateDirectories: true)
+            guard fileManager.fileExists(atPath: globalLucafileURL.path) else {
+                throw InstallCommandError.globalLucafileMissing(globalLucafileURL.path)
+            }
             resolvedSpec = globalLucafileURL.path
         } else {
             resolvedSpec = spec
