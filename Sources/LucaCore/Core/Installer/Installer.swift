@@ -210,9 +210,10 @@ public struct Installer {
         let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
         guard !skillsInfo.skillSets.isEmpty else { return }
 
+        let scope = isGlobal ? "globally" : "for the current project"
         try await noora.progressStep(
             message: "Installing skills",
-            successMessage: "Skills have been installed for the current project",
+            successMessage: "Skills have been installed \(scope)",
             errorMessage: "Failed to install skills",
             showSpinner: true
         ) { updateMessage in
@@ -258,9 +259,11 @@ public struct Installer {
                 let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
                 try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
             }
-            printer.printFormatted("\(.success("🚀 Skills have been installed for the current project."))")
+            let scope = isGlobal ? "globally" : "for the current project"
+            printer.printFormatted("\(.success("🚀 Skills have been installed \(scope)."))")
         } else {
-            printer.printFormatted("\(.muted("🫥 No skills have been installed for the current project."))")
+            let scope = isGlobal ? "globally" : "for the current project"
+            printer.printFormatted("\(.muted("🫥 No skills have been installed \(scope)."))")
         }
     }
 
@@ -284,7 +287,8 @@ public struct Installer {
                 try skillSymLinker.setSymLink(skillName: name, agents: resolvedAgents, isGlobal: isGlobal)
             }
         }
-        printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed for the current project."))")
+        let scope = isGlobal ? "globally" : "for the current project"
+        printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed \(scope)."))")
     }
 
     private func isToolInstalled(_ tool: Tool) -> Bool {
