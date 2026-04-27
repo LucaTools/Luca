@@ -241,6 +241,7 @@ public struct Installer {
         printer.printFormatted("\(.info("🧠 Detecting skills to install..."))")
 
         let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
+        let scope = isGlobal ? "globally" : "for the current project"
         if !skillsInfo.skillSets.isEmpty {
             printer.printFormatted("\(.info("🧠 Installing skills for the current project."))")
             printer.printFormatted("")
@@ -259,10 +260,8 @@ public struct Installer {
                 let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
                 try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
             }
-            let scope = isGlobal ? "globally" : "for the current project"
             printer.printFormatted("\(.success("🚀 Skills have been installed \(scope)."))")
         } else {
-            let scope = isGlobal ? "globally" : "for the current project"
             printer.printFormatted("\(.muted("🫥 No skills have been installed \(scope)."))")
         }
     }
