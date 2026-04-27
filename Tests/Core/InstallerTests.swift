@@ -690,6 +690,43 @@ struct InstallerTests {
         #expect(skillDownloaderMock.downloadCalled == false)
     }
 
+    // MARK: - Global installation
+
+    @Test(arguments: [true, false])
+    func test_installSkills_whenGlobal_usesGlobalCacheFolderAndPassesIsGlobalToSymLinker(quiet: Bool) async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        skillDownloaderMock.downloadResult = .success([
+            ("global-skill", [SkillFile(relativePath: "SKILL.md", content: Data("content".utf8))])
+        ])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: quiet,
+            printer: PrinterMock(),
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock
+        )
+
+        try await installer.install(
+            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: nil),
+            useNpx: false,
+            isGlobal: true
+        )
+
+        #expect(skillDownloaderMock.downloadCalled == true)
+        #expect(skillSymLinkerMock.setSymLinkCalled == true)
+        #expect(skillSymLinkerMock.lastIsGlobal == true)
+
+        let skillFile = fileManager.globalSkillsCacheFolder.appending(components: "global-skill", "SKILL.md")
+        #expect(fileManager.fileExists(atPath: skillFile.path))
+
+        // Must NOT write to the project-local cache
+        let localSkillFile = fileManager.skillsCacheFolder.appending(components: "global-skill", "SKILL.md")
+        #expect(!fileManager.fileExists(atPath: localSkillFile.path))
+    }
+
     @Test(arguments: [true, false])
     func test_installSkillsIndividual_noAgents_usesAllAgents(quiet: Bool) async throws {
         let skillDownloaderMock = SkillDownloaderMock()

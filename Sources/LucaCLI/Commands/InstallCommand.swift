@@ -174,10 +174,10 @@ struct InstallCommand: AsyncParsableCommand {
     var quiet: Bool = false
 
     @Flag(help: ArgumentHelp(
-        "Install skills globally to ~/.config/luca/Lucafile and ~/.luca/skills/.",
+        "Install skills globally, caching to ~/.luca/skills/.",
         discussion: """
-        Installs skills to the global Lucafile (~/.config/luca/Lucafile) and caches them in
-        ~/.luca/skills/, symlinking into each agent's global skills path.
+        Reads from the global Lucafile (~/.config/luca/Lucafile) when no --spec is given,
+        caches skills to ~/.luca/skills/, and symlinks into each agent's global skills path.
         Cannot be combined with --only-tools.
         Example:
           luca install --global
@@ -283,7 +283,7 @@ struct InstallCommand: AsyncParsableCommand {
                 .appending(components: ".config", "luca", "Lucafile")
             // Ensure parent directory exists
             let globalConfigDir = globalLucafileURL.deletingLastPathComponent()
-            try? fileManager.createDirectory(at: globalConfigDir, withIntermediateDirectories: true)
+            try fileManager.createDirectory(at: globalConfigDir, withIntermediateDirectories: true)
             resolvedSpec = globalLucafileURL.path
         } else {
             resolvedSpec = spec
@@ -311,11 +311,15 @@ struct InstallCommand: AsyncParsableCommand {
             }
         }
 
-        let installMode: InstallMode
+        var installMode: InstallMode
         if let id = identifier {
             installMode = id.contains("@") ? .toolsOnly : .skillsOnly
         } else {
             installMode = onlyTools ? .toolsOnly : onlySkills ? .skillsOnly : .all
+        }
+        // --global is skills-only; promote .all to .skillsOnly so the tools phase is never run.
+        if global && installMode == .all {
+            installMode = .skillsOnly
         }
 
         switch installMode {
