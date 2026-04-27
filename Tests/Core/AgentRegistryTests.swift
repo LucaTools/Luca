@@ -1,5 +1,6 @@
 //  AgentRegistryTests.swift
 
+import Foundation
 import Testing
 @testable import LucaCore
 
