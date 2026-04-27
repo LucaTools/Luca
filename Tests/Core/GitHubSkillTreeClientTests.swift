@@ -231,6 +231,19 @@ struct GitHubSkillTreeClientTests {
         }
     }
 
+    // MARK: - Symlink filtering
+
+    @Test
+    func test_skillPaths_excludesSymlinkBlobs() async throws {
+        let dataDownloader = DataDownloaderMock(result: .fixture(Fixture(filename: "GitHubTreeWithSymlinks", type: "json")))
+        let sut = GitHubSkillTreeClient(dataDownloader: dataDownloader)
+        let paths = try await sut.skillPaths(repository: "owner/repo", ref: nil)
+        #expect(paths.contains("skills/my-skill/SKILL.md"))
+        #expect(paths.contains("skills/my-skill/regular-file.md"))
+        // Items with mode "120000" (symbolic links) must be excluded
+        #expect(!paths.contains("skills/my-skill/link-to-shared"))
+    }
+
     // MARK: - Root-level SKILL.md
 
     @Test

@@ -1,0 +1,9 @@
+{
+  "tree": [
+    { "path": "README.md", "type": "blob" },
+    { "path": "skills/my-skill/SKILL.md", "type": "blob" },
+    { "path": "skills/my-skill/regular-file.md", "type": "blob" },
+    { "path": "skills/my-skill/link-to-shared", "type": "blob", "mode": "120000" }
+  ],
+  "truncated": false
+}

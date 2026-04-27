@@ -311,6 +311,23 @@ struct GitRepositorySkillFetcherTests {
         #expect(runner.runCallCount == 1)
     }
 
+    // MARK: - test_skillPaths_skipsDirSymlinks
+
+    @Test
+    func test_skillPaths_skipsDirSymlinks() async throws {
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCodes = [0]
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        // Symlink inside the skill directory that resolves to /tmp (a real directory).
+        runner.symlinksToCreate = ["skills/foo/link-to-dir": "/tmp"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        let paths = try await sut.skillPaths(repository: "owner/repo", ref: nil)
+
+        #expect(paths.contains("skills/foo/SKILL.md"))
+        #expect(!paths.contains("skills/foo/link-to-dir"))
+    }
+
     // MARK: - test_skillPaths_sameRepoDifferentRef_clonesAgain
 
     @Test
@@ -337,6 +354,8 @@ private final class SeedingSubprocessRunnerMock: SubprocessRunning, @unchecked S
     var exitCodes: [Int32] = [0]
     /// Relative paths → file contents to write into the clone destination.
     var filesToCreate: [String: String] = [:]
+    /// Relative symlink paths → symlink destinations to create in the clone destination.
+    var symlinksToCreate: [String: String] = [:]
     var recordedArguments: [[String]] = []
     var recordedEnvironments: [[String: String]] = []
     var runCallCount = 0
@@ -358,6 +377,13 @@ private final class SeedingSubprocessRunnerMock: SubprocessRunning, @unchecked S
                 let parentURL = fileURL.deletingLastPathComponent()
                 try? FileManager.default.createDirectory(at: parentURL, withIntermediateDirectories: true)
                 try? Data(content.utf8).write(to: fileURL)
+            }
+
+            for (relativePath, destination) in symlinksToCreate {
+                let linkURL = destURL.appendingPathComponent(relativePath)
+                let parentURL = linkURL.deletingLastPathComponent()
+                try? FileManager.default.createDirectory(at: parentURL, withIntermediateDirectories: true)
+                try? FileManager.default.createSymbolicLink(atPath: linkURL.path, withDestinationPath: destination)
             }
         }
 

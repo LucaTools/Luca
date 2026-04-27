@@ -169,7 +169,7 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
         let resolvedBase = directory.resolvingSymlinksInPath()
         guard let enumerator = FileManager.default.enumerator(
             at: resolvedBase,
-            includingPropertiesForKeys: [.isDirectoryKey],
+            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
             options: [.skipsHiddenFiles]
         ) else {
             return []
@@ -179,8 +179,18 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
         var allPaths: [String] = []
 
         while let fileURL = enumerator.nextObject() as? URL {
-            let isDir = (try? fileURL.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
+            let resourceValues = try? fileURL.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+            let isDir = resourceValues?.isDirectory ?? false
             if isDir { continue }
+            
+            // Skip symbolic links that point to directories, since they cannot be read as files
+            // and we rely on deduplication to find the original directory if it's within the skill scope.
+            let isSymlink = resourceValues?.isSymbolicLink ?? false
+            if isSymlink {
+                let resolved = fileURL.resolvingSymlinksInPath()
+                let isResolvedDir = (try? resolved.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
+                if isResolvedDir { continue }
+            }
 
             let fileComponents = fileURL.resolvingSymlinksInPath().pathComponents
             let relativePath = fileComponents.dropFirst(baseComponents.count).joined(separator: "/")
