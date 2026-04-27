@@ -24,14 +24,21 @@ struct InstalledCommand: AsyncParsableCommand {
     ))
     var skills: Bool = false
 
+    @Flag(help: "List globally-installed skills from ~/.luca/skills/.")
+    var global: Bool = false
+
     func run() async throws {
         let noora = Noora(terminal: Terminal(signalBehavior: .none))
         let printer = Printer(noora: noora)
         let fileManager = FileManagerWrapper()
 
+        if global && !skills {
+            throw ValidationError("--global requires --skills. Use: luca installed --skills --global")
+        }
+
         if skills {
             let lister = InstalledSkillsLister(fileManager: fileManager)
-            let skills = try lister.installedSkills()
+            let skills = try lister.installedSkills(isGlobal: global)
             if skills.isEmpty {
                 printer.printFormatted("\(.info("No skills installed."))")
             } else {

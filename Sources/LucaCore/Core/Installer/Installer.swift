@@ -131,12 +131,13 @@ public struct Installer {
     ///     Can be `.spec` to read from a Lucafile, or `.individual` to install directly from a repository.
     ///   - useNpx: When `true`, routes installation through the npx-based ``SkillInstalling`` path
     ///     instead of Luca's native pipeline (``SkillDownloading`` + ``SkillSymLinking``).
+    ///   - isGlobal: When `true`, caches skills to `~/.luca/skills/` and symlinks to each agent's global path.
     /// - Throws: An error if downloading, extracting, or linking fails.
-    public func install(installationType: SkillInstallationType, useNpx: Bool = false) async throws {
+    public func install(installationType: SkillInstallationType, useNpx: Bool = false, isGlobal: Bool = false) async throws {
         if quiet {
-            try await installQuietly(installationType: installationType, useNpx: useNpx)
+            try await installQuietly(installationType: installationType, useNpx: useNpx, isGlobal: isGlobal)
         } else {
-            try await installVerbose(installationType: installationType, useNpx: useNpx)
+            try await installVerbose(installationType: installationType, useNpx: useNpx, isGlobal: isGlobal)
         }
     }
     
@@ -204,14 +205,15 @@ public struct Installer {
         }
     }
     
-    private func installQuietly(installationType: SkillInstallationType, useNpx: Bool) async throws {
+    private func installQuietly(installationType: SkillInstallationType, useNpx: Bool, isGlobal: Bool = false) async throws {
         let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
         let skillsInfo = try await skillsInfoFactory.skillsInfoForInstallationType(installationType)
         guard !skillsInfo.skillSets.isEmpty else { return }
 
+        let scope = isGlobal ? "globally" : "for the current project"
         try await noora.progressStep(
             message: "Installing skills",
-            successMessage: "Skills have been installed for the current project",
+            successMessage: "Skills have been installed \(scope)",
             errorMessage: "Failed to install skills",
             showSpinner: true
         ) { updateMessage in
@@ -224,16 +226,16 @@ public struct Installer {
             }
             for skillSet in skillsInfo.skillSets {
                 updateMessage("Installing skills from \(skillSet.repository)")
-                try await install(skillSet, agents: skillsInfo.agents, useNpx: useNpx, resolvedAgents: resolvedAgents)
+                try await install(skillSet, agents: skillsInfo.agents, useNpx: useNpx, isGlobal: isGlobal, resolvedAgents: resolvedAgents)
             }
-            if !useNpx {
+            if !useNpx && !isGlobal {
                 let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
                 try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
             }
         }
     }
 
-    private func installVerbose(installationType: SkillInstallationType, useNpx: Bool) async throws {
+    private func installVerbose(installationType: SkillInstallationType, useNpx: Bool, isGlobal: Bool = false) async throws {
         let skillsInfoFactory = SkillsInfoFactory(specLoader: specLoader)
 
         printer.printFormatted("\(.info("🧠 Detecting skills to install..."))")
@@ -250,27 +252,31 @@ public struct Installer {
                 resolvedAgents = AgentRegistry.all
             }
             for skillSet in skillsInfo.skillSets {
-                try await install(skillSet, agents: skillsInfo.agents, useNpx: useNpx, resolvedAgents: resolvedAgents)
+                try await install(skillSet, agents: skillsInfo.agents, useNpx: useNpx, isGlobal: isGlobal, resolvedAgents: resolvedAgents)
                 printer.printFormatted("")
             }
-            if !useNpx {
+            if !useNpx && !isGlobal {
                 let gitIgnoreManager = GitIgnoreManager(fileManager: fileManager, printer: printer)
                 try gitIgnoreManager.ensureGitIgnoreIncludesSkillFolders(agents: resolvedAgents)
             }
-            printer.printFormatted("\(.success("🚀 Skills have been installed for the current project."))")
+            let scope = isGlobal ? "globally" : "for the current project"
+            printer.printFormatted("\(.success("🚀 Skills have been installed \(scope)."))")
         } else {
-            printer.printFormatted("\(.muted("🫥 No skills have been installed for the current project."))")
+            let scope = isGlobal ? "globally" : "for the current project"
+            printer.printFormatted("\(.muted("🫥 No skills have been installed \(scope)."))")
         }
     }
 
-    private func install(_ skillSet: SkillSet, agents: [String]?, useNpx: Bool, resolvedAgents: [AgentInfo]) async throws {
+    private func install(_ skillSet: SkillSet, agents: [String]?, useNpx: Bool, isGlobal: Bool = false, resolvedAgents: [AgentInfo]) async throws {
         printer.printFormatted("\(.raw("🧩 Installing skills from \(skillSet.repository)..."))")
         if useNpx {
             try await skillInstaller.install(skillSet: skillSet, agents: agents)
         } else {
             let skills = try await skillDownloader.download(skillSet: skillSet)
             for (name, files) in skills {
-                let skillFolder = fileManager.skillsCacheFolder.appending(component: name)
+                let skillFolder = isGlobal
+                    ? fileManager.globalSkillsCacheFolder.appending(component: name)
+                    : fileManager.skillsCacheFolder.appending(component: name)
                 try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
                 for skillFile in files {
                     let filePath = skillFolder.appendingPathComponent(skillFile.relativePath)
@@ -278,10 +284,11 @@ public struct Installer {
                     try fileManager.createDirectory(at: parentDir, withIntermediateDirectories: true)
                     _ = fileManager.createFile(atPath: filePath.path, contents: skillFile.content)
                 }
-                try skillSymLinker.setSymLink(skillName: name, agents: resolvedAgents)
+                try skillSymLinker.setSymLink(skillName: name, agents: resolvedAgents, isGlobal: isGlobal)
             }
         }
-        printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed for the current project."))")
+        let scope = isGlobal ? "globally" : "for the current project"
+        printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed \(scope)."))")
     }
 
     private func isToolInstalled(_ tool: Tool) -> Bool {

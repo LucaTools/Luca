@@ -1,5 +1,6 @@
 //  AgentRegistryTests.swift
 
+import Foundation
 import Testing
 @testable import LucaCore
 
@@ -63,5 +64,37 @@ struct AgentRegistryTests {
         #expect(claudeCode?.projectSkillsPath == ".claude/skills")
         let cursor = AgentRegistry.agents(for: ["cursor"]).first
         #expect(cursor?.projectSkillsPath == ".agents/skills")
+    }
+
+    // MARK: - AgentInfo.resolvedGlobalSkillsPath
+
+    @Test
+    func test_resolvedGlobalSkillsPath_withTildeSlashPrefix_expandsToHomeDirectory() {
+        let homeDirectory = URL(fileURLWithPath: "/Users/testuser")
+        let agentInfo = AgentInfo(id: "test", projectSkillsPath: ".test/skills", globalSkillsPath: "~/.test/skills")
+
+        let resolved = agentInfo.resolvedGlobalSkillsPath(homeDirectory: homeDirectory)
+
+        #expect(resolved == URL(fileURLWithPath: "/Users/testuser/.test/skills"))
+    }
+
+    @Test
+    func test_resolvedGlobalSkillsPath_withBareGlobalPath_noTilde_returnsAsIs() {
+        let homeDirectory = URL(fileURLWithPath: "/Users/testuser")
+        let agentInfo = AgentInfo(id: "test", projectSkillsPath: ".test/skills", globalSkillsPath: "/absolute/path/skills")
+
+        let resolved = agentInfo.resolvedGlobalSkillsPath(homeDirectory: homeDirectory)
+
+        #expect(resolved == URL(fileURLWithPath: "/absolute/path/skills"))
+    }
+
+    @Test
+    func test_resolvedGlobalSkillsPath_withBareHome_returnsHomeDirectory() {
+        let homeDirectory = URL(fileURLWithPath: "/Users/testuser")
+        let agentInfo = AgentInfo(id: "test", projectSkillsPath: ".test/skills", globalSkillsPath: "~")
+
+        let resolved = agentInfo.resolvedGlobalSkillsPath(homeDirectory: homeDirectory)
+
+        #expect(resolved == homeDirectory)
     }
 }

@@ -4,6 +4,8 @@ import Foundation
 
 /// File system interface for ``SkillSymLinker``.
 public protocol SkillSymLinkerFileManaging {
+    var globalSkillsCacheFolder: URL { get }
+    var homeDirectoryForCurrentUser: URL { get }
     var currentDirectoryPath: String { get }
     func fileExists(atPath: String) -> Bool
     func removeItem(at: URL) throws
