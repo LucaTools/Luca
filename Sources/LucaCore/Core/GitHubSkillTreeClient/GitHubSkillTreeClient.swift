@@ -87,7 +87,8 @@ struct GitHubSkillTreeClient: SkillRepositoryFetching {
             guard !tree.truncated else {
                 throw GitHubSkillTreeClientError.treeTruncated
             }
-            let allBlobs = tree.tree.filter { $0.type == "blob" }
+            // "120000" is the Git mode for symbolic links
+            let allBlobs = tree.tree.filter { $0.type == "blob" && $0.mode != "120000" }
             // Identify directories that contain a SKILL.md (excluding the repo root).
             // Use string splitting to preserve the relative path (not URL resolution).
             let skillDirectories: Set<String> = Set(
@@ -216,4 +217,5 @@ private struct GitHubTree: Decodable {
 private struct GitHubTreeItem: Decodable {
     let path: String
     let type: String
+    let mode: String?
 }
