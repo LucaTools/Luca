@@ -24,4 +24,6 @@ public struct Constants {
     public static let toolsFolder = "tools"
     /// Skills cache subfolder name, used for the project-local `.luca/skills/` directory.
     public static let skillsFolder = "skills"
+    /// Subdirectory searched for pipeline YAML files when using convention-based lookup.
+    public static let pipelinesFolder = "pipelines"
 }
