@@ -9,12 +9,16 @@ class SubprocessRunnerMock: SubprocessRunning, @unchecked Sendable {
     var exitCodes: [Int32] = [0]
     var recordedArguments: [[String]] = []
     var recordedEnvironments: [[String: String]] = []
+    var recordedWorkingDirectories: [URL?] = []
+    var recordedInheritStdin: [Bool] = []
 
     private var callCount = 0
 
-    func run(executableURL: URL, arguments: [String], environment: [String: String]) async throws -> Int32 {
+    func run(executableURL: URL, arguments: [String], environment: [String: String], workingDirectory: URL?, inheritStdin: Bool) async throws -> Int32 {
         recordedArguments.append(arguments)
         recordedEnvironments.append(environment)
+        recordedWorkingDirectories.append(workingDirectory)
+        recordedInheritStdin.append(inheritStdin)
         let code = exitCodes.indices.contains(callCount) ? exitCodes[callCount] : exitCodes[exitCodes.count - 1]
         callCount += 1
         return code
