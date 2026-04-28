@@ -117,6 +117,17 @@ struct PipelineValidatorTests {
         #expect(results[0][1].available == false)
     }
 
+    // MARK: - Edge cases
+
+    @Test
+    func test_validate_emptyCommand_succeedsWithoutCheckingAnyTool() throws {
+        let fileManager = ExecutableFileManagerMock(executablePaths: [])
+        let sut = PipelineValidator(fileManager: fileManager, pathEnvironment: "/usr/bin")
+        let pipeline = makePipeline(tasks: [makeTask(command: "")])
+        // An empty command produces no tools to check; validation passes silently.
+        try sut.validate(pipeline)
+    }
+
     // MARK: - Error descriptions
 
     @Test

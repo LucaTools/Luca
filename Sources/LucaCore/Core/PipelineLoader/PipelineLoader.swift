@@ -30,16 +30,16 @@ import Yams
 /// - ``PipelineTask``
 public struct PipelineLoader: PipelineLoading {
 
-    public enum PipelineLoaderError: Error, LocalizedError {
+    public enum PipelineLoaderError: Error, LocalizedError, Equatable {
         case missingPipeline(String)
-        case invalidPipeline(String, Error)
+        case invalidPipeline(String, String)
 
         public var errorDescription: String? {
             switch self {
             case .missingPipeline(let path):
                 return "Missing pipeline at path: \(path)"
-            case .invalidPipeline(let path, let error):
-                return "Invalid pipeline at path: \(path). \(formattedParseError(error))"
+            case .invalidPipeline(let path, let reason):
+                return "Invalid pipeline at path: \(path). \(reason)"
             }
         }
     }
@@ -49,6 +49,8 @@ public struct PipelineLoader: PipelineLoading {
     public init(fileManager: FileManager = .default) {
         self.fileManager = fileManager
     }
+
+    // MARK: - PipelineLoading
 
     /// Loads a pipeline from the specified file path.
     ///
@@ -63,7 +65,7 @@ public struct PipelineLoader: PipelineLoading {
         do {
             return try YAMLDecoder().decode(Pipeline.self, from: data)
         } catch {
-            throw PipelineLoaderError.invalidPipeline(path.path, error)
+            throw PipelineLoaderError.invalidPipeline(path.path, formattedParseError(error))
         }
     }
 }

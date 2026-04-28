@@ -43,6 +43,12 @@ public struct Pipeline: Codable {
     /// Task-level ``PipelineTask/workingDirectory`` overrides this value.
     public let workingDirectory: String?
 
+    public init(tasks: [PipelineTask], env: [String: String]?, workingDirectory: String?) {
+        self.tasks = tasks
+        self.env = env
+        self.workingDirectory = workingDirectory
+    }
+
     private enum CodingKeys: String, CodingKey {
         case tasks, env
         case workingDirectory = "working-directory"

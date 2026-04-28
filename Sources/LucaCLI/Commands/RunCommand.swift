@@ -8,7 +8,7 @@ import Noora
 /// Executes a pipeline of shell tasks defined in a YAML file.
 struct RunCommand: AsyncParsableCommand {
 
-    enum RunCommandError: Error, LocalizedError {
+    enum RunCommandError: Error, LocalizedError, Equatable {
         case pipelineNotFound(String)
 
         var errorDescription: String? {
@@ -128,7 +128,7 @@ struct RunCommand: AsyncParsableCommand {
         throw RunCommandError.pipelineNotFound(name)
     }
 
-    private func printDryRun(pipeline: Pipeline, pipelinePath: URL, validator: PipelineValidator, printer: Printing) {
+    private func printDryRun(pipeline: Pipeline, pipelinePath: URL, validator: PipelineValidating, printer: Printing) {
         let displayName = name ?? pipelinePath.lastPathComponent
         printer.printFormatted("\(.accent("[DRY RUN] Pipeline: \(displayName)"))")
         printer.printFormatted("\(.raw(""))")

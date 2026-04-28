@@ -17,7 +17,7 @@ struct PipelineRunnerTests {
         let pipeline = makePipeline(tasks: [makeTask(command: "echo hello")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
         #expect(runner.recordedArguments.count == 1)
-        #expect(runner.recordedArguments[0] == ["-c", "set -eo pipefail && echo hello"])
+        #expect(runner.recordedArguments[0] == ["bash", "-c", "set -eo pipefail && echo hello"])
     }
 
     @Test
@@ -30,8 +30,8 @@ struct PipelineRunnerTests {
         ])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
         #expect(runner.recordedArguments.count == 2)
-        #expect(runner.recordedArguments[0][1].hasSuffix("echo first"))
-        #expect(runner.recordedArguments[1][1].hasSuffix("echo second"))
+        #expect(runner.recordedArguments[0][2].hasSuffix("echo first"))
+        #expect(runner.recordedArguments[1][2].hasSuffix("echo second"))
     }
 
     // MARK: - Stdin
@@ -167,6 +167,17 @@ struct PipelineRunnerTests {
         ])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
         #expect(runner.recordedArguments.count == 2)
+    }
+
+    // MARK: - Edge cases
+
+    @Test
+    func test_run_emptyTaskList_completesWithoutRunningSubprocess() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir)
+        #expect(runner.recordedArguments.isEmpty)
     }
 
     // MARK: - Error descriptions

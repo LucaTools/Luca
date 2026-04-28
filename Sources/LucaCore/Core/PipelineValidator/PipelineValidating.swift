@@ -9,4 +9,9 @@ public protocol PipelineValidating {
     /// - Parameter pipeline: The pipeline to validate.
     /// - Throws: ``PipelineValidator/PipelineValidatorError/toolNotFound(taskName:tool:)`` if any required tool is absent from `PATH`.
     func validate(_ pipeline: Pipeline) throws
+
+    /// Returns per-task availability results (one inner array per task, in pipeline order).
+    ///
+    /// Used by dry-run output to display tool availability alongside each task.
+    func toolCheckResults(for pipeline: Pipeline) -> [[PipelineValidator.ToolCheckResult]]
 }

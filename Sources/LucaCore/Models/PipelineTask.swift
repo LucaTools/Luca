@@ -40,6 +40,15 @@ public struct PipelineTask: Codable {
     /// Overrides the pipeline-level ``Pipeline/workingDirectory``.
     public let workingDirectory: String?
 
+    public init(name: String, command: String, tools: [String]?, env: [String: String]?, continueOnError: Bool?, workingDirectory: String?) {
+        self.name = name
+        self.command = command
+        self.tools = tools
+        self.env = env
+        self.continueOnError = continueOnError
+        self.workingDirectory = workingDirectory
+    }
+
     private enum CodingKeys: String, CodingKey {
         case name, command, tools, env
         case continueOnError = "continue-on-error"

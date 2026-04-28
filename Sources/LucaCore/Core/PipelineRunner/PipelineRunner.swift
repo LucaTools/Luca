@@ -5,7 +5,7 @@ import Noora
 
 /// Executes a ``Pipeline`` task by task, printing headers and streaming subprocess output.
 ///
-/// Each task runs inside `/bin/bash -c "set -eo pipefail && <command>"`.
+/// Each task runs via `/usr/bin/env bash -c "set -eo pipefail && <command>"`.
 /// Environment variables are merged in order: inherited process env ← pipeline-level env ← task-level env.
 /// Working directory is resolved as: task-level → pipeline-level → invocation directory.
 public struct PipelineRunner: PipelineRunning {
@@ -49,8 +49,8 @@ public struct PipelineRunner: PipelineRunning {
             let workingDirectory = resolveWorkingDirectory(task: task, pipeline: pipeline, invocationDirectory: currentDirectoryURL)
 
             let exitCode = try await subprocessRunner.run(
-                executableURL: URL(fileURLWithPath: "/bin/bash"),
-                arguments: ["-c", "set -eo pipefail && \(task.command)"],
+                executableURL: URL(fileURLWithPath: "/usr/bin/env"),
+                arguments: ["bash", "-c", "set -eo pipefail && \(task.command)"],
                 environment: env,
                 workingDirectory: workingDirectory,
                 inheritStdin: true
@@ -58,9 +58,9 @@ public struct PipelineRunner: PipelineRunning {
 
             if exitCode != 0 {
                 if task.continueOnError == true {
-                    printer.printFormatted("\(.raw("⚠️  Task '\(task.name)' exited \(exitCode) (continuing)"))")
+                    printer.printFormatted("⚠️  \(.muted("Task '"))\(.primary(task.name))\(.muted("' exited \(exitCode) (continuing)"))")
                 } else {
-                    printer.printFormatted("\(.raw("✗ Task failed: \(task.name) (exit code \(exitCode))"))")
+                    printer.printFormatted("\(.danger("✗ Task failed: \(task.name) (exit code \(exitCode))"))")
                     throw PipelineRunnerError.taskFailed(taskName: task.name, exitCode: exitCode)
                 }
             }
@@ -68,15 +68,15 @@ public struct PipelineRunner: PipelineRunning {
 
         let elapsed = Date().timeIntervalSince(start)
         let summary = "── Pipeline complete (\(tasks.count) task\(tasks.count == 1 ? "" : "s"), \(String(format: "%.1f", elapsed))s) "
-        printer.printFormatted("\(.primary(summary + String(repeating: "─", count: max(0, 50 - summary.count))))")
+        printer.printFormatted("\(.success(summary + String(repeating: "─", count: max(0, 60 - summary.count))))")
     }
 
     // MARK: - Private
 
     private func printTaskHeader(index: Int, total: Int, name: String) {
-        let label = "── Task \(index)/\(total): \(name) "
-        let padding = String(repeating: "─", count: max(0, 60 - label.count))
-        printer.printFormatted("\(.raw(label + padding))")
+        let prefix = "── Task \(index)/\(total): "
+        let padding = String(repeating: "─", count: max(0, 60 - prefix.count - name.count - 1))
+        printer.printFormatted("\(.muted(prefix))\(.accent(name))\(.muted(" " + padding))")
     }
 
     private func mergedEnvironment(pipelineEnv: [String: String]?, taskEnv: [String: String]?) -> [String: String] {
