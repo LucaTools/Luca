@@ -114,11 +114,15 @@ class FileManagerWrapperMock: FileManaging {
     func contentsOfFile(atPath path: String) -> String? { nil }
 
     func isWritableFile(atPath path: String) -> Bool { true }
-    
+
+    func isExecutableFile(atPath path: String) -> Bool {
+        fileManager.isExecutableFile(atPath: path)
+    }
+
     func readString(at url: URL) throws -> String {
         try String(contentsOf: url, encoding: .utf8)
     }
-    
+
     func writeString(_ content: String, to url: URL) throws {
         try content.write(to: url, atomically: true, encoding: .utf8)
     }
