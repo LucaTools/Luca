@@ -1,0 +1,107 @@
+//  PipelineLoader.swift
+
+import Foundation
+import Yams
+
+/// Loads and parses pipeline YAML files.
+///
+/// ## Pipeline File Format
+///
+/// ```yaml
+/// ---
+/// env:
+///   CI: "true"
+///
+/// tasks:
+///   - name: Generate project
+///     command: tuist generate
+///   - name: Run tests
+///     command: swift test
+///     continue-on-error: true
+/// ```
+///
+/// ## Topics
+///
+/// ### Loading Pipelines
+/// - ``loadPipeline(at:)``
+///
+/// ### Related Types
+/// - ``Pipeline``
+/// - ``PipelineTask``
+public struct PipelineLoader: PipelineLoading {
+
+    public enum PipelineLoaderError: Error, LocalizedError {
+        case missingPipeline(String)
+        case invalidPipeline(String, Error)
+
+        public var errorDescription: String? {
+            switch self {
+            case .missingPipeline(let path):
+                return "Missing pipeline at path: \(path)"
+            case .invalidPipeline(let path, let error):
+                return "Invalid pipeline at path: \(path). \(formattedParseError(error))"
+            }
+        }
+    }
+
+    private let fileManager: FileManager
+
+    public init(fileManager: FileManager = .default) {
+        self.fileManager = fileManager
+    }
+
+    /// Loads a pipeline from the specified file path.
+    ///
+    /// - Parameter path: URL to the pipeline YAML file.
+    /// - Returns: A ``Pipeline`` containing the parsed task definitions.
+    /// - Throws: ``PipelineLoaderError/missingPipeline(_:)`` if the file doesn't exist,
+    ///   or ``PipelineLoaderError/invalidPipeline(_:_:)`` if the YAML is malformed.
+    public func loadPipeline(at path: URL) throws -> Pipeline {
+        guard let data = fileManager.contents(atPath: path.path) else {
+            throw PipelineLoaderError.missingPipeline(path.path)
+        }
+        do {
+            return try YAMLDecoder().decode(Pipeline.self, from: data)
+        } catch {
+            throw PipelineLoaderError.invalidPipeline(path.path, error)
+        }
+    }
+}
+
+// MARK: - Helpers
+
+private func formattedParseError(_ error: Error) -> String {
+    guard let decodingError = error as? DecodingError else {
+        return error.localizedDescription
+    }
+    switch decodingError {
+    case .typeMismatch(_, let context):
+        return formattedContext(context, prefix: "Type mismatch")
+    case .valueNotFound(_, let context):
+        return formattedContext(context, prefix: "Value not found")
+    case .keyNotFound(let key, let context):
+        return formattedContext(context, prefix: "Missing required key '\(key.stringValue)'")
+    case .dataCorrupted(let context):
+        return formattedContext(context, prefix: "Data corrupted")
+    @unknown default:
+        return decodingError.localizedDescription
+    }
+}
+
+private func formattedContext(_ context: DecodingError.Context, prefix: String) -> String {
+    let path = codingPath(from: context.codingPath)
+    return path.isEmpty ? "\(prefix): \(context.debugDescription)" : "\(prefix) at '\(path)': \(context.debugDescription)"
+}
+
+private func codingPath(from keys: [CodingKey]) -> String {
+    var result = ""
+    for key in keys {
+        if let index = key.intValue {
+            result += "[\(index)]"
+        } else {
+            if !result.isEmpty { result += "." }
+            result += key.stringValue
+        }
+    }
+    return result
+}
