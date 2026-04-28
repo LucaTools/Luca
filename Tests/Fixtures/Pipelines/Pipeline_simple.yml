@@ -1,0 +1,7 @@
+---
+tasks:
+  - name: Print version
+    command: swift --version
+
+  - name: Echo message
+    command: echo "hello pipeline"

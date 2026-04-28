@@ -1,0 +1,26 @@
+---
+env:
+  PIPELINE_VAR: "pipeline-value"
+working-directory: ios/
+
+tasks:
+  - name: Simple task
+    command: echo "simple"
+
+  - name: Task with env
+    command: echo $MY_VAR
+    env:
+      MY_VAR: "task-value"
+
+  - name: Task with tools
+    command: swift --version
+    tools:
+      - swift
+
+  - name: Task with working dir
+    command: pwd
+    working-directory: backend/
+
+  - name: Optional task
+    command: echo "optional"
+    continue-on-error: true
