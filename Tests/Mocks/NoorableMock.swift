@@ -5,7 +5,9 @@ import Noora
 @testable import LucaCore
 
 final class NoorableMock: Noorable, @unchecked Sendable {
-    
+
+    var yesOrNoAnswer: Bool = true
+
     private(set) var formatCallCount = 0
     private(set) var lastFormattedText: TerminalText?
 
@@ -77,7 +79,7 @@ final class NoorableMock: Noorable, @unchecked Sendable {
         collapseOnSelection: Bool,
         renderer: Rendering
     ) -> Bool {
-        fatalError("Not implemented in mock")
+        yesOrNoAnswer
     }
 
     func textPrompt(

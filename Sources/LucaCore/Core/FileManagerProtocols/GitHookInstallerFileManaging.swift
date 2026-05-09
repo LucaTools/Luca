@@ -7,6 +7,7 @@ public protocol GitHookInstallerFileManaging {
     var currentDirectoryPath: String { get }
     var homeDirectoryForCurrentUser: URL { get }
     func fileExists(atPath: String) -> Bool
+    func createDirectory(at url: URL, withIntermediateDirectories: Bool) throws
     func copyItem(at srcURL: URL, to dstURL: URL) throws
     func removeItem(at URL: URL) throws
     func readString(at url: URL) throws -> String

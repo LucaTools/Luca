@@ -8,18 +8,21 @@ final class GitHookInstallerTests: XCTestCase {
 
     var fileManager: FileManagerWrapperMock!
     var printer: PrinterSpyMock!
+    var noora: NoorableMock!
     var sut: GitHookInstaller!
 
     override func setUp() {
         super.setUp()
         fileManager = FileManagerWrapperMock()
         printer = PrinterSpyMock()
-        sut = GitHookInstaller(fileManager: fileManager, printer: printer)
+        noora = NoorableMock()
+        sut = GitHookInstaller(fileManager: fileManager, printer: printer, noora: noora)
     }
 
     override func tearDown() {
         fileManager = nil
         printer = nil
+        noora = nil
         sut = nil
         super.tearDown()
     }
@@ -200,6 +203,59 @@ final class GitHookInstallerTests: XCTestCase {
 
         XCTAssertEqual(printer.printedMessages.count, 1)
         XCTAssertTrue(printer.printedMessages[0].contains("Installed post-checkout hook"))
+    }
+
+    // MARK: - Missing Hooks Directory
+
+    func test_installPostCheckoutHook_whenHooksDirMissing_userConfirms_createsDirectoryAndInstalls() throws {
+        // Given
+        let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
+        try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
+        let gitDirectory = currentDirectory.appending(component: ".git")
+        try fileManager.createDirectory(at: gitDirectory, withIntermediateDirectories: true)
+        // Note: hooksDirectory is intentionally NOT created
+
+        let sourceHookDirectory = fileManager.homeDirectoryForCurrentUser.appending(component: ".luca")
+        try fileManager.createDirectory(at: sourceHookDirectory, withIntermediateDirectories: true)
+        let sourceHookPath = sourceHookDirectory.appending(component: "post-checkout")
+        try fileManager.writeString("#!/bin/sh\necho 'post-checkout hook'", to: sourceHookPath)
+
+        noora.yesOrNoAnswer = true
+
+        // When
+        try sut.installPostCheckoutHook()
+
+        // Then
+        let hooksDirectory = gitDirectory.appending(component: "hooks")
+        XCTAssertTrue(fileManager.fileExists(atPath: hooksDirectory.path))
+        let destinationHookPath = hooksDirectory.appending(component: "post-checkout")
+        XCTAssertTrue(fileManager.fileExists(atPath: destinationHookPath.path))
+        XCTAssertEqual(printer.printedMessages.count, 1)
+        XCTAssertTrue(printer.printedMessages[0].contains("Installed post-checkout hook"))
+    }
+
+    func test_installPostCheckoutHook_whenHooksDirMissing_userDeclines_skipsInstallation() throws {
+        // Given
+        let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
+        try fileManager.createDirectory(at: currentDirectory, withIntermediateDirectories: true)
+        let gitDirectory = currentDirectory.appending(component: ".git")
+        try fileManager.createDirectory(at: gitDirectory, withIntermediateDirectories: true)
+        // Note: hooksDirectory is intentionally NOT created
+
+        let sourceHookDirectory = fileManager.homeDirectoryForCurrentUser.appending(component: ".luca")
+        try fileManager.createDirectory(at: sourceHookDirectory, withIntermediateDirectories: true)
+        let sourceHookPath = sourceHookDirectory.appending(component: "post-checkout")
+        try fileManager.writeString("#!/bin/sh\necho 'post-checkout hook'", to: sourceHookPath)
+
+        noora.yesOrNoAnswer = false
+
+        // When
+        try sut.installPostCheckoutHook()
+
+        // Then
+        let hooksDirectory = gitDirectory.appending(component: "hooks")
+        XCTAssertFalse(fileManager.fileExists(atPath: hooksDirectory.path))
+        XCTAssertTrue(printer.printedMessages.isEmpty)
     }
 }
 

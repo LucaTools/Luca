@@ -1,6 +1,7 @@
 //  GitHookInstaller.swift
 
 import Foundation
+import Noora
 
 /// Installs a post-checkout Git hook into the current repository.
 public struct GitHookInstaller {
@@ -10,10 +11,12 @@ public struct GitHookInstaller {
 
     private let fileManager: GitHookInstallerFileManaging
     private let printer: Printing
+    private let noora: Noorable
 
-    public init(fileManager: GitHookInstallerFileManaging, printer: Printing) {
+    public init(fileManager: GitHookInstallerFileManaging, printer: Printing, noora: Noorable) {
         self.fileManager = fileManager
         self.printer = printer
+        self.noora = noora
     }
 
     /// Copies the Luca post-checkout hook into `.git/hooks/`.
@@ -47,6 +50,18 @@ public struct GitHookInstaller {
 
         let hooksDirectory = gitDirectory.appending(component: "hooks")
         let destinationHookPath = hooksDirectory.appending(component: "post-checkout")
+
+        if !fileManager.fileExists(atPath: hooksDirectory.path) {
+            let shouldCreate = noora.yesOrNoChoicePrompt(
+                title: "Create missing hooks folder",
+                question: "The .git/hooks directory does not exist. Would you like Luca to create it?",
+                defaultAnswer: true,
+                description: nil,
+                collapseOnSelection: true
+            )
+            guard shouldCreate else { return }
+            try fileManager.createDirectory(at: hooksDirectory, withIntermediateDirectories: true)
+        }
 
         if fileManager.fileExists(atPath: destinationHookPath.path) {
             // Check if the existing hook is a Luca-managed hook
