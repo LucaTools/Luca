@@ -312,7 +312,7 @@ struct InstallCommand: AsyncParsableCommand {
             try gitIgnoreManager.ensureGitIgnoreIncludesSymlinksFolder()
 
             if installPostCheckoutGitHook {
-                let gitHookInstaller = GitHookInstaller(fileManager: fileManager, printer: printer)
+                let gitHookInstaller = GitHookInstaller(fileManager: fileManager, printer: printer, noora: noora)
                 try gitHookInstaller.installPostCheckoutHook()
             }
         }
