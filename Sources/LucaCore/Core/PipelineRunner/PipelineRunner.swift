@@ -64,6 +64,8 @@ public struct PipelineRunner: PipelineRunning {
                     throw PipelineRunnerError.taskFailed(taskName: task.name, exitCode: exitCode)
                 }
             }
+
+            printer.printFormatted("\(.raw(""))")
         }
 
         let elapsed = Date().timeIntervalSince(start)
