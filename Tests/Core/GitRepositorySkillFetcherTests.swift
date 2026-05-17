@@ -360,7 +360,7 @@ private final class SeedingSubprocessRunnerMock: SubprocessRunning, @unchecked S
     var recordedEnvironments: [[String: String]] = []
     var runCallCount = 0
 
-    func run(executableURL: URL, arguments: [String], environment: [String: String]) async throws -> Int32 {
+    func run(executableURL: URL, arguments: [String], environment: [String: String], workingDirectory: URL?, inheritStdin: Bool) async throws -> Int32 {
         recordedArguments.append(arguments)
         recordedEnvironments.append(environment)
         let index = runCallCount

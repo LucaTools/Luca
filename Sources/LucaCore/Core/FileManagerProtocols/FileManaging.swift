@@ -13,6 +13,7 @@ public protocol FileManaging:
     InstalledSkillsListerFileManaging,
     InstalledToolsFileManaging,
     PermissionManagerFileManaging,
+    PipelineValidatorFileManaging,
     SelfUpdaterFileManaging,
     SkillSymLinkerFileManaging,
     SkillUninstallerFileManaging,

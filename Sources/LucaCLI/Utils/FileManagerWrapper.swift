@@ -115,4 +115,8 @@ public struct FileManagerWrapper: FileManaging {
     public func writeString(_ content: String, to url: URL) throws {
         try content.write(to: url, atomically: true, encoding: .utf8)
     }
+
+    public func isExecutableFile(atPath path: String) -> Bool {
+        fileManager.isExecutableFile(atPath: path)
+    }
 }

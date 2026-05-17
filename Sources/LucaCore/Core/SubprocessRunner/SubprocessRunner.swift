@@ -16,15 +16,22 @@ struct SubprocessRunner: SubprocessRunning {
     ///   - arguments: The command-line arguments to pass.
     ///   - environment: Additional environment variables merged on top of the inherited environment.
     ///     Pass an empty dictionary to inherit the environment unchanged.
+    ///   - workingDirectory: The working directory for the process. When `nil`, the process inherits the current directory.
+    ///   - inheritStdin: When `true`, stdin is inherited from the parent process. When `false`, stdin is set to `/dev/null`.
     /// - Returns: The process termination status.
-    func run(executableURL: URL, arguments: [String], environment: [String: String]) async throws -> Int32 {
+    func run(executableURL: URL, arguments: [String], environment: [String: String], workingDirectory: URL?, inheritStdin: Bool) async throws -> Int32 {
         try await withCheckedThrowingContinuation { continuation in
             let process = Process()
             process.executableURL = executableURL
             process.arguments = arguments
-            // Close stdin so any reads inside the subprocess return EOF immediately
-            // rather than blocking on input that will never arrive.
-            process.standardInput = FileHandle.nullDevice
+            if !inheritStdin {
+                // Close stdin so any reads inside the subprocess return EOF immediately
+                // rather than blocking on input that will never arrive.
+                process.standardInput = FileHandle.nullDevice
+            }
+            if let workingDirectory {
+                process.currentDirectoryURL = workingDirectory
+            }
             if !environment.isEmpty {
                 var env = ProcessInfo.processInfo.environment
                 env.merge(environment) { _, new in new }
