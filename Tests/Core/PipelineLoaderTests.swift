@@ -138,4 +138,13 @@ struct PipelineLoaderTests {
         let error = PipelineLoader.PipelineLoaderError.missingPipeline("/some/path.yml")
         #expect(error.errorDescription?.contains("/some/path.yml") == true)
     }
+
+    // MARK: - formattedParseError (direct)
+
+    @Test
+    func test_formattedParseError_valueNotFound_containsPrefix() {
+        let context = DecodingError.Context(codingPath: [], debugDescription: "no value found")
+        let result = PipelineLoader.formattedParseError(DecodingError.valueNotFound(String.self, context))
+        #expect(result.contains("Value not found"))
+    }
 }

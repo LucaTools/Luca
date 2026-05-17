@@ -65,45 +65,47 @@ public struct PipelineLoader: PipelineLoading {
         do {
             return try YAMLDecoder().decode(Pipeline.self, from: data)
         } catch {
-            throw PipelineLoaderError.invalidPipeline(path.path, formattedParseError(error))
+            throw PipelineLoaderError.invalidPipeline(path.path, Self.formattedParseError(error))
         }
     }
 }
 
 // MARK: - Helpers
 
-private func formattedParseError(_ error: Error) -> String {
-    guard let decodingError = error as? DecodingError else {
+extension PipelineLoader {
+
+    static func formattedParseError(_ error: Error) -> String {
+        if let decodingError = error as? DecodingError {
+            switch decodingError {
+            case .typeMismatch(_, let context):
+                return formattedContext(context, prefix: "Type mismatch")
+            case .valueNotFound(_, let context):
+                return formattedContext(context, prefix: "Value not found")
+            case .keyNotFound(let key, let context):
+                return formattedContext(context, prefix: "Missing required key '\(key.stringValue)'")
+            case .dataCorrupted(let context):
+                return formattedContext(context, prefix: "Data corrupted")
+            @unknown default: break
+            }
+        }
         return error.localizedDescription
     }
-    switch decodingError {
-    case .typeMismatch(_, let context):
-        return formattedContext(context, prefix: "Type mismatch")
-    case .valueNotFound(_, let context):
-        return formattedContext(context, prefix: "Value not found")
-    case .keyNotFound(let key, let context):
-        return formattedContext(context, prefix: "Missing required key '\(key.stringValue)'")
-    case .dataCorrupted(let context):
-        return formattedContext(context, prefix: "Data corrupted")
-    @unknown default:
-        return decodingError.localizedDescription
+
+    private static func formattedContext(_ context: DecodingError.Context, prefix: String) -> String {
+        let path = codingPath(from: context.codingPath)
+        return path.isEmpty ? "\(prefix): \(context.debugDescription)" : "\(prefix) at '\(path)': \(context.debugDescription)"
     }
-}
 
-private func formattedContext(_ context: DecodingError.Context, prefix: String) -> String {
-    let path = codingPath(from: context.codingPath)
-    return path.isEmpty ? "\(prefix): \(context.debugDescription)" : "\(prefix) at '\(path)': \(context.debugDescription)"
-}
-
-private func codingPath(from keys: [CodingKey]) -> String {
-    var result = ""
-    for key in keys {
-        if let index = key.intValue {
-            result += "[\(index)]"
-        } else {
-            if !result.isEmpty { result += "." }
-            result += key.stringValue
+    private static func codingPath(from keys: [CodingKey]) -> String {
+        var result = ""
+        for key in keys {
+            if let index = key.intValue {
+                result += "[\(index)]"
+            } else {
+                if !result.isEmpty { result += "." }
+                result += key.stringValue
+            }
         }
+        return result
     }
-    return result
 }
