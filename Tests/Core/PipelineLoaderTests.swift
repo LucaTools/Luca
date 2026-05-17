@@ -107,6 +107,30 @@ struct PipelineLoaderTests {
         }
     }
 
+    @Test
+    func test_loadPipeline_nullTaskElement_throwsInvalidPipeline() throws {
+        let path = try #require(Bundle.module.url(forResource: "Pipeline_nullCommand", withExtension: "yml"))
+        #expect {
+            try sut.loadPipeline(at: path)
+        } throws: { error in
+            guard let loaderError = error as? PipelineLoader.PipelineLoaderError,
+                  case PipelineLoader.PipelineLoaderError.invalidPipeline = loaderError else { return false }
+            return true
+        }
+    }
+
+    @Test
+    func test_loadPipeline_invalidUTF8Data_throwsInvalidPipeline() throws {
+        let path = try #require(Bundle.module.url(forResource: "Pipeline_invalidUTF8", withExtension: "yml"))
+        #expect {
+            try sut.loadPipeline(at: path)
+        } throws: { error in
+            guard let loaderError = error as? PipelineLoader.PipelineLoaderError,
+                  case PipelineLoader.PipelineLoaderError.invalidPipeline = loaderError else { return false }
+            return true
+        }
+    }
+
     // MARK: - Error descriptions
 
     @Test
