@@ -83,6 +83,30 @@ struct PipelineLoaderTests {
         }
     }
 
+    @Test
+    func test_loadPipeline_syntaxErrorYAML_throwsInvalidPipeline() throws {
+        let path = try #require(Bundle.module.url(forResource: "Pipeline_syntaxError", withExtension: "yml"))
+        #expect {
+            try sut.loadPipeline(at: path)
+        } throws: { error in
+            guard let loaderError = error as? PipelineLoader.PipelineLoaderError,
+                  case PipelineLoader.PipelineLoaderError.invalidPipeline = loaderError else { return false }
+            return true
+        }
+    }
+
+    @Test
+    func test_loadPipeline_missingRequiredKey_throwsInvalidPipeline() throws {
+        let path = try #require(Bundle.module.url(forResource: "Pipeline_missingCommand", withExtension: "yml"))
+        #expect {
+            try sut.loadPipeline(at: path)
+        } throws: { error in
+            guard let loaderError = error as? PipelineLoader.PipelineLoaderError,
+                  case PipelineLoader.PipelineLoaderError.invalidPipeline = loaderError else { return false }
+            return true
+        }
+    }
+
     // MARK: - Error descriptions
 
     @Test

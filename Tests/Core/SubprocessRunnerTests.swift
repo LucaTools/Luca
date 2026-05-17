@@ -71,6 +71,21 @@ struct SubprocessRunnerTests {
         #expect(status == 0)
     }
 
+    // MARK: - Working directory
+
+    @Test
+    func test_run_withWorkingDirectory_setsCurrentDirectory() async throws {
+        let workDir = URL(fileURLWithPath: "/usr/bin")
+        let status = try await runner.run(
+            executableURL: sh,
+            arguments: ["-c", "test \"$PWD\" = \"/usr/bin\""],
+            environment: [:],
+            workingDirectory: workDir,
+            inheritStdin: false
+        )
+        #expect(status == 0)
+    }
+
     // MARK: - Invalid executable
 
     @Test

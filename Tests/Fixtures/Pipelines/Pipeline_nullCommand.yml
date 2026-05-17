@@ -1,0 +1,4 @@
+---
+tasks:
+  - name: Null command task
+    command: ~

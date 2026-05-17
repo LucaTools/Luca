@@ -180,6 +180,15 @@ struct PipelineRunnerTests {
         #expect(runner.recordedArguments.isEmpty)
     }
 
+    // MARK: - Public init
+
+    @Test
+    func test_publicInit_emptyPipeline_completes() async throws {
+        let sut = PipelineRunner(printer: PrinterMock())
+        let pipeline = Pipeline(tasks: [], env: nil, workingDirectory: nil)
+        try await sut.run(pipeline, currentDirectoryURL: URL(fileURLWithPath: "/tmp"))
+    }
+
     // MARK: - Error descriptions
 
     @Test
