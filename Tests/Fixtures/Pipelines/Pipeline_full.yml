@@ -1,4 +1,10 @@
 ---
+parameters:
+  - name: flavor
+    description: Build flavor
+    default: debug
+  - name: upload
+
 env:
   PIPELINE_VAR: "pipeline-value"
 working-directory: ios/

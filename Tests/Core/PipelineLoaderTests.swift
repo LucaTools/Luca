@@ -25,6 +25,9 @@ struct PipelineLoaderTests {
         let path = try #require(Bundle.module.url(forResource: "Pipeline_full", withExtension: "yml"))
         let pipeline = try sut.loadPipeline(at: path)
 
+        #expect(pipeline.parameters?.count == 2)
+        #expect(pipeline.parameters?.first?.name == "flavor")
+        #expect(pipeline.parameters?.last?.name == "upload")
         #expect(pipeline.env?["PIPELINE_VAR"] == "pipeline-value")
         #expect(pipeline.workingDirectory == "ios/")
         #expect(pipeline.tasks.count == 5)
@@ -40,6 +43,30 @@ struct PipelineLoaderTests {
 
         let optionalTask = pipeline.tasks[4]
         #expect(optionalTask.continueOnError == true)
+    }
+
+    @Test
+    func test_loadPipeline_withParameters_decodesParameterBlock() throws {
+        let path = try #require(Bundle.module.url(forResource: "Pipeline_withParameters", withExtension: "yml"))
+        let pipeline = try sut.loadPipeline(at: path)
+        #expect(pipeline.parameters?.count == 2)
+
+        let flavorParam = try #require(pipeline.parameters?.first)
+        #expect(flavorParam.name == "flavor")
+        #expect(flavorParam.description == "Build flavor")
+        #expect(flavorParam.defaultValue == "debug")
+
+        let uploadParam = try #require(pipeline.parameters?.last)
+        #expect(uploadParam.name == "upload")
+        #expect(uploadParam.description == nil)
+        #expect(uploadParam.defaultValue == nil)
+    }
+
+    @Test
+    func test_loadPipeline_noParametersBlock_returnsNilParameters() throws {
+        let path = try #require(Bundle.module.url(forResource: "Pipeline_simple", withExtension: "yml"))
+        let pipeline = try sut.loadPipeline(at: path)
+        #expect(pipeline.parameters == nil)
     }
 
     // MARK: - Missing file

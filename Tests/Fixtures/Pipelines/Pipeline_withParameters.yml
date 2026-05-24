@@ -1,0 +1,12 @@
+---
+parameters:
+  - name: flavor
+    description: Build flavor
+    default: debug
+  - name: upload
+
+tasks:
+  - name: Build
+    command: build --flavor ${flavor}
+  - name: Upload
+    command: upload --artifact ${upload}
