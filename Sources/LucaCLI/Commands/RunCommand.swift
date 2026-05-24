@@ -69,12 +69,28 @@ struct RunCommand: AsyncParsableCommand {
     ))
     var dryRun: Bool = false
 
+    @Option(name: .customLong("param"), help: ArgumentHelp(
+        "Set a pipeline parameter value.",
+        discussion: """
+        Provide KEY=VALUE pairs to satisfy parameters declared in the pipeline's `parameters:` block.
+        May be repeated for multiple parameters.
+        Example: --param flavor=release --param upload=true
+        """,
+        valueName: "KEY=VALUE"
+    ))
+    var params: [String] = []
+
     func validate() throws {
         guard name != nil || file != nil else {
             throw ValidationError("Missing required argument. Provide <name> or --file <path>.")
         }
         if name != nil && file != nil {
             throw ValidationError("<name> and --file are mutually exclusive.")
+        }
+        for param in params {
+            guard param.contains("=") else {
+                throw ValidationError("Invalid --param '\(param)': expected KEY=VALUE format.")
+            }
         }
     }
 
@@ -98,16 +114,22 @@ struct RunCommand: AsyncParsableCommand {
         let loader = PipelineLoader()
         let pipeline = try loader.loadPipeline(at: pipelinePath)
         let validator = PipelineValidator(fileManager: fileManager)
+        let resolver = ParameterResolver()
+        let resolvedParams = try resolver.resolve(
+            declared: pipeline.parameters ?? [],
+            provided: parsedParams()
+        )
 
         if dryRun {
-            printDryRun(pipeline: pipeline, pipelinePath: pipelinePath, validator: validator, printer: printer)
+            printDryRun(pipeline: pipeline, pipelinePath: pipelinePath, validator: validator,
+                        printer: printer, resolvedParams: resolvedParams)
             return
         }
 
         try validator.validate(pipeline)
 
         let runner = PipelineRunner(printer: printer)
-        try await runner.run(pipeline, currentDirectoryURL: invocationDirectory)
+        try await runner.run(pipeline, currentDirectoryURL: invocationDirectory, parameters: resolvedParams)
 
     }
 
@@ -128,10 +150,39 @@ struct RunCommand: AsyncParsableCommand {
         throw RunCommandError.pipelineNotFound(name)
     }
 
-    private func printDryRun(pipeline: Pipeline, pipelinePath: URL, validator: PipelineValidating, printer: Printing) {
+    private func parsedParams() -> [String: String] {
+        params.reduce(into: [:]) { dict, entry in
+            let parts = entry.split(separator: "=", maxSplits: 1)
+            guard parts.count == 2 else { return }
+            dict[String(parts[0])] = String(parts[1])
+        }
+    }
+
+    private func printDryRun(
+        pipeline: Pipeline,
+        pipelinePath: URL,
+        validator: PipelineValidating,
+        printer: Printing,
+        resolvedParams: [String: String]
+    ) {
         let displayName = name ?? pipelinePath.lastPathComponent
         printer.printFormatted("\(.accent("[DRY RUN] Pipeline: \(displayName)"))")
         printer.printFormatted("\(.raw(""))")
+
+        if let declared = pipeline.parameters, !declared.isEmpty {
+            printer.printFormatted("\(.primary("Parameters:"))")
+            for param in declared {
+                let value = resolvedParams[param.name] ?? param.defaultValue ?? "(not set)"
+                let source = resolvedParams[param.name] != nil && resolvedParams[param.name] != param.defaultValue
+                    ? " (override)"
+                    : param.defaultValue != nil ? " (default)" : ""
+                printer.printFormatted("\(.raw("  \(param.name) = \(value)\(source)"))")
+                if let desc = param.description {
+                    printer.printFormatted("\(.muted("    \(desc)"))")
+                }
+            }
+            printer.printFormatted("\(.raw(""))")
+        }
 
         let allResults = validator.toolCheckResults(for: pipeline)
 
