@@ -122,8 +122,10 @@ struct RunCommand: AsyncParsableCommand {
         )
 
         if dryRun {
+            let conditionEvaluator = TaskConditionEvaluator()
             printDryRun(pipeline: pipeline, pipelinePath: pipelinePath, validator: validator,
-                        printer: printer, resolvedParams: resolvedParams, providedParams: parsedParams())
+                        printer: printer, resolvedParams: resolvedParams, providedParams: parsedParams(),
+                        conditionEvaluator: conditionEvaluator)
             return
         }
 
@@ -165,7 +167,8 @@ struct RunCommand: AsyncParsableCommand {
         validator: PipelineValidating,
         printer: Printing,
         resolvedParams: [String: String],
-        providedParams: [String: String]
+        providedParams: [String: String],
+        conditionEvaluator: TaskConditionEvaluating
     ) {
         let displayName = name ?? pipelinePath.lastPathComponent
         printer.printFormatted("\(.accent("[DRY RUN] Pipeline: \(displayName)"))")
@@ -205,6 +208,15 @@ struct RunCommand: AsyncParsableCommand {
                     let mark = result.available ? "✓" : "✗"
                     printer.printFormatted("\(.raw("    Tools:   \(result.tool) \(mark)"))")
                 }
+            }
+
+            if let condition = task.when {
+                var context: [String: String] = [:]
+                if let pipelineEnv = pipeline.env { context.merge(pipelineEnv) { _, new in new } }
+                if let taskEnv = task.env { context.merge(taskEnv) { _, new in new } }
+                context.merge(resolvedParams) { _, new in new }
+                let outcome = conditionEvaluator.evaluate(condition: condition, context: context) ? "run" : "skip"
+                printer.printFormatted("\(.raw("    When:    \(condition) → \(outcome)"))")
             }
 
             if let workDir = task.workingDirectory ?? pipeline.workingDirectory {
