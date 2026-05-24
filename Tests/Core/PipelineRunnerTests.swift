@@ -13,7 +13,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_singleTask_executesOnce() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "echo hello")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
         #expect(runner.recordedArguments.count == 1)
@@ -23,7 +23,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_multipleTasks_executesInOrder() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [
             makeTask(command: "echo first"),
             makeTask(command: "echo second")
@@ -39,7 +39,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_inheritStdinIsTrue() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "echo hello")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
         #expect(runner.recordedInheritStdin == [true])
@@ -50,7 +50,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_pipelineEnvPassedToTask() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "echo")], env: ["PIPELINE_KEY": "pipeline-val"])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
         #expect(runner.recordedEnvironments[0]["PIPELINE_KEY"] == "pipeline-val")
@@ -59,7 +59,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_taskEnvOverridesPipelineEnv() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let task = makeTask(command: "echo", env: ["KEY": "task-val"])
         let pipeline = makePipeline(tasks: [task], env: ["KEY": "pipeline-val"])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
@@ -69,7 +69,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_noEnv_passesEmptyEnvironment() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "echo")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
         #expect(runner.recordedEnvironments[0].isEmpty)
@@ -80,7 +80,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_noWorkingDirectory_passesNil() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "echo")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
         #expect(runner.recordedWorkingDirectories[0] == nil)
@@ -89,7 +89,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_relativeWorkingDirectory_resolvedAgainstInvocationDir() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let task = makeTask(command: "echo", workingDirectory: "ios/")
         let pipeline = makePipeline(tasks: [task])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
@@ -99,7 +99,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_absoluteWorkingDirectory_usedAsIs() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let task = makeTask(command: "echo", workingDirectory: "/absolute/path")
         let pipeline = makePipeline(tasks: [task])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
@@ -109,7 +109,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_taskWorkingDirectoryOverridesPipelineDefault() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let task = makeTask(command: "echo", workingDirectory: "ios/")
         let pipeline = makePipeline(tasks: [task], workingDirectory: "backend/")
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
@@ -119,7 +119,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_pipelineLevelWorkingDirectory_appliedWhenTaskHasNone() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let task = makeTask(command: "echo")
         let pipeline = makePipeline(tasks: [task], workingDirectory: "backend/")
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
@@ -132,7 +132,7 @@ struct PipelineRunnerTests {
     func test_run_taskFails_throwsTaskFailed() async throws {
         let runner = SubprocessRunnerMock()
         runner.exitCodes = [1]
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(name: "Build", command: "swift build")])
         await #expect(throws: PipelineRunner.PipelineRunnerError.taskFailed(taskName: "Build", exitCode: 1)) {
             try await sut.run(pipeline, currentDirectoryURL: invocationDir)
@@ -143,7 +143,7 @@ struct PipelineRunnerTests {
     func test_run_taskFails_stopsExecution() async throws {
         let runner = SubprocessRunnerMock()
         runner.exitCodes = [1, 0]
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [
             makeTask(name: "First", command: "fail"),
             makeTask(name: "Second", command: "never-runs")
@@ -160,7 +160,7 @@ struct PipelineRunnerTests {
     func test_run_continueOnError_doesNotThrow() async throws {
         let runner = SubprocessRunnerMock()
         runner.exitCodes = [1, 0]
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [
             makeTask(name: "Optional", command: "might-fail", continueOnError: true),
             makeTask(name: "Required", command: "must-run")
@@ -174,7 +174,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_emptyTaskList_completesWithoutRunningSubprocess() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir)
         #expect(runner.recordedArguments.isEmpty)
@@ -204,7 +204,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_withParameters_substitutesTokensInCommand() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "build --flavor ${flavor}")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["flavor": "release"])
         #expect(runner.recordedArguments[0][2].hasSuffix("build --flavor release"))
@@ -213,7 +213,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_withMultipleParameters_substitutesAllTokens() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "deploy --env ${env} --version ${version}")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["env": "prod", "version": "1.0"])
         #expect(runner.recordedArguments[0][2].hasSuffix("deploy --env prod --version 1.0"))
@@ -222,7 +222,7 @@ struct PipelineRunnerTests {
     @Test
     func test_run_emptyParameters_commandUnchanged() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "echo hello")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:])
         #expect(runner.recordedArguments[0][2].hasSuffix("echo hello"))
@@ -231,10 +231,54 @@ struct PipelineRunnerTests {
     @Test
     func test_run_unknownTokenInCommand_leftAsIs() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "echo ${unknown}")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:])
         #expect(runner.recordedArguments[0][2].hasSuffix("echo ${unknown}"))
+    }
+
+    // MARK: - when: condition
+
+    @Test
+    func test_run_taskWithPassingCondition_executes() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let task = makeTask(name: "Build", command: "swift build", when: "${flavor} == release")
+        let pipeline = makePipeline(tasks: [task])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["flavor": "release"])
+        #expect(runner.recordedArguments.count == 1)
+    }
+
+    @Test
+    func test_run_taskWithFailingCondition_isSkipped() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let task = makeTask(name: "Upload", command: "upload", when: "${upload} == true")
+        let pipeline = makePipeline(tasks: [task])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["upload": "false"])
+        #expect(runner.recordedArguments.isEmpty)
+    }
+
+    @Test
+    func test_run_mixOfSkippedAndExecuted_onlyExecutedTasksRun() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [
+            makeTask(name: "Always", command: "echo always"),
+            makeTask(name: "Skipped", command: "echo skip", when: "${flag} == yes"),
+            makeTask(name: "Also always", command: "echo also")
+        ])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["flag": "no"])
+        #expect(runner.recordedArguments.count == 2)
+    }
+
+    @Test
+    func test_run_noWhenField_alwaysExecutes() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [makeTask(command: "echo hello")])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir)
+        #expect(runner.recordedArguments.count == 1)
     }
 
     // MARK: - Helpers
@@ -253,8 +297,9 @@ struct PipelineRunnerTests {
         command: String,
         env: [String: String]? = nil,
         continueOnError: Bool? = nil,
-        workingDirectory: String? = nil
+        workingDirectory: String? = nil,
+        when: String? = nil
     ) -> PipelineTask {
-        PipelineTask(name: name, command: command, tools: nil, env: env, continueOnError: continueOnError, workingDirectory: workingDirectory)
+        PipelineTask(name: name, command: command, tools: nil, env: env, continueOnError: continueOnError, workingDirectory: workingDirectory, when: when)
     }
 }
