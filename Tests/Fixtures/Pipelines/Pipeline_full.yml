@@ -30,3 +30,7 @@ tasks:
   - name: Optional task
     command: echo "optional"
     continue-on-error: true
+
+  - name: Conditional task
+    command: upload --artifact build.zip
+    when: ${upload} == true
