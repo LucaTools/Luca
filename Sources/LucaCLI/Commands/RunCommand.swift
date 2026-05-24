@@ -88,7 +88,8 @@ struct RunCommand: AsyncParsableCommand {
             throw ValidationError("<name> and --file are mutually exclusive.")
         }
         for param in params {
-            guard param.contains("=") else {
+            let parts = param.split(separator: "=", maxSplits: 1)
+            guard parts.count == 2, !parts[0].isEmpty else {
                 throw ValidationError("Invalid --param '\(param)': expected KEY=VALUE format.")
             }
         }
@@ -122,7 +123,7 @@ struct RunCommand: AsyncParsableCommand {
 
         if dryRun {
             printDryRun(pipeline: pipeline, pipelinePath: pipelinePath, validator: validator,
-                        printer: printer, resolvedParams: resolvedParams)
+                        printer: printer, resolvedParams: resolvedParams, providedParams: parsedParams())
             return
         }
 
@@ -163,7 +164,8 @@ struct RunCommand: AsyncParsableCommand {
         pipelinePath: URL,
         validator: PipelineValidating,
         printer: Printing,
-        resolvedParams: [String: String]
+        resolvedParams: [String: String],
+        providedParams: [String: String]
     ) {
         let displayName = name ?? pipelinePath.lastPathComponent
         printer.printFormatted("\(.accent("[DRY RUN] Pipeline: \(displayName)"))")
@@ -172,10 +174,15 @@ struct RunCommand: AsyncParsableCommand {
         if let declared = pipeline.parameters, !declared.isEmpty {
             printer.printFormatted("\(.primary("Parameters:"))")
             for param in declared {
-                let value = resolvedParams[param.name] ?? param.defaultValue ?? "(not set)"
-                let source = resolvedParams[param.name] != nil && resolvedParams[param.name] != param.defaultValue
-                    ? " (override)"
-                    : param.defaultValue != nil ? " (default)" : ""
+                let value = resolvedParams[param.name] ?? "(not set)"
+                let source: String
+                if providedParams.keys.contains(param.name) {
+                    source = " (override)"
+                } else if param.defaultValue != nil {
+                    source = " (default)"
+                } else {
+                    source = ""
+                }
                 printer.printFormatted("\(.raw("  \(param.name) = \(value)\(source)"))")
                 if let desc = param.description {
                     printer.printFormatted("\(.muted("    \(desc)"))")
