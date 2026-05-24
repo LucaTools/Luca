@@ -30,7 +30,7 @@ struct PipelineLoaderTests {
         #expect(pipeline.parameters?.last?.name == "upload")
         #expect(pipeline.env?["PIPELINE_VAR"] == "pipeline-value")
         #expect(pipeline.workingDirectory == "ios/")
-        #expect(pipeline.tasks.count == 5)
+        #expect(pipeline.tasks.count == 6)
 
         let taskWithEnv = pipeline.tasks[1]
         #expect(taskWithEnv.env?["MY_VAR"] == "task-value")
@@ -43,6 +43,9 @@ struct PipelineLoaderTests {
 
         let optionalTask = pipeline.tasks[4]
         #expect(optionalTask.continueOnError == true)
+
+        let taskWithWhen = pipeline.tasks[5]
+        #expect(taskWithWhen.when == "${upload} == true")
     }
 
     @Test
