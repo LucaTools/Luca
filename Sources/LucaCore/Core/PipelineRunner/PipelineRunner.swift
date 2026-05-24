@@ -38,7 +38,7 @@ public struct PipelineRunner: PipelineRunning {
 
     // MARK: - PipelineRunning
 
-    public func run(_ pipeline: Pipeline, currentDirectoryURL: URL) async throws {
+    public func run(_ pipeline: Pipeline, currentDirectoryURL: URL, parameters: [String: String]) async throws {
         let start = Date()
         let tasks = pipeline.tasks
 
@@ -48,9 +48,10 @@ public struct PipelineRunner: PipelineRunning {
             let env = mergedEnvironment(pipelineEnv: pipeline.env, taskEnv: task.env)
             let workingDirectory = resolveWorkingDirectory(task: task, pipeline: pipeline, invocationDirectory: currentDirectoryURL)
 
+            let command = renderCommand(task.command, parameters: parameters)
             let exitCode = try await subprocessRunner.run(
                 executableURL: URL(fileURLWithPath: "/usr/bin/env"),
-                arguments: ["bash", "-c", "set -eo pipefail && \(task.command)"],
+                arguments: ["bash", "-c", "set -eo pipefail && \(command)"],
                 environment: env,
                 workingDirectory: workingDirectory,
                 inheritStdin: true
@@ -94,5 +95,11 @@ public struct PipelineRunner: PipelineRunning {
             return URL(fileURLWithPath: workDir)
         }
         return invocationDirectory.appending(path: workDir)
+    }
+
+    private func renderCommand(_ command: String, parameters: [String: String]) -> String {
+        parameters.reduce(command) { result, pair in
+            result.replacingOccurrences(of: "${\(pair.key)}", with: pair.value)
+        }
     }
 }

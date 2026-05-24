@@ -199,14 +199,53 @@ struct PipelineRunnerTests {
         #expect(description.contains("127"))
     }
 
+    // MARK: - Parameter substitution
+
+    @Test
+    func test_run_withParameters_substitutesTokensInCommand() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [makeTask(command: "build --flavor ${flavor}")])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["flavor": "release"])
+        #expect(runner.recordedArguments[0][2].hasSuffix("build --flavor release"))
+    }
+
+    @Test
+    func test_run_withMultipleParameters_substitutesAllTokens() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [makeTask(command: "deploy --env ${env} --version ${version}")])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["env": "prod", "version": "1.0"])
+        #expect(runner.recordedArguments[0][2].hasSuffix("deploy --env prod --version 1.0"))
+    }
+
+    @Test
+    func test_run_emptyParameters_commandUnchanged() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [makeTask(command: "echo hello")])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:])
+        #expect(runner.recordedArguments[0][2].hasSuffix("echo hello"))
+    }
+
+    @Test
+    func test_run_unknownTokenInCommand_leftAsIs() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [makeTask(command: "echo ${unknown}")])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:])
+        #expect(runner.recordedArguments[0][2].hasSuffix("echo ${unknown}"))
+    }
+
     // MARK: - Helpers
 
     private func makePipeline(
         tasks: [PipelineTask],
         env: [String: String]? = nil,
-        workingDirectory: String? = nil
+        workingDirectory: String? = nil,
+        parameters: [PipelineParameter]? = nil
     ) -> Pipeline {
-        Pipeline(tasks: tasks, env: env, workingDirectory: workingDirectory)
+        Pipeline(tasks: tasks, env: env, workingDirectory: workingDirectory, parameters: parameters)
     }
 
     private func makeTask(
