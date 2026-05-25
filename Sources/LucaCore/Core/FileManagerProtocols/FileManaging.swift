@@ -18,6 +18,7 @@ public protocol FileManaging:
     SkillSymLinkerFileManaging,
     SkillUninstallerFileManaging,
     SpecFinderFileManaging,
+    SpecInitializerFileManaging,
     SymLinkFileManaging,
     UnarchiverFileManaging {
     var toolsFolder: URL { get }

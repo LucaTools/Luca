@@ -10,6 +10,9 @@ struct LucaCommand: AsyncParsableCommand {
         abstract: "A modern tool manager that helps you install and manage development tools.",
         version: version,
         groupedSubcommands: [
+            CommandGroup(name: "Setup", subcommands: [
+                InitCommand.self
+            ]),
             CommandGroup(name: "Execution", subcommands: [
                 RunCommand.self
             ]),
