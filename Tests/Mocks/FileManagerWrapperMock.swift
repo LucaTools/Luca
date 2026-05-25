@@ -3,7 +3,7 @@
 import Foundation
 @testable import LucaCore
 
-class FileManagerWrapperMock: FileManaging {
+class FileManagerWrapperMock: FileManaging, GlobalSpecFinderFileManaging {
     
     private(set) var fileManager: FileManager = .default
     
