@@ -34,7 +34,6 @@ struct LucaCommand: AsyncParsableCommand {
             CommandGroup(name: "Validation", subcommands: [
                 CalculateChecksumCommand.self
             ])
-        ],
-        defaultSubcommand: InstallCommand.self
+        ]
     )
 }
