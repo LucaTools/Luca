@@ -5,7 +5,8 @@ import Foundation
 import FoundationNetworking
 #endif
 import Testing
-@testable import LucaCore
+@testable import LucaFoundation
+@testable import ManagerCore
 
 @Suite(.serialized)
 struct DataDownloaderTests {

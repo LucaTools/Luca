@@ -1,6 +1,7 @@
 import Foundation
 import Testing
-@testable import LucaCore
+@testable import LucaFoundation
+@testable import ManagerCore
 
 struct UnlinkerTests {
     

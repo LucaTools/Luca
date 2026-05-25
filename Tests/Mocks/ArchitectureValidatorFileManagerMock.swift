@@ -1,7 +1,8 @@
 //  ArchitectureValidatorFileManagerMock.swift
 
 import Foundation
-@testable import LucaCore
+@testable import LucaFoundation
+@testable import ManagerCore
 
 struct ArchitectureValidatorFileManagerMock: ArchitectureValidatorFileManaging {
     

@@ -3,7 +3,7 @@
 import Foundation
 import Noora
 import Testing
-@testable import LucaCore
+@testable import LucaFoundation
 
 struct PrinterTests {
 

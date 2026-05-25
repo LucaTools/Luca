@@ -1,7 +1,8 @@
 //  SudoInstallerMock.swift
 
 import Foundation
-@testable import LucaCore
+@testable import LucaFoundation
+@testable import ManagerCore
 
 class SudoInstallerMock: SudoInstalling, @unchecked Sendable {
 

@@ -1,6 +1,7 @@
 //  GlobalSpecFinder.swift
 
 import Foundation
+import LucaFoundation
 
 /// Searches `~/.config/luca/` for the first recognised spec file.
 ///

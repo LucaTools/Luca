@@ -8,7 +8,10 @@ let package = Package(
     platforms: [.macOS(.v13)],
     products: [
         .executable(name: "luca", targets: ["LucaCLI"]),
-        .library(name: "LucaCore", targets: ["LucaCore"])
+        .library(name: "LucaCore", targets: ["LucaCore"]),
+        .library(name: "LucaFoundation", targets: ["LucaFoundation"]),
+        .library(name: "PipelineCore", targets: ["PipelineCore"]),
+        .library(name: "ManagerCore", targets: ["ManagerCore"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", exact: "1.7.1"),
@@ -31,16 +34,45 @@ let package = Package(
         .target(
             name: "LucaCore",
             dependencies: [
+                .target(name: "LucaFoundation"),
+                .target(name: "PipelineCore"),
+                .target(name: "ManagerCore")
+            ],
+            path: "Sources/LucaCore"
+        ),
+        .target(
+            name: "LucaFoundation",
+            dependencies: [
+                .product(name: "Noora", package: "Noora"),
+                .product(name: "Yams", package: "Yams")
+            ],
+            path: "Sources/LucaFoundation"
+        ),
+        .target(
+            name: "PipelineCore",
+            dependencies: [
+                .target(name: "LucaFoundation"),
+                .product(name: "Noora", package: "Noora"),
+                .product(name: "Yams", package: "Yams")
+            ],
+            path: "Sources/PipelineCore"
+        ),
+        .target(
+            name: "ManagerCore",
+            dependencies: [
+                .target(name: "LucaFoundation"),
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "Noora", package: "Noora"),
                 .product(name: "Yams", package: "Yams")
             ],
-            path: "Sources/LucaCore"
+            path: "Sources/ManagerCore"
         ),
         .testTarget(
             name: "LucaTests",
             dependencies: [
                 .target(name: "LucaCore"),
+                .target(name: "PipelineCore"),
+                .target(name: "ManagerCore")
             ],
             path: "Tests",
             resources: [

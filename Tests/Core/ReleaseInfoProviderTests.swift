@@ -1,7 +1,8 @@
 //  ReleaseInfoProviderTests.swift
 
 import Testing
-@testable import LucaCore
+@testable import LucaFoundation
+@testable import ManagerCore
 
 struct ReleaseInfoProviderTests {
 
