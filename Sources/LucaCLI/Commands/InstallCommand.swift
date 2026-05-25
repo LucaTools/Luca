@@ -282,7 +282,7 @@ struct InstallCommand: AsyncParsableCommand {
         // When --global is set and no explicit --spec was provided, search ~/.config/luca/ for the first recognised spec file
         let resolvedSpec: String?
         if global && spec == nil {
-            resolvedSpec = try globalSpecPath(fileManager: fileManager)
+            resolvedSpec = try globalSpecPath(fileManager: fileManager).path
         } else {
             resolvedSpec = spec
         }
@@ -444,11 +444,11 @@ struct InstallCommand: AsyncParsableCommand {
         }
     }
     
-    /// Searches `~/.config/luca/` for the first recognised spec file.
+    /// Searches `~/.config/luca/` for the first recognised spec file, returning its URL.
     ///
     /// Checks each name in `Constants.specFiles` (plain then `.yml`) in priority order.
     /// Throws ``InstallCommandError/globalLucafileMissing(_:)`` if none are found.
-    private func globalSpecPath(fileManager: FileManaging) throws -> String {
+    private func globalSpecPath(fileManager: FileManaging) throws -> URL {
         let globalConfigDir = fileManager.homeDirectoryForCurrentUser
             .appending(components: ".config", "luca")
         try fileManager.createDirectory(at: globalConfigDir, withIntermediateDirectories: true)
@@ -456,11 +456,11 @@ struct InstallCommand: AsyncParsableCommand {
         for name in Constants.specFiles {
             let plain = globalConfigDir.appending(component: name)
             if fileManager.fileExists(atPath: plain.path) {
-                return plain.path
+                return plain
             }
             let yml = globalConfigDir.appending(component: "\(name).\(Constants.ymlExtension)")
             if fileManager.fileExists(atPath: yml.path) {
-                return yml.path
+                return yml
             }
         }
 
