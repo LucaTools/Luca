@@ -23,7 +23,7 @@ struct InstallCommand: AsyncParsableCommand {
             case .invalidCombinationOfArguments(let arguments):
                 return "Invalid combination of arguments. Please rely on the documentation to see examples of invocations (e.g. use --help).\nGot the following parameters:\n\(String(describing: arguments))."
             case .globalLucafileMissing(let path):
-                return "No global Lucafile found at \(path). Create one to get started."
+                return "No global spec file found in \(path). Create a Lucafile, Toolfile, or Skillfile (optionally with .yml extension) to get started."
             }
         }
     }
@@ -279,18 +279,10 @@ struct InstallCommand: AsyncParsableCommand {
             throw ValidationError("--global cannot be combined with --only-tools. Global installation is skills-only.")
         }
 
-        // When --global is set and no explicit --spec was provided, default to ~/.config/luca/Lucafile
+        // When --global is set and no explicit --spec was provided, search ~/.config/luca/ for the first recognised spec file
         let resolvedSpec: String?
         if global && spec == nil {
-            let globalLucafileURL = fileManager.homeDirectoryForCurrentUser
-                .appending(components: ".config", "luca", "Lucafile")
-            // Ensure parent directory exists
-            let globalConfigDir = globalLucafileURL.deletingLastPathComponent()
-            try fileManager.createDirectory(at: globalConfigDir, withIntermediateDirectories: true)
-            guard fileManager.fileExists(atPath: globalLucafileURL.path) else {
-                throw InstallCommandError.globalLucafileMissing(globalLucafileURL.path)
-            }
-            resolvedSpec = globalLucafileURL.path
+            resolvedSpec = try globalSpecPath(fileManager: fileManager)
         } else {
             resolvedSpec = spec
         }
@@ -452,6 +444,29 @@ struct InstallCommand: AsyncParsableCommand {
         }
     }
     
+    /// Searches `~/.config/luca/` for the first recognised spec file.
+    ///
+    /// Checks each name in `Constants.specFiles` (plain then `.yml`) in priority order.
+    /// Throws ``InstallCommandError/globalLucafileMissing(_:)`` if none are found.
+    private func globalSpecPath(fileManager: FileManaging) throws -> String {
+        let globalConfigDir = fileManager.homeDirectoryForCurrentUser
+            .appending(components: ".config", "luca")
+        try fileManager.createDirectory(at: globalConfigDir, withIntermediateDirectories: true)
+
+        for name in Constants.specFiles {
+            let plain = globalConfigDir.appending(component: name)
+            if fileManager.fileExists(atPath: plain.path) {
+                return plain.path
+            }
+            let yml = globalConfigDir.appending(component: "\(name).\(Constants.ymlExtension)")
+            if fileManager.fileExists(atPath: yml.path) {
+                return yml.path
+            }
+        }
+
+        throw InstallCommandError.globalLucafileMissing(globalConfigDir.path)
+    }
+
     private func toolUrl(for urlString: String?) throws -> URL? {
         if let urlString {
             guard let toolUrl = URL(string: urlString) else {
