@@ -3,7 +3,7 @@
 import Foundation
 
 /// Runs an external process and returns its exit code.
-protocol SubprocessRunning: Sendable {
+public protocol SubprocessRunning: Sendable {
     /// Runs the executable at the given URL with the provided arguments and extra environment variables.
     ///
     /// - Parameters:
@@ -16,7 +16,7 @@ protocol SubprocessRunning: Sendable {
     func run(executableURL: URL, arguments: [String], environment: [String: String], workingDirectory: URL?, inheritStdin: Bool) async throws -> Int32
 }
 
-extension SubprocessRunning {
+public extension SubprocessRunning {
     /// Convenience overload using no extra environment, current working directory, and closed stdin.
     func run(executableURL: URL, arguments: [String]) async throws -> Int32 {
         try await run(executableURL: executableURL, arguments: arguments, environment: [:], workingDirectory: nil, inheritStdin: false)

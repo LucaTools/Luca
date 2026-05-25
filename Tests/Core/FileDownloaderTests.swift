@@ -6,6 +6,7 @@ import FoundationNetworking
 #endif
 import Testing
 @testable import LucaCore
+@testable import ManagerCore
 
 // URLSession.download(from:) on Linux's FoundationNetworking does not support URLProtocol
 // interception: urlProtocolDidFinishLoading crashes because no real temp file is ever written.

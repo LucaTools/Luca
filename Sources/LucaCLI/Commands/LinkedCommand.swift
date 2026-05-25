@@ -3,6 +3,7 @@
 import ArgumentParser
 import Foundation
 import LucaCore
+import ManagerCore
 import Noora
 
 /// Lists tools currently symlinked in the tools folder of the current project.

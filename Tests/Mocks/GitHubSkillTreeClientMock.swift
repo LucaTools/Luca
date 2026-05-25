@@ -2,6 +2,7 @@
 
 import Foundation
 @testable import LucaCore
+@testable import ManagerCore
 
 final class GitHubSkillTreeClientMock: SkillRepositoryFetching, @unchecked Sendable {
 

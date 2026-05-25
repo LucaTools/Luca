@@ -2,6 +2,7 @@
 
 import Foundation
 @testable import LucaCore
+@testable import ManagerCore
 
 final class SkillDownloaderMock: SkillDownloading, @unchecked Sendable {
 

@@ -3,6 +3,7 @@
 import XCTest
 import Noora
 @testable import LucaCore
+@testable import ManagerCore
 
 final class GitHookInstallerTests: XCTestCase {
 

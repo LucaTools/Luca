@@ -2,7 +2,7 @@
 
 import Foundation
 
-typealias Agent = String
+public typealias Agent = String
 
 /// A specification defining the tools required for a project.
 ///
@@ -49,22 +49,22 @@ typealias Agent = String
 /// - ``Tool``
 /// - ``Skill``
 /// - ``SpecLoader``
-struct Spec: Codable {
+public struct Spec: Codable {
     /// The list of tools defined in the specification.
-    let tools: [Tool]?
+    public let tools: [Tool]?
     /// The list of agentic skills defined in the specification.
-    let skills: [Skill]?
+    public let skills: [Skill]?
     /// The list of agent identifiers to target when installing skills (e.g. `claude-code`, `github-copilot`).
     /// When `nil`, skills are installed for all supported agents.
-    let agents: [Agent]?
+    public let agents: [Agent]?
 
-    init(tools: [Tool]?, skills: [Skill]?, agents: [Agent]?) {
+    public init(tools: [Tool]?, skills: [Skill]?, agents: [Agent]?) {
         self.tools = tools
         self.skills = skills
         self.agents = agents
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let repos = try container.decodeIfPresent([String: String].self, forKey: .repos)
         tools = try container.decodeIfPresent([Tool].self, forKey: .tools)
@@ -79,7 +79,7 @@ struct Spec: Codable {
         agents = try container.decodeIfPresent([Agent].self, forKey: .agents)
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(tools, forKey: .tools)
         try container.encodeIfPresent(skills, forKey: .skills)

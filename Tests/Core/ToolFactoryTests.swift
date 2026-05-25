@@ -4,6 +4,7 @@ import Foundation
 import Testing
 import Yams
 @testable import LucaCore
+@testable import ManagerCore
 
 struct ToolFactoryTests {
 

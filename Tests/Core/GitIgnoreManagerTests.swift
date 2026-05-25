@@ -2,6 +2,7 @@
 
 import XCTest
 @testable import LucaCore
+@testable import ManagerCore
 
 final class GitIgnoreManagerTests: XCTestCase {
     

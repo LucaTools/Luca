@@ -2,6 +2,7 @@
 
 import Testing
 @testable import LucaCore
+@testable import ManagerCore
 
 struct ReleaseInfoProviderTests {
 

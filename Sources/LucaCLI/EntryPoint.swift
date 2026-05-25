@@ -2,6 +2,7 @@
 
 import Foundation
 import LucaCore
+import ManagerCore
 import Noora
 
 /// The program entry point.

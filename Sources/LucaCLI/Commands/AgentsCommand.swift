@@ -3,6 +3,7 @@
 import ArgumentParser
 import Foundation
 import LucaCore
+import ManagerCore
 import Noora
 
 /// Lists all known agent identifiers that can be used with the `--agent` flag during skill installation.

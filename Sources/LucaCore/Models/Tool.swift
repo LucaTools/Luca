@@ -35,38 +35,58 @@ import Foundation
 /// ### Computed Properties
 /// - ``expectedBinaryName``
 /// - ``effectiveBinaryPath``
-struct Tool: Codable {
+public struct Tool: Codable {
     /// Logical name of the tool (used for directory hierarchy).
-    let name: String
+    public let name: String
     /// Version string (used to build folder names and allow side‑by‑side installs).
-    let version: String
+    public let version: String
     /// Remote URL to an archive containing the tool or an executable file.
-    let url: URL
+    public let url: URL
     /// Path (possibly nested) to the binary inside the unzipped archive.
-    let binaryPath: String?
+    public let binaryPath: String?
     /// Name of the binary stored locally. Requires `url` to point to an executable file, ignored otherwise.
-    let desiredBinaryName: String?
+    public let desiredBinaryName: String?
     /// The checksum hash of asset associated with the tool.
-    let checksum: String?
+    public let checksum: String?
     /// The algorithm used to generate the checksum.
-    let algorithm: ChecksumAlgorithm?
+    public let algorithm: ChecksumAlgorithm?
     /// Per-tool override for architecture validation.
     /// `true` always skips; `false` always validates; `nil` falls back to the CLI `--ignore-arch-check` flag.
-    let ignoreArchCheck: Bool?
+    public let ignoreArchCheck: Bool?
+
+    public init(
+        name: String,
+        version: String,
+        url: URL,
+        binaryPath: String? = nil,
+        desiredBinaryName: String? = nil,
+        checksum: String? = nil,
+        algorithm: ChecksumAlgorithm? = nil,
+        ignoreArchCheck: Bool? = nil
+    ) {
+        self.name = name
+        self.version = version
+        self.url = url
+        self.binaryPath = binaryPath
+        self.desiredBinaryName = desiredBinaryName
+        self.checksum = checksum
+        self.algorithm = algorithm
+        self.ignoreArchCheck = ignoreArchCheck
+    }
 }
 
 extension Tool {
     /// Resolves the expected binary name for comparison with linked tools.
     /// Priority: desiredBinaryName > binaryPath basename > tool name.
-    var expectedBinaryName: String {
+    public var expectedBinaryName: String {
         if let desiredBinaryName { return desiredBinaryName }
         if let binaryPath { return URL(fileURLWithPath: binaryPath).lastPathComponent }
         return name
     }
-    
+
     /// Resolves the path to the binary file within the tool's installation directory.
     /// Priority: desiredBinaryName > binaryPath > name.
-    var effectiveBinaryPath: String {
+    public var effectiveBinaryPath: String {
         desiredBinaryName ?? binaryPath ?? name
     }
 }

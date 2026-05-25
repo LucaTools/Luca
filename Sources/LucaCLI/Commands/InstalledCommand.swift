@@ -3,6 +3,7 @@
 import ArgumentParser
 import Foundation
 import LucaCore
+import ManagerCore
 import Noora
 
 /// Lists all tools and their cached versions in the local Luca cache.

@@ -6,6 +6,7 @@ import FoundationNetworking
 #endif
 import Testing
 @testable import LucaCore
+@testable import ManagerCore
 
 class FileDownloadingMock: FileDownloading {
 

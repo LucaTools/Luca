@@ -7,7 +7,9 @@ import Foundation
 /// `SubprocessRunner` wraps `Foundation.Process`, inheriting the parent's
 /// stdout and stderr so output flows through to the terminal. The exit code
 /// is returned directly to the caller.
-struct SubprocessRunner: SubprocessRunning {
+public struct SubprocessRunner: SubprocessRunning {
+
+    public init() {}
 
     /// Runs the executable at the given URL with the provided arguments and extra environment variables.
     ///
@@ -19,7 +21,7 @@ struct SubprocessRunner: SubprocessRunning {
     ///   - workingDirectory: The working directory for the process. When `nil`, the process inherits the current directory.
     ///   - inheritStdin: When `true`, stdin is inherited from the parent process. When `false`, stdin is set to `/dev/null`.
     /// - Returns: The process termination status.
-    func run(executableURL: URL, arguments: [String], environment: [String: String], workingDirectory: URL?, inheritStdin: Bool) async throws -> Int32 {
+    public func run(executableURL: URL, arguments: [String], environment: [String: String], workingDirectory: URL?, inheritStdin: Bool) async throws -> Int32 {
         try await withCheckedThrowingContinuation { continuation in
             let process = Process()
             process.executableURL = executableURL
