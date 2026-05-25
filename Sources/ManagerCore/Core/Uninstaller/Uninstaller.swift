@@ -1,7 +1,7 @@
 //  Uninstaller.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Removes a specific version of a tool from the local cache.
 public struct Uninstaller {

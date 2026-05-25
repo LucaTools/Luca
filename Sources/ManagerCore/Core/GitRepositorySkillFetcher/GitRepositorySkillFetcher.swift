@@ -1,7 +1,7 @@
 //  GitRepositorySkillFetcher.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 // MARK: - Error
 

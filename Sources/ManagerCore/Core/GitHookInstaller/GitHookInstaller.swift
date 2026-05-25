@@ -1,7 +1,7 @@
 //  GitHookInstaller.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 import Noora
 
 /// Installs a post-checkout Git hook into the current repository.

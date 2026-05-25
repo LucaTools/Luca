@@ -1,7 +1,7 @@
 //  ToolInstallationType.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Specifies the source from which tools are resolved for installation.
 public enum ToolInstallationType {

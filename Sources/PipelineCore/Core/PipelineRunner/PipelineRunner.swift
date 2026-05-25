@@ -1,7 +1,7 @@
 //  PipelineRunner.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 import Noora
 
 /// Executes a ``Pipeline`` task by task, printing headers and streaming subprocess output.

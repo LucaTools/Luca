@@ -1,7 +1,7 @@
 //  SkillsInfoFactory.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Creates ``SkillsInfo`` instances from various installation type descriptions.
 struct SkillsInfoFactory {

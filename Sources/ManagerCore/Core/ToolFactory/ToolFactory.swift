@@ -1,7 +1,7 @@
 //  ToolFactory.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Creates ``Tool`` instances from various installation type descriptions.
 struct ToolFactory {

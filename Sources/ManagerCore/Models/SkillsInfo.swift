@@ -1,7 +1,7 @@
 //  SkillsInfo.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 struct SkillsInfo: Codable {
     /// The agent names to install the skills for.

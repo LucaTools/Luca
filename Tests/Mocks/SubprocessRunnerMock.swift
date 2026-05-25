@@ -1,7 +1,7 @@
 //  SubprocessRunnerMock.swift
 
 import Foundation
-@testable import LucaCore
+@testable import LucaFoundation
 
 class SubprocessRunnerMock: SubprocessRunning, @unchecked Sendable {
 

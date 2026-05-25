@@ -1,7 +1,7 @@
 //  Unlinker.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Removes a symlink from the project's `.luca/tools/` directory.
 public struct Unlinker {

@@ -1,7 +1,7 @@
 //  GitIgnoreManagerTests.swift
 
 import XCTest
-@testable import LucaCore
+@testable import LucaFoundation
 @testable import ManagerCore
 
 final class GitIgnoreManagerTests: XCTestCase {

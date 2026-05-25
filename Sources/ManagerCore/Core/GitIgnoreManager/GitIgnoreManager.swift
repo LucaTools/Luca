@@ -1,7 +1,7 @@
 //  GitIgnoreManager.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Ensures the project's `.gitignore` contains entries for the tools and skills folders.
 public struct GitIgnoreManager {

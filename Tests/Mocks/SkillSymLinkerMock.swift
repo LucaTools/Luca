@@ -1,6 +1,6 @@
 //  SkillSymLinkerMock.swift
 
-@testable import LucaCore
+@testable import LucaFoundation
 @testable import ManagerCore
 
 final class SkillSymLinkerMock: SkillSymLinking, @unchecked Sendable {

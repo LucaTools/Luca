@@ -3,7 +3,6 @@
 import ArgumentParser
 import Foundation
 import LucaCore
-import ManagerCore
 import Noora
 
 /// Updates the `luca` binary to the latest available GitHub release.

@@ -1,7 +1,7 @@
 //  VersionLister.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Lists the cached versions of a named tool in the Luca tools cache.
 public struct VersionLister {

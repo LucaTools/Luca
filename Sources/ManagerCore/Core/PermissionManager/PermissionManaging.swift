@@ -1,7 +1,7 @@
 //  PermissionManaging.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Sets executable permissions on installed tool binaries.
 protocol PermissionManaging {

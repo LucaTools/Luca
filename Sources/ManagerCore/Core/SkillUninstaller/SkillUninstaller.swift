@@ -1,7 +1,7 @@
 //  SkillUninstaller.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Removes a skill from the project-local skills cache and all agent symlinks.
 public struct SkillUninstaller {

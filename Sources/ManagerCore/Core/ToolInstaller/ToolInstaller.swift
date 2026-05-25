@@ -1,7 +1,7 @@
 //  ToolInstaller.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Downloads, validates, installs, and reinstalls a single development tool.
 ///

@@ -1,10 +1,10 @@
 //  SelfUpdater.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
-import LucaCore
+import LucaFoundation
 #endif
 
 /// Replaces the Luca binary with a newer version when `.luca-version` differs

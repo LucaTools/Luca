@@ -2,7 +2,7 @@
 
 import Foundation
 import Noora
-@testable import LucaCore
+@testable import LucaFoundation
 
 final class NoorableMock: Noorable, @unchecked Sendable {
 

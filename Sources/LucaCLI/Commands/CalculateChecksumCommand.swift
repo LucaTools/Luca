@@ -3,7 +3,6 @@
 import ArgumentParser
 import Foundation
 import LucaCore
-import ManagerCore
 
 /// Computes a checksum hash for a file, useful for generating Lucafile entries.
 struct CalculateChecksumCommand: AsyncParsableCommand {

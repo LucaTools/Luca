@@ -1,7 +1,7 @@
 //  ChecksumValidator.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 import Crypto
 
 /// Validates a file's integrity by comparing its computed hash against an expected checksum string.

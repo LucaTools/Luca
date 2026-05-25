@@ -1,7 +1,7 @@
 //  ChecksumValidating.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Verifies a file's integrity by comparing its computed checksum against an expected value.
 protocol ChecksumValidating {

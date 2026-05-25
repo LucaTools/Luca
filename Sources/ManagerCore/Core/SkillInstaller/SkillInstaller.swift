@@ -1,7 +1,7 @@
 //  SkillInstaller.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Installs agentic skills by delegating to `npx skills add`.
 ///

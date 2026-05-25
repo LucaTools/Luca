@@ -1,7 +1,7 @@
 //  UnarchiverFileManagerMock.swift
 
 import Foundation
-@testable import LucaCore
+@testable import LucaFoundation
 @testable import ManagerCore
 
 class UnarchiverFileManagerMock: UnarchiverFileManaging {

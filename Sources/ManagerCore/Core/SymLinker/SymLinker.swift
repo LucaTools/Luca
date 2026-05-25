@@ -1,7 +1,7 @@
 //  SymLinker.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Creates and manages symbolic links for installed tools.
 ///

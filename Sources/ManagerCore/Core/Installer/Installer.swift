@@ -1,7 +1,7 @@
 //  Installer.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 import Noora
 
 /// Orchestrates tool and skill installation for a project.

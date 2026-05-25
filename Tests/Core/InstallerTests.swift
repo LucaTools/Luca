@@ -3,7 +3,7 @@
 import Foundation
 import Testing
 import Yams
-@testable import LucaCore
+@testable import LucaFoundation
 @testable import ManagerCore
 
 struct InstallerTests {

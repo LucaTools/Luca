@@ -3,8 +3,6 @@
 import ArgumentParser
 import Foundation
 import LucaCore
-import PipelineCore
-import ManagerCore
 import Noora
 
 /// Executes a pipeline of shell tasks defined in a YAML file.

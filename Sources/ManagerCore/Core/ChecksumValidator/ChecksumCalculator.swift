@@ -1,7 +1,7 @@
 //  ChecksumCalculator.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 import Crypto
 
 /// Computes a hex-encoded cryptographic hash for a file on disk.

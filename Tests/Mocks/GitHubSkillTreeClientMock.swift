@@ -1,7 +1,7 @@
 //  GitHubSkillTreeClientMock.swift
 
 import Foundation
-@testable import LucaCore
+@testable import LucaFoundation
 @testable import ManagerCore
 
 final class GitHubSkillTreeClientMock: SkillRepositoryFetching, @unchecked Sendable {

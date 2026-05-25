@@ -2,8 +2,6 @@
 
 import Foundation
 import LucaCore
-import ManagerCore
-import PipelineCore
 
 public struct FileManagerWrapper: FileManaging, PipelineValidatorFileManaging {
     

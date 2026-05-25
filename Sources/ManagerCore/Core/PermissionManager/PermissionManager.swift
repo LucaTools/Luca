@@ -1,7 +1,7 @@
 //  PermissionManager.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Applies executable permission bits to installed tool binaries.
 struct PermissionManager: PermissionManaging {

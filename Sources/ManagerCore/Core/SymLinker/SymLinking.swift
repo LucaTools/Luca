@@ -1,7 +1,7 @@
 //  SymLinking.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Creates a symlink for an installed tool in the tools folder.
 protocol SymLinking {

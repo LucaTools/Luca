@@ -3,7 +3,6 @@
 import ArgumentParser
 import Foundation
 import LucaCore
-import ManagerCore
 import Noora
 import Yams
 

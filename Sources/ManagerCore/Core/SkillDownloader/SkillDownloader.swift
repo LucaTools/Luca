@@ -1,7 +1,7 @@
 //  SkillDownloader.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 
 /// Downloads skill files from a repository.
 ///

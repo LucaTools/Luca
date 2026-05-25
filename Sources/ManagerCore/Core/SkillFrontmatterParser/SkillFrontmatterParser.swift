@@ -1,7 +1,7 @@
 //  SkillFrontmatterParser.swift
 
 import Foundation
-import LucaCore
+import LucaFoundation
 import Yams
 
 /// Parses the YAML frontmatter from SKILL.md files to extract skill metadata.
