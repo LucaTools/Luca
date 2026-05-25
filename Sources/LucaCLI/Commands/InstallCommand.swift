@@ -179,8 +179,9 @@ struct InstallCommand: AsyncParsableCommand {
     @Flag(help: ArgumentHelp(
         "Install skills globally, caching to ~/.luca/skills/.",
         discussion: """
-        Reads from the global Lucafile (~/.config/luca/Lucafile) when no --spec is given,
-        caches skills to ~/.luca/skills/, and symlinks into each agent's global skills path.
+        Reads the first global spec file found in ~/.config/luca/ when no --spec is given.
+        Checks Lucafile, Toolfile, and Skillfile (plain and .yml) in priority order.
+        Caches skills to ~/.luca/skills/ and symlinks into each agent's global skills path.
         Cannot be combined with --only-tools.
         Example:
           luca install --global
