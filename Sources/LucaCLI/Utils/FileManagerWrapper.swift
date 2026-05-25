@@ -3,7 +3,7 @@
 import Foundation
 import LucaCore
 
-public struct FileManagerWrapper: FileManaging, GlobalSpecFinderFileManaging {
+public struct FileManagerWrapper: FileManaging {
     
     private(set) var fileManager: FileManager
     
