@@ -124,4 +124,10 @@ struct SpecInitializerTests {
     func test_template_containsSkillsKey() {
         #expect(SpecInitializer.template.contains("skills:"))
     }
+
+    @Test
+    func test_fileAlreadyExistsError_errorDescription() {
+        let error = SpecInitializer.SpecInitializerError.fileAlreadyExists("/path/to/Lucafile")
+        #expect(error.errorDescription == "A spec file already exists at /path/to/Lucafile.")
+    }
 }
