@@ -10,6 +10,7 @@ public protocol FileManaging:
     FileTypeDetectorFileManaging,
     GitHookInstallerFileManaging,
     GitIgnoreFileManaging,
+    GlobalSpecFinderFileManaging,
     InstalledSkillsListerFileManaging,
     InstalledToolsFileManaging,
     PermissionManagerFileManaging,
