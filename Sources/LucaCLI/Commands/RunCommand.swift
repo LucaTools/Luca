@@ -132,13 +132,14 @@ struct RunCommand: AsyncParsableCommand {
         let envFilePath = envFile.map { URL(fileURLWithPath: $0) }
             ?? invocationDirectory.appending(component: "luca-env-vars.yml")
         let isExplicit = envFile != nil
-        let envFileLoader = EnvFileLoader()
+        let envFileLoader = EnvFileLoader(fileManager: fileManager)
         let envFileEnvironment: [String: String]
-        if fileManager.fileExists(atPath: envFilePath.path) {
+        do {
             envFileEnvironment = try envFileLoader.load(from: envFilePath)
-        } else if isExplicit {
-            throw EnvFileLoader.EnvFileLoaderError.fileNotFound(envFilePath)
-        } else {
+        } catch EnvFileLoader.EnvFileLoaderError.fileNotFound {
+            if isExplicit {
+                throw EnvFileLoader.EnvFileLoaderError.fileNotFound(envFilePath)
+            }
             envFileEnvironment = [:]
         }
 
