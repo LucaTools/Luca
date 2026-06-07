@@ -89,6 +89,22 @@ struct EnvFileLoaderTests {
         }
     }
 
+    @Test
+    func test_load_booleanValue_throwsInvalidFormat() throws {
+        let url = makeTempURL()
+        let content = "ENABLED: true\n"
+        try content.write(to: url, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        #expect {
+            try sut.load(from: url)
+        } throws: { error in
+            guard let loaderError = error as? EnvFileLoader.EnvFileLoaderError,
+                  case EnvFileLoader.EnvFileLoaderError.invalidFormat = loaderError else { return false }
+            return true
+        }
+    }
+
     // MARK: - Error descriptions
 
     @Test

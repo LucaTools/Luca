@@ -83,7 +83,7 @@ struct RunCommand: AsyncParsableCommand {
     /// Path to a YAML file of environment variables injected into every task.
     @Option(name: .customLong("env-file"), help: ArgumentHelp(
         "Path to a YAML file of environment variables injected into every task.",
-        discussion: "Defaults to luca-env-vars.yml in the current directory if present. An explicit path fails if the file does not exist.",
+        discussion: "Defaults to luca-env-vars.yml in the current directory if present. An explicit path fails if the file does not exist. All values must be quoted strings; unquoted numbers or booleans (e.g., PORT: 8080, ENABLED: true) are not accepted—use PORT: \"8080\" instead.",
         valueName: "path"
     ))
     var envFile: String?
@@ -136,10 +136,9 @@ struct RunCommand: AsyncParsableCommand {
         let envFileEnvironment: [String: String]
         do {
             envFileEnvironment = try envFileLoader.load(from: envFilePath)
+        } catch EnvFileLoader.EnvFileLoaderError.fileNotFound(let url) where isExplicit {
+            throw EnvFileLoader.EnvFileLoaderError.fileNotFound(url)
         } catch EnvFileLoader.EnvFileLoaderError.fileNotFound {
-            if isExplicit {
-                throw EnvFileLoader.EnvFileLoaderError.fileNotFound(envFilePath)
-            }
             envFileEnvironment = [:]
         }
 
