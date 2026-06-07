@@ -131,7 +131,7 @@ struct RunCommand: AsyncParsableCommand {
 
         try validator.validate(pipeline)
 
-        let runner = PipelineRunner(printer: printer)
+        let runner: any PipelineRunning = PipelineRunner(printer: printer)
         try await runner.run(pipeline, currentDirectoryURL: invocationDirectory, parameters: resolvedParams)
 
     }
