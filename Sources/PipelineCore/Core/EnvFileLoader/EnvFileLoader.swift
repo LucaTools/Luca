@@ -32,7 +32,11 @@ public struct EnvFileLoader: EnvFileLoading {
         }
     }
 
-    public init() {}
+    private let fileManager: any EnvFileLoaderFileManaging
+
+    public init(fileManager: any EnvFileLoaderFileManaging = FileManager.default) {
+        self.fileManager = fileManager
+    }
 
     // MARK: - EnvFileLoading
 
@@ -43,10 +47,7 @@ public struct EnvFileLoader: EnvFileLoading {
     /// - Throws: ``EnvFileLoaderError/fileNotFound(_:)`` if the file does not exist,
     ///   or ``EnvFileLoaderError/invalidFormat`` if the YAML is not a flat `[String: String]` mapping.
     public func load(from url: URL) throws -> [String: String] {
-        let data: Data
-        do {
-            data = try Data(contentsOf: url)
-        } catch {
+        guard let data = fileManager.contents(atPath: url.path) else {
             throw EnvFileLoaderError.fileNotFound(url)
         }
 

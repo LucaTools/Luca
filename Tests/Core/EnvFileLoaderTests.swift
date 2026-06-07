@@ -2,6 +2,7 @@
 
 import Foundation
 import Testing
+@testable import LucaFoundation
 @testable import PipelineCore
 
 struct EnvFileLoaderTests {

@@ -3,7 +3,7 @@
 import Foundation
 @testable import PipelineCore
 
-class EnvFileLoaderMock: EnvFileLoading, @unchecked Sendable {
+final class EnvFileLoaderMock: EnvFileLoading, @unchecked Sendable {
 
     /// The URL last passed to ``load(from:)``.
     var recordedURL: URL?
