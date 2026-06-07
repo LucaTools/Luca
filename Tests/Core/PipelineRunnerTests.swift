@@ -277,6 +277,26 @@ struct PipelineRunnerTests {
         #expect(runner.recordedEnvironments[0].isEmpty)
     }
 
+    @Test
+    func test_run_envFileEnvironment_visibleInWhenCondition_matching() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let task = makeTask(name: "Deploy", command: "deploy.sh", when: "${ENV_FILE_KEY} == active")
+        let pipeline = makePipeline(tasks: [task])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:], envFileEnvironment: ["ENV_FILE_KEY": "active"])
+        #expect(runner.recordedArguments.count == 1)
+    }
+
+    @Test
+    func test_run_envFileEnvironment_visibleInWhenCondition_notMatching() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let task = makeTask(name: "Deploy", command: "deploy.sh", when: "${ENV_FILE_KEY} == active")
+        let pipeline = makePipeline(tasks: [task])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:], envFileEnvironment: ["ENV_FILE_KEY": "inactive"])
+        #expect(runner.recordedArguments.isEmpty)
+    }
+
     // MARK: - when: condition
 
     @Test
