@@ -80,10 +80,14 @@ struct RunCommand: AsyncParsableCommand {
     ))
     var params: [String] = []
 
-    /// Path to a YAML file of environment variables injected into every task.
     @Option(name: .customLong("env-file"), help: ArgumentHelp(
-        "Path to a YAML file of environment variables injected into every task.",
-        discussion: "Defaults to luca-env-vars.yml in the current directory if present. An explicit path fails if the file does not exist. All values must be quoted strings; unquoted numbers or booleans (e.g., PORT: 8080, ENABLED: true) are not accepted—use PORT: \"8080\" instead.",
+        "Path to a dotenv file of environment variables injected into every task.",
+        discussion: """
+        The file must contain KEY=VALUE pairs, one per line. Lines starting with # are \
+        treated as comments. Surrounding single or double quotes on values are stripped.
+        Defaults to .env in the current directory when present. \
+        An explicit path fails if the file does not exist.
+        """,
         valueName: "path"
     ))
     var envFile: String?
@@ -130,7 +134,7 @@ struct RunCommand: AsyncParsableCommand {
         )
 
         let envFilePath = envFile.map { URL(fileURLWithPath: $0) }
-            ?? invocationDirectory.appending(component: "luca-env-vars.yml")
+            ?? invocationDirectory.appending(component: ".env")
         let isExplicit = envFile != nil
         let envFileLoader = EnvFileLoader(fileManager: fileManager)
         let envFileEnvironment: [String: String]
