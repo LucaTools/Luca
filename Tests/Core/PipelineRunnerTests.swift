@@ -238,6 +238,65 @@ struct PipelineRunnerTests {
         #expect(runner.recordedArguments[0][2].hasSuffix("echo ${unknown}"))
     }
 
+    // MARK: - Env file environment
+
+    @Test
+    func test_run_envFileVarsPassedToSubprocess() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [makeTask(command: "echo")])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:], envFileEnvironment: ["ENV_FILE_KEY": "env_file_value"])
+        #expect(runner.recordedEnvironments[0]["ENV_FILE_KEY"] == "env_file_value")
+    }
+
+    @Test
+    func test_run_pipelineEnvOverridesEnvFile() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [makeTask(command: "echo")], env: ["KEY": "pipeline"])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:], envFileEnvironment: ["KEY": "env_file"])
+        #expect(runner.recordedEnvironments[0]["KEY"] == "pipeline")
+    }
+
+    @Test
+    func test_run_taskEnvOverridesEnvFile() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let task = makeTask(command: "echo", env: ["KEY": "task"])
+        let pipeline = makePipeline(tasks: [task])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:], envFileEnvironment: ["KEY": "env_file"])
+        #expect(runner.recordedEnvironments[0]["KEY"] == "task")
+    }
+
+    @Test
+    func test_run_emptyEnvFileEnvironment_noEffect() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [makeTask(command: "echo")])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:], envFileEnvironment: [:])
+        #expect(runner.recordedEnvironments[0].isEmpty)
+    }
+
+    @Test
+    func test_run_envFileEnvironment_visibleInWhenCondition_matching() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let task = makeTask(name: "Deploy", command: "deploy.sh", when: "${ENV_FILE_KEY} == active")
+        let pipeline = makePipeline(tasks: [task])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:], envFileEnvironment: ["ENV_FILE_KEY": "active"])
+        #expect(runner.recordedArguments.count == 1)
+    }
+
+    @Test
+    func test_run_envFileEnvironment_visibleInWhenCondition_notMatching() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let task = makeTask(name: "Deploy", command: "deploy.sh", when: "${ENV_FILE_KEY} == active")
+        let pipeline = makePipeline(tasks: [task])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: [:], envFileEnvironment: ["ENV_FILE_KEY": "inactive"])
+        #expect(runner.recordedArguments.isEmpty)
+    }
+
     // MARK: - when: condition
 
     @Test

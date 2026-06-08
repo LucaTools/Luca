@@ -2,8 +2,9 @@
 
 import Foundation
 import LucaCore
+import PipelineCore
 
-public struct FileManagerWrapper: FileManaging, PipelineValidatorFileManaging {
+public struct FileManagerWrapper: FileManaging, PipelineValidatorFileManaging, EnvFileLoaderFileManaging {
     
     private(set) var fileManager: FileManager
     

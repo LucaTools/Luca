@@ -80,6 +80,18 @@ struct RunCommand: AsyncParsableCommand {
     ))
     var params: [String] = []
 
+    @Option(name: .customLong("env-file"), help: ArgumentHelp(
+        "Path to a dotenv file of environment variables injected into every task.",
+        discussion: """
+        The file must contain KEY=VALUE pairs, one per line. Lines starting with # are \
+        treated as comments. Surrounding single or double quotes on values are stripped.
+        Defaults to .env in the current directory when present. \
+        An explicit path fails if the file does not exist.
+        """,
+        valueName: "path"
+    ))
+    var envFile: String?
+
     func validate() throws {
         guard name != nil || file != nil else {
             throw ValidationError("Missing required argument. Provide <name> or --file <path>.")
@@ -121,18 +133,32 @@ struct RunCommand: AsyncParsableCommand {
             provided: parsedParams()
         )
 
+        let envFilePath = envFile.map { URL(fileURLWithPath: $0) }
+            ?? invocationDirectory.appending(component: ".env")
+        let isExplicit = envFile != nil
+        let envFileLoader = EnvFileLoader(fileManager: fileManager)
+        let envFileEnvironment: [String: String]
+        do {
+            envFileEnvironment = try envFileLoader.load(from: envFilePath)
+        } catch EnvFileLoader.EnvFileLoaderError.fileNotFound(let url) where isExplicit {
+            throw EnvFileLoader.EnvFileLoaderError.fileNotFound(url)
+        } catch EnvFileLoader.EnvFileLoaderError.fileNotFound {
+            envFileEnvironment = [:]
+        }
+
         if dryRun {
             let conditionEvaluator = TaskConditionEvaluator()
             printDryRun(pipeline: pipeline, pipelinePath: pipelinePath, validator: validator,
                         printer: printer, resolvedParams: resolvedParams, providedParams: parsedParams(),
-                        conditionEvaluator: conditionEvaluator)
+                        conditionEvaluator: conditionEvaluator, envFilePath: envFilePath,
+                        envFileEnvironment: envFileEnvironment)
             return
         }
 
         try validator.validate(pipeline)
 
-        let runner = PipelineRunner(printer: printer)
-        try await runner.run(pipeline, currentDirectoryURL: invocationDirectory, parameters: resolvedParams)
+        let runner: any PipelineRunning = PipelineRunner(printer: printer)
+        try await runner.run(pipeline, currentDirectoryURL: invocationDirectory, parameters: resolvedParams, envFileEnvironment: envFileEnvironment)
 
     }
 
@@ -168,7 +194,9 @@ struct RunCommand: AsyncParsableCommand {
         printer: Printing,
         resolvedParams: [String: String],
         providedParams: [String: String],
-        conditionEvaluator: TaskConditionEvaluating
+        conditionEvaluator: TaskConditionEvaluating,
+        envFilePath: URL,
+        envFileEnvironment: [String: String]
     ) {
         let displayName = name ?? pipelinePath.lastPathComponent
         printer.printFormatted("\(.accent("[DRY RUN] Pipeline: \(displayName)"))")
@@ -194,6 +222,14 @@ struct RunCommand: AsyncParsableCommand {
             printer.printFormatted("\(.raw(""))")
         }
 
+        if !envFileEnvironment.isEmpty {
+            printer.printFormatted("\(.primary("Env file: \(envFilePath.path)"))")
+            for key in envFileEnvironment.keys.sorted() {
+                printer.printFormatted("\(.raw("  \(key)"))")
+            }
+            printer.printFormatted("\(.raw(""))")
+        }
+
         let allResults = validator.toolCheckResults(for: pipeline)
 
         for (index, task) in pipeline.tasks.enumerated() {
@@ -211,7 +247,7 @@ struct RunCommand: AsyncParsableCommand {
             }
 
             if let condition = task.when {
-                var context: [String: String] = [:]
+                var context: [String: String] = envFileEnvironment
                 if let pipelineEnv = pipeline.env { context.merge(pipelineEnv) { _, new in new } }
                 if let taskEnv = task.env { context.merge(taskEnv) { _, new in new } }
                 context.merge(resolvedParams) { _, new in new }

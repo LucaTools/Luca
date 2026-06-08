@@ -7,7 +7,7 @@ import Noora
 /// Executes a ``Pipeline`` task by task, printing headers and streaming subprocess output.
 ///
 /// Each task runs via `/usr/bin/env bash -c "set -eo pipefail && <command>"`.
-/// Environment variables are merged in order: inherited process env ← pipeline-level env ← task-level env.
+/// Environment variables are merged in order: inherited process env ← env-file env ← pipeline-level env ← task-level env.
 /// Working directory is resolved as: task-level → pipeline-level → invocation directory.
 /// Tasks with a `when:` field are skipped when the condition evaluates to false.
 public struct PipelineRunner: PipelineRunning {
@@ -43,7 +43,7 @@ public struct PipelineRunner: PipelineRunning {
 
     // MARK: - PipelineRunning
 
-    public func run(_ pipeline: Pipeline, currentDirectoryURL: URL, parameters: [String: String]) async throws {
+    public func run(_ pipeline: Pipeline, currentDirectoryURL: URL, parameters: [String: String], envFileEnvironment: [String: String]) async throws {
         let start = Date()
         let tasks = pipeline.tasks
         var executedCount = 0
@@ -52,7 +52,7 @@ public struct PipelineRunner: PipelineRunning {
             printTaskHeader(index: index + 1, total: tasks.count, name: task.name)
 
             if let condition = task.when {
-                let context = buildContext(parameters: parameters, pipelineEnv: pipeline.env, taskEnv: task.env)
+                let context = buildContext(parameters: parameters, envFileEnvironment: envFileEnvironment, pipelineEnv: pipeline.env, taskEnv: task.env)
                 let shouldRun = conditionEvaluator.evaluate(condition: condition, context: context)
                 if !shouldRun {
                     printer.printFormatted("⊘  \(.muted("Skipped (when: \(condition) → false)"))")
@@ -61,7 +61,7 @@ public struct PipelineRunner: PipelineRunning {
                 }
             }
 
-            let env = mergedEnvironment(pipelineEnv: pipeline.env, taskEnv: task.env)
+            let env = mergedEnvironment(envFileEnvironment: envFileEnvironment, pipelineEnv: pipeline.env, taskEnv: task.env)
             let workingDirectory = resolveWorkingDirectory(task: task, pipeline: pipeline, invocationDirectory: currentDirectoryURL)
 
             let command = renderCommand(task.command, parameters: parameters)
@@ -99,16 +99,18 @@ public struct PipelineRunner: PipelineRunning {
         printer.printFormatted("\(.muted(prefix))\(.accent(name))\(.muted(" " + padding))")
     }
 
-    private func buildContext(parameters: [String: String], pipelineEnv: [String: String]?, taskEnv: [String: String]?) -> [String: String] {
+    private func buildContext(parameters: [String: String], envFileEnvironment: [String: String], pipelineEnv: [String: String]?, taskEnv: [String: String]?) -> [String: String] {
         var context: [String: String] = [:]
+        context.merge(envFileEnvironment) { _, new in new }
         if let pipelineEnv { context.merge(pipelineEnv) { _, new in new } }
         if let taskEnv { context.merge(taskEnv) { _, new in new } }
         context.merge(parameters) { _, new in new }
         return context
     }
 
-    private func mergedEnvironment(pipelineEnv: [String: String]?, taskEnv: [String: String]?) -> [String: String] {
+    private func mergedEnvironment(envFileEnvironment: [String: String], pipelineEnv: [String: String]?, taskEnv: [String: String]?) -> [String: String] {
         var merged: [String: String] = [:]
+        merged.merge(envFileEnvironment) { _, new in new }
         if let pipelineEnv { merged.merge(pipelineEnv) { _, new in new } }
         if let taskEnv { merged.merge(taskEnv) { _, new in new } }
         return merged
