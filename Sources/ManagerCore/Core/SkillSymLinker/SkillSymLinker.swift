@@ -71,7 +71,7 @@ struct SkillSymLinker: SkillSymLinking {
                 throw SkillSymLinkerError.agentDirectoryCreationFailed(path: agentSkillsDir.path)
             }
 
-            if symLinkExists(atPath: symLinkDestination.path) {
+            if (try? fileManager.attributesOfItem(atPath: symLinkDestination.path)) != nil {
                 try fileManager.removeItem(at: symLinkDestination)
             }
 
@@ -80,20 +80,6 @@ struct SkillSymLinker: SkillSymLinking {
             } catch {
                 throw SkillSymLinkerError.symLinkCreationFailed(from: symLinkDestination.path, to: skillSource.path)
             }
-        }
-    }
-
-    // MARK: - Private
-
-    private func symLinkExists(atPath path: String) -> Bool {
-        do {
-            let attributes = try fileManager.attributesOfItem(atPath: path)
-            if let fileType = attributes[.type] as? FileAttributeType {
-                return fileType == .typeSymbolicLink
-            }
-            return false
-        } catch {
-            return false
         }
     }
 }

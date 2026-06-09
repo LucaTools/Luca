@@ -147,6 +147,44 @@ struct SymLinkerTests {
     }
 
     @Test
+    func createSymLink_whenRealFileExistsAtSymlinkPath_replacesWithSymlink() throws {
+        let tool = Tool(
+            name: "MockTool",
+            version: "1.0.0",
+            url: URL(string: "https://example.com")!,
+            binaryPath: "MockTool",
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil,
+            ignoreArchCheck: nil
+        )
+
+        let symLinkFileManager = SymLinkFileManagerMock(fileManager: fileManager)
+
+        let toolFilePath = symLinkFileManager.toolsFolder
+            .appending(components: tool.name, "1.0.0")
+            .appending(path: tool.effectiveBinaryPath)
+        try fileManager.createDirectory(at: toolFilePath.deletingLastPathComponent(), withIntermediateDirectories: true)
+        _ = fileManager.createFile(atPath: toolFilePath.path, contents: Data())
+
+        let symLinkPath = symLinkFileManager.symlinksFolder
+            .appending(component: tool.expectedBinaryName)
+
+        // Simulate a stale real file at the symlink location
+        try fileManager.createDirectory(at: symLinkPath.deletingLastPathComponent(), withIntermediateDirectories: true)
+        _ = fileManager.createFile(atPath: symLinkPath.path, contents: Data())
+        #expect(fileManager.fileExists(atPath: symLinkPath.path))
+        #expect(!symLinkExists(atPath: symLinkPath.path))
+
+        let sut = SymLinker(fileManager: symLinkFileManager)
+
+        // Should succeed by replacing the real file with a symlink
+        try sut.setSymLink(for: tool)
+
+        #expect(symLinkExists(atPath: symLinkPath.path))
+    }
+
+    @Test
     func createSymLink_toolDoesNotExist() throws {
         let tool = Tool(
             name: "MockTool",
