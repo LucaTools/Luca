@@ -26,4 +26,6 @@ public struct Constants {
     public static let skillsFolder = "skills"
     /// Subdirectory searched for pipeline YAML files when using convention-based lookup.
     public static let pipelinesFolder = "pipelines"
+    /// File extension used for convention-based pipeline parameter file lookup.
+    public static let paramsExtension = "params"
 }
