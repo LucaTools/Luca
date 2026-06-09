@@ -122,6 +122,32 @@ struct SkillSymLinkerTests {
     }
 
     @Test
+    func test_setSymLink_whenRealDirectoryExistsAtDestination_replacesWithSymlink() throws {
+        let skillName = "find-skills"
+        let agents = [
+            AgentInfo(id: "claude-code", projectSkillsPath: ".claude/skills", globalSkillsPath: "~/.claude/skills")
+        ]
+
+        let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
+        let sut = SkillSymLinker(fileManager: symLinkerFileManager)
+
+        let expectedSymLink = URL(fileURLWithPath: symLinkerFileManager.currentDirectoryPath)
+            .appending(path: agents[0].projectSkillsPath)
+            .appending(component: skillName)
+
+        // Simulate a previous npx-based install that left a real directory instead of a symlink
+        try fileManager.createDirectory(at: expectedSymLink, withIntermediateDirectories: true)
+        var isDirectory: ObjCBool = false
+        #expect(fileManager.fileExists(atPath: expectedSymLink.path, isDirectory: &isDirectory))
+        #expect(isDirectory.boolValue)
+
+        // Native install should replace the real directory with a symlink
+        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
+
+        #expect(symLinkExists(atPath: expectedSymLink.path))
+    }
+
+    @Test
     func test_setSymLink_whenGlobal_usesGlobalSourcePath() throws {
         let skillName = "global-skill"
         let agents = [

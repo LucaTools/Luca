@@ -55,26 +55,12 @@ struct SymLinker: SymLinking {
         if !fileManager.fileExists(atPath: destinationFile.path) {
             throw SymLinkerError.missingBinaryFile(binaryName: tool.expectedBinaryName, expectedLocation: destinationFile.path)
         }
-        if symLinkExists(atPath: symLinkFile.path) {
+        if (try? fileManager.attributesOfItem(atPath: symLinkFile.path)) != nil {
             try fileManager.removeItem(at: symLinkFile)
         }
         try fileManager.createDirectory(at: fileManager.symlinksFolder, withIntermediateDirectories: true)
         try fileManager.createSymbolicLink(at: symLinkFile, withDestinationURL: destinationFile)
-        
+
         return symLinkFile
-    }
-    
-    // MARK: - Private
-    
-    private func symLinkExists(atPath path: String) -> Bool {
-        do {
-            let attributes = try fileManager.attributesOfItem(atPath: path)
-            if let fileType = attributes[.type] as? FileAttributeType {
-                return fileType == .typeSymbolicLink
-            }
-            return false
-        } catch {
-            return false
-        }
     }
 }
