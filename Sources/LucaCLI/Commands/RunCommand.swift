@@ -37,10 +37,20 @@ struct RunCommand: AsyncParsableCommand {
 
         Use --file to specify an explicit path instead.
 
+        Parameter file lookup for `luca run <name>` (in order):
+          1. ./<name>.params.yml
+          2. ./<name>.params
+          3. ./pipelines/<name>.params.yml
+          4. ./pipelines/<name>.params
+
+        Use --params-file to specify an explicit params file path.
+        Values from --param override values from the params file.
+
         Examples:
           luca run ci
           luca run deploy --dry-run
           luca run --file pipelines/release.yml
+          luca run ci --params-file ./ci.params.yml
         """
     )
 
@@ -79,6 +89,19 @@ struct RunCommand: AsyncParsableCommand {
         valueName: "KEY=VALUE"
     ))
     var params: [String] = []
+
+    @Option(name: .customLong("params-file"), help: ArgumentHelp(
+        "Path to a YAML file of parameter values.",
+        discussion: """
+        The file must contain a `params:` list of `{key, value}` pairs. \
+        Defaults to convention-based lookup (<name>.params.yml, <name>.params, \
+        pipelines/<name>.params.yml, pipelines/<name>.params) when present. \
+        An explicit path fails if the file does not exist. \
+        Values from --param override values from the params file.
+        """,
+        valueName: "path"
+    ))
+    var paramsFile: String?
 
     @Option(name: .customLong("env-file"), help: ArgumentHelp(
         "Path to a dotenv file of environment variables injected into every task.",
@@ -128,9 +151,32 @@ struct RunCommand: AsyncParsableCommand {
         let pipeline = try loader.loadPipeline(at: pipelinePath)
         let validator = PipelineValidator(fileManager: fileManager)
         let resolver = ParameterResolver()
+
+        let stem = name ?? URL(fileURLWithPath: file!).deletingPathExtension().lastPathComponent
+        let resolvedParamsFilePath: URL?
+        if let explicit = paramsFile {
+            resolvedParamsFilePath = URL(fileURLWithPath: explicit)
+        } else {
+            resolvedParamsFilePath = resolveParamsFilePath(stem: stem, in: invocationDirectory, fileManager: fileManager)
+        }
+
+        let paramsFileLoader = ParamsFileLoader(fileManager: fileManager)
+        var fileParams: [String: String] = [:]
+        if let path = resolvedParamsFilePath {
+            do {
+                fileParams = try paramsFileLoader.load(from: path)
+            } catch ParamsFileLoader.ParamsFileLoaderError.fileNotFound(let url) where paramsFile != nil {
+                throw ParamsFileLoader.ParamsFileLoaderError.fileNotFound(url)
+            } catch ParamsFileLoader.ParamsFileLoaderError.fileNotFound {
+                fileParams = [:]
+            }
+        }
+
+        let cliParams = parsedParams()
+        let mergedProvided = fileParams.merging(cliParams) { _, new in new }
         let resolvedParams = try resolver.resolve(
             declared: pipeline.parameters ?? [],
-            provided: parsedParams()
+            provided: mergedProvided
         )
 
         let envFilePath = envFile.map { URL(fileURLWithPath: $0) }
@@ -149,7 +195,8 @@ struct RunCommand: AsyncParsableCommand {
         if dryRun {
             let conditionEvaluator = TaskConditionEvaluator()
             printDryRun(pipeline: pipeline, pipelinePath: pipelinePath, validator: validator,
-                        printer: printer, resolvedParams: resolvedParams, providedParams: parsedParams(),
+                        printer: printer, resolvedParams: resolvedParams,
+                        cliParams: cliParams, fileParams: fileParams,
                         conditionEvaluator: conditionEvaluator, envFilePath: envFilePath,
                         envFileEnvironment: envFileEnvironment)
             return
@@ -163,6 +210,16 @@ struct RunCommand: AsyncParsableCommand {
     }
 
     // MARK: - Private
+
+    private func resolveParamsFilePath(stem: String, in directory: URL, fileManager: FileManaging) -> URL? {
+        let candidates: [URL] = [
+            directory.appending(component: "\(stem).\(Constants.paramsExtension).\(Constants.ymlExtension)"),
+            directory.appending(component: "\(stem).\(Constants.paramsExtension)"),
+            directory.appending(components: Constants.pipelinesFolder, "\(stem).\(Constants.paramsExtension).\(Constants.ymlExtension)"),
+            directory.appending(components: Constants.pipelinesFolder, "\(stem).\(Constants.paramsExtension)")
+        ]
+        return candidates.first { fileManager.fileExists(atPath: $0.path) }
+    }
 
     private func resolvePipelinePath(name: String, in directory: URL, fileManager: FileManaging) throws -> URL {
         let candidates: [URL] = [
@@ -193,7 +250,8 @@ struct RunCommand: AsyncParsableCommand {
         validator: PipelineValidating,
         printer: Printing,
         resolvedParams: [String: String],
-        providedParams: [String: String],
+        cliParams: [String: String],
+        fileParams: [String: String],
         conditionEvaluator: TaskConditionEvaluating,
         envFilePath: URL,
         envFileEnvironment: [String: String]
@@ -207,8 +265,10 @@ struct RunCommand: AsyncParsableCommand {
             for param in declared {
                 let value = resolvedParams[param.name] ?? "(not set)"
                 let source: String
-                if providedParams.keys.contains(param.name) {
+                if cliParams.keys.contains(param.name) {
                     source = " (override)"
+                } else if fileParams.keys.contains(param.name) {
+                    source = " (file)"
                 } else if param.defaultValue != nil {
                     source = " (default)"
                 } else {
