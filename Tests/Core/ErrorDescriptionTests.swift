@@ -156,6 +156,7 @@ struct ErrorDescriptionTests {
     @Test
     func installerError_errorDescription() {
         #expect(Installer.InstallerError.runningFromHomeDirectory.errorDescription != nil)
+        #expect(Installer.InstallerError.unsafeSkillPath("../../escaped.txt").errorDescription != nil)
     }
 
     @Test

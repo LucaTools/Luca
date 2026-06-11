@@ -35,11 +35,14 @@ public struct Installer {
 
     enum InstallerError: Error, LocalizedError, Equatable {
         case runningFromHomeDirectory
+        case unsafeSkillPath(String)
 
         var errorDescription: String? {
             switch self {
             case .runningFromHomeDirectory:
                 return "Cannot install tools from the home directory. Please run luca install from within a project directory."
+            case .unsafeSkillPath(let path):
+                return "Refusing to install skill file '\(path)': its path escapes the skill directory."
             }
         }
     }
@@ -286,6 +289,12 @@ public struct Installer {
                 try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
                 for skillFile in files {
                     let filePath = skillFolder.appendingPathComponent(skillFile.relativePath)
+                    // Defence-in-depth: a skill's file paths come from a remote repository, so make
+                    // sure none of them resolve outside the skill directory (path traversal) before
+                    // writing anything to disk.
+                    guard isContained(filePath, within: skillFolder) else {
+                        throw InstallerError.unsafeSkillPath(skillFile.relativePath)
+                    }
                     let parentDir = filePath.deletingLastPathComponent()
                     try fileManager.createDirectory(at: parentDir, withIntermediateDirectories: true)
                     _ = fileManager.createFile(atPath: filePath.path, contents: skillFile.content)
@@ -295,6 +304,16 @@ public struct Installer {
         }
         let scope = isGlobal ? "globally" : "for the current project"
         printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed \(scope)."))")
+    }
+
+    /// Returns whether `url` lexically resolves to a location inside `base`.
+    ///
+    /// Uses `standardizedFileURL` so that `..` components are collapsed without touching the file
+    /// system, making this safe to call before the file exists.
+    private func isContained(_ url: URL, within base: URL) -> Bool {
+        let basePath = base.standardizedFileURL.path
+        let candidatePath = url.standardizedFileURL.path
+        return candidatePath == basePath || candidatePath.hasPrefix(basePath + "/")
     }
 
     private func isToolInstalled(_ tool: Tool) -> Bool {

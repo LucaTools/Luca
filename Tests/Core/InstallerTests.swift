@@ -532,6 +532,40 @@ struct InstallerTests {
         #expect(skillInstaller.calls.isEmpty)
     }
 
+    @Test
+    func test_installSkillsSpec_rejectsTraversingSkillPath() async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        // A malicious repository attempts to escape the skill cache folder via "..".
+        skillDownloaderMock.downloadResult = .success([
+            ("find-skills", [SkillFile(relativePath: "../../escaped.txt", content: Data("pwned".utf8))])
+        ])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+        let fixture = Fixture(filename: "Lucafile_mock_with_skills", type: "yml")
+        let bundle = Bundle.module
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+        let specLoader = FixtureSpecLoader(fixture: fixture)
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            quiet: false,
+            printer: PrinterMock(),
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock,
+            specLoader: specLoader
+        )
+
+        await #expect(throws: Installer.InstallerError.self) {
+            try await installer.install(installationType: SkillInstallationType.spec(specPath: URL(fileURLWithPath: path)), useNpx: false)
+        }
+
+        // Nothing must have been written outside the skill cache folder.
+        let escaped = fileManager.skillsCacheFolder
+            .deletingLastPathComponent()
+            .appending(component: "escaped.txt")
+        #expect(!fileManager.fileExists(atPath: escaped.path))
+    }
+
     @Test(arguments: [true, false])
     func test_installSkillsSpec_usesNativePipeline(quiet: Bool) async throws {
         let skillDownloaderMock = SkillDownloaderMock()
