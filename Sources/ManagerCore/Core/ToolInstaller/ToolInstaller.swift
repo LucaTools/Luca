@@ -63,8 +63,12 @@ struct ToolInstaller: ToolInstalling {
         let downloadedFile = try await downloader.downloadRelease(at: tool.url)
 
         if let checksum = tool.checksum {
+            let algorithm = tool.algorithm ?? .sha256
+            if algorithm.isCryptographicallyWeak {
+                printer.printFormatted("\(.danger("⚠️  SECURITY: \(tool.name) version \(tool.version) is verified with \(algorithm.rawValue.uppercased()), which is cryptographically broken. An attacker could forge a matching artifact. Prefer \(ChecksumAlgorithm.sha256.rawValue.uppercased()) or \(ChecksumAlgorithm.sha512.rawValue.uppercased())."))")
+            }
             printer.printFormatted("\(.raw("📋 Validating checksum for \(tool.name) version \(tool.version)..."))")
-            try checksumValidator.validate(checksum: checksum, for: downloadedFile.path, using: tool.algorithm ?? .sha256)
+            try checksumValidator.validate(checksum: checksum, for: downloadedFile.path, using: algorithm)
         } else {
             printer.printFormatted("\(.raw("📋 Skipping checksum validation for \(tool.name) version \(tool.version)..."))")
         }

@@ -47,6 +47,16 @@ struct ChecksumCalculatorTests {
             try calculator.calculateChecksum(for: path, using: .sha256)
         }
     }
+
+    @Test(arguments: [
+        (ChecksumAlgorithm.md5, true),
+        (ChecksumAlgorithm.sha1, true),
+        (ChecksumAlgorithm.sha256, false),
+        (ChecksumAlgorithm.sha512, false)
+    ])
+    func isCryptographicallyWeak(algorithm: ChecksumAlgorithm, expected: Bool) {
+        #expect(algorithm.isCryptographicallyWeak == expected)
+    }
 }
 
 // MARK: - NilContentsChecksumFileManagerMock
