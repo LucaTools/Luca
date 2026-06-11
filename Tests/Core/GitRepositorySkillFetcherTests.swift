@@ -329,6 +329,39 @@ struct GitRepositorySkillFetcherTests {
         #expect(!paths.contains("skills/foo/link-to-dir"))
     }
 
+    // MARK: - test_skillPaths_skipsFileSymlinks
+
+    @Test
+    func test_skillPaths_skipsFileSymlinks() async throws {
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCodes = [0]
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        // Symlink inside the skill directory that resolves to a file outside the clone.
+        runner.symlinksToCreate = ["skills/foo/leak": "/etc/passwd"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        let paths = try await sut.skillPaths(repository: "owner/repo", ref: nil)
+
+        #expect(paths.contains("skills/foo/SKILL.md"))
+        #expect(!paths.contains("skills/foo/leak"))
+    }
+
+    // MARK: - test_downloadSkill_symlink_throwsFileReadFailed
+
+    @Test
+    func test_downloadSkill_symlink_throwsFileReadFailed() async throws {
+        let runner = SeedingSubprocessRunnerMock()
+        runner.exitCodes = [0]
+        runner.filesToCreate = ["skills/foo/SKILL.md": "# Foo"]
+        // A symlink pointing outside the clone must not be readable through downloadSkill.
+        runner.symlinksToCreate = ["skills/foo/leak": "/etc/passwd"]
+        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+
+        await #expect(throws: GitRepositorySkillFetcherError.fileReadFailed(path: "skills/foo/leak")) {
+            try await sut.downloadSkill(repository: "owner/repo", path: "skills/foo/leak", ref: nil)
+        }
+    }
+
     // MARK: - test_skillPaths_sameRepoDifferentRef_clonesAgain
 
     @Test
