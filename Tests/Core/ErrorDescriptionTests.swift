@@ -87,6 +87,7 @@ struct ErrorDescriptionTests {
         #expect(Unarchiver.UnarchiverError.unrecognizedFileType("/some/file").errorDescription != nil)
         #expect(Unarchiver.UnarchiverError.notAnArchive("/some/file").errorDescription != nil)
         #expect(Unarchiver.UnarchiverError.failedToUnarchive(underlyingError).errorDescription != nil)
+        #expect(Unarchiver.UnarchiverError.unsafeArchiveEntry("../escape.txt").errorDescription != nil)
     }
 
     @Test
