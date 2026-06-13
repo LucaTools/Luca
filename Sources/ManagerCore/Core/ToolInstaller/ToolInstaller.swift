@@ -69,7 +69,7 @@ struct ToolInstaller: ToolInstalling {
             printer.printFormatted("\(.raw("📋 Validating checksum for \(tool.name) version \(tool.version)..."))")
             try checksumValidator.validate(checksum: checksum, for: downloadedFile.path, using: tool.algorithm ?? .sha256)
         } else {
-            printer.printFormatted("\(.raw("📋 Skipping checksum validation for \(tool.name) version \(tool.version)..."))")
+            printer.printFormatted("\(.danger("⚠️  SECURITY: Installing \(tool.name) version \(tool.version) WITHOUT checksum verification. The downloaded binary could have been tampered with in transit or at the source. Add a `checksum:` entry to verify its integrity."))")
         }
 
         let fileTypeDetector = FileTypeDetector(fileManager: fileManager)
