@@ -208,7 +208,9 @@ struct PipelineRunnerTests {
         let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "build --flavor ${flavor}")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["flavor": "release"])
-        #expect(runner.recordedArguments[0][2].hasSuffix("build --flavor release"))
+        // The placeholder is rewritten to a quoted shell reference; the value is passed via the environment.
+        #expect(runner.recordedArguments[0][2].hasSuffix("build --flavor \"${LUCA_PARAM_flavor}\""))
+        #expect(runner.recordedEnvironments[0]["LUCA_PARAM_flavor"] == "release")
     }
 
     @Test
@@ -217,7 +219,33 @@ struct PipelineRunnerTests {
         let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
         let pipeline = makePipeline(tasks: [makeTask(command: "deploy --env ${env} --version ${version}")])
         try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["env": "prod", "version": "1.0"])
-        #expect(runner.recordedArguments[0][2].hasSuffix("deploy --env prod --version 1.0"))
+        #expect(runner.recordedArguments[0][2].hasSuffix("deploy --env \"${LUCA_PARAM_env}\" --version \"${LUCA_PARAM_version}\""))
+        #expect(runner.recordedEnvironments[0]["LUCA_PARAM_env"] == "prod")
+        #expect(runner.recordedEnvironments[0]["LUCA_PARAM_version"] == "1.0")
+    }
+
+    @Test
+    func test_run_maliciousParameterValue_isNotInterpolatedAsShellCode() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [makeTask(command: "echo ${msg}")])
+        let payload = "; rm -rf ~ #"
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["msg": payload])
+        // The dangerous value must never appear in the command string — only the quoted reference does.
+        #expect(!runner.recordedArguments[0][2].contains(payload))
+        #expect(runner.recordedArguments[0][2].hasSuffix("echo \"${LUCA_PARAM_msg}\""))
+        // The raw value is delivered as inert data through the environment.
+        #expect(runner.recordedEnvironments[0]["LUCA_PARAM_msg"] == payload)
+    }
+
+    @Test
+    func test_run_parameterNameWithUnsafeCharacters_sanitizedToValidIdentifier() async throws {
+        let runner = SubprocessRunnerMock()
+        let sut = PipelineRunner(subprocessRunner: runner, conditionEvaluator: TaskConditionEvaluator(), printer: PrinterMock())
+        let pipeline = makePipeline(tasks: [makeTask(command: "build ${my-flavor}")])
+        try await sut.run(pipeline, currentDirectoryURL: invocationDir, parameters: ["my-flavor": "release"])
+        #expect(runner.recordedArguments[0][2].hasSuffix("build \"${LUCA_PARAM_my_flavor}\""))
+        #expect(runner.recordedEnvironments[0]["LUCA_PARAM_my_flavor"] == "release")
     }
 
     @Test

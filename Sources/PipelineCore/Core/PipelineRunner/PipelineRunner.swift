@@ -10,6 +10,13 @@ import Noora
 /// Environment variables are merged in order: inherited process env ← env-file env ← pipeline-level env ← task-level env.
 /// Working directory is resolved as: task-level → pipeline-level → invocation directory.
 /// Tasks with a `when:` field are skipped when the condition evaluates to false.
+///
+/// Parameters are **not** interpolated as literal text into the command. Instead each parameter is
+/// exposed to the shell as an environment variable (`LUCA_PARAM_<name>`) and every `${name}`
+/// placeholder is rewritten to a quoted shell reference (`"${LUCA_PARAM_name}"`). Because bash does
+/// not re-parse the result of a parameter expansion, a value such as `; rm -rf ~` is passed through
+/// as inert data rather than being executed — closing the command-injection vector that literal
+/// substitution would otherwise open.
 public struct PipelineRunner: PipelineRunning {
 
     public enum PipelineRunnerError: Error, LocalizedError, Equatable {
@@ -48,6 +55,10 @@ public struct PipelineRunner: PipelineRunning {
         let tasks = pipeline.tasks
         var executedCount = 0
 
+        // Expose parameters as namespaced environment variables and map each `${name}`
+        // placeholder to a quoted shell reference, so values are never parsed as shell code.
+        let (parameterEnvironment, parameterReferences) = parameterBindings(parameters)
+
         for (index, task) in tasks.enumerated() {
             printTaskHeader(index: index + 1, total: tasks.count, name: task.name)
 
@@ -61,10 +72,11 @@ public struct PipelineRunner: PipelineRunning {
                 }
             }
 
-            let env = mergedEnvironment(envFileEnvironment: envFileEnvironment, pipelineEnv: pipeline.env, taskEnv: task.env)
+            var env = mergedEnvironment(envFileEnvironment: envFileEnvironment, pipelineEnv: pipeline.env, taskEnv: task.env)
+            env.merge(parameterEnvironment) { _, new in new }
             let workingDirectory = resolveWorkingDirectory(task: task, pipeline: pipeline, invocationDirectory: currentDirectoryURL)
 
-            let command = renderCommand(task.command, parameters: parameters)
+            let command = renderCommand(task.command, parameterReferences: parameterReferences)
             let exitCode = try await subprocessRunner.run(
                 executableURL: URL(fileURLWithPath: "/usr/bin/env"),
                 arguments: ["bash", "-c", "set -eo pipefail && \(command)"],
@@ -124,9 +136,55 @@ public struct PipelineRunner: PipelineRunning {
         return invocationDirectory.appending(path: workDir)
     }
 
-    private func renderCommand(_ command: String, parameters: [String: String]) -> String {
-        parameters.reduce(command) { result, pair in
-            result.replacingOccurrences(of: "${\(pair.key)}", with: pair.value)
+    /// Replaces each `${name}` placeholder with a quoted reference to its environment variable.
+    ///
+    /// - Parameters:
+    ///   - command: The raw task command.
+    ///   - parameterReferences: Maps a parameter name to the environment-variable name holding its value.
+    /// - Returns: The command with placeholders rewritten as `"${LUCA_PARAM_name}"`.
+    private func renderCommand(_ command: String, parameterReferences: [String: String]) -> String {
+        parameterReferences.reduce(command) { result, pair in
+            result.replacingOccurrences(of: "${\(pair.key)}", with: "\"${\(pair.value)}\"")
         }
+    }
+
+    /// Builds the environment variables and placeholder references used to pass parameters to the shell.
+    ///
+    /// - Parameter parameters: The user-supplied parameter values.
+    /// - Returns: A tuple of `(environment, references)` where `environment` maps each
+    ///   `LUCA_PARAM_<name>` variable to its value, and `references` maps each original parameter
+    ///   name to the environment-variable name it resolves to.
+    private func parameterBindings(_ parameters: [String: String]) -> (environment: [String: String], references: [String: String]) {
+        var environment: [String: String] = [:]
+        var references: [String: String] = [:]
+        var used: Set<String> = []
+
+        // Sort for deterministic name assignment when two keys sanitize to the same identifier.
+        for key in parameters.keys.sorted() {
+            let base = environmentVariableName(for: key)
+            var name = base
+            var suffix = 2
+            while used.contains(name) {
+                name = "\(base)_\(suffix)"
+                suffix += 1
+            }
+            used.insert(name)
+            references[key] = name
+            environment[name] = parameters[key]
+        }
+
+        return (environment, references)
+    }
+
+    /// Derives a shell-safe, namespaced environment-variable name from a parameter name.
+    ///
+    /// Any character that is not an ASCII letter, digit, or underscore is replaced with `_`,
+    /// guaranteeing a valid shell identifier regardless of the original parameter name.
+    private func environmentVariableName(for key: String) -> String {
+        let sanitized = key.map { character -> Character in
+            let isSafe = character.isASCII && (character.isLetter || character.isNumber || character == "_")
+            return isSafe ? character : "_"
+        }
+        return "LUCA_PARAM_" + String(sanitized)
     }
 }
