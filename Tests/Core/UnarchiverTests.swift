@@ -130,6 +130,32 @@ struct UnarchiverTests {
         }
     }
 
+    @Test
+    func unarchive_archiveWithAbsolutePath_throws() throws {
+        let unarchiverFileManager = UnarchiverFileManagerMock(fileManager: .default)
+        let fileTypeDetectorFileManager = FileTypeDetectorFileManagerMock(fileManager: .default)
+        let fileTypeDetector = FileTypeDetector(fileManager: fileTypeDetectorFileManager)
+        let sut = Unarchiver(fileManager: unarchiverFileManager, fileTypeDetector: fileTypeDetector)
+
+        let bundle = Bundle.module
+        let fixture = Fixture(filename: "MockAbsolutePath", type: "zip")
+        let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))
+
+        let installationDestination = unarchiverFileManager.toolsFolder
+            .appending(components: "Tool", "1.0.0")
+
+        #expect {
+            try sut.unarchive(filePath: URL(filePath: path), installationDestination: installationDestination)
+        } throws: { error in
+            guard let unarchiverError = error as? Unarchiver.UnarchiverError,
+                  case .unsafeArchiveEntry = unarchiverError else { return false }
+            return true
+        }
+
+        // The malicious payload must not have been extracted.
+        #expect(!FileManager.default.fileExists(atPath: installationDestination.appending(component: "evil.txt").path))
+    }
+
     @Test(arguments: ["zip", "tar.gz"])
     func test_unarchive_archiveContainingSymlink_ignoringUnsafeEntries_succeeds(archiveType: String) throws {
         let unarchiverFileManager = UnarchiverFileManagerMock(fileManager: .default)
