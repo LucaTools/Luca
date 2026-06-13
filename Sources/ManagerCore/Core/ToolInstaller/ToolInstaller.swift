@@ -34,15 +34,18 @@ struct ToolInstaller: ToolInstalling {
     private let symLinker: SymLinking
     private let printer: Printing
     private let ignoreArchitectureCheck: Bool
+    private let ignoreUnsafeArchiveEntries: Bool
 
     init(
         fileManager: FileManaging,
         ignoreArchitectureCheck: Bool,
+        ignoreUnsafeArchiveEntries: Bool = false,
         printer: Printing,
         downloader: Downloading? = nil
     ) {
         self.fileManager = fileManager
         self.ignoreArchitectureCheck = ignoreArchitectureCheck
+        self.ignoreUnsafeArchiveEntries = ignoreUnsafeArchiveEntries
         self.printer = printer
         self.binaryFinder = BinaryFinder(fileManager: fileManager)
         self.checksumValidator = ChecksumValidator(fileManager: fileManager)
@@ -120,7 +123,11 @@ struct ToolInstaller: ToolInstalling {
 
         let fileTypeDetector = FileTypeDetector(fileManager: fileManager)
 
-        let unarchiver = Unarchiver(fileManager: fileManager, fileTypeDetector: fileTypeDetector)
+        let effectiveIgnoreUnsafeEntries = tool.ignoreUnsafeArchiveEntries ?? ignoreUnsafeArchiveEntries
+        if effectiveIgnoreUnsafeEntries {
+            printer.printFormatted("\(.raw("🔍 Skipping unsafe archive entry validation for \(tool.name) version \(tool.version)..."))")
+        }
+        let unarchiver = Unarchiver(fileManager: fileManager, fileTypeDetector: fileTypeDetector, ignoreUnsafeArchiveEntries: effectiveIgnoreUnsafeEntries)
         try unarchiver.unarchive(filePath: downloadedFile, installationDestination: installationDestination)
 
         let extractedBinaryPath: String = try {

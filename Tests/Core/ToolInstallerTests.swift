@@ -10,11 +10,13 @@ struct ToolInstallerTests {
     private func makeToolInstaller(
         fileManager: FileManaging,
         ignoreArchitectureCheck: Bool,
+        ignoreUnsafeArchiveEntries: Bool = false,
         downloader: Downloading
     ) -> ToolInstaller {
         ToolInstaller(
             fileManager: fileManager,
             ignoreArchitectureCheck: ignoreArchitectureCheck,
+            ignoreUnsafeArchiveEntries: ignoreUnsafeArchiveEntries,
             printer: PrinterMock(),
             downloader: downloader
         )
@@ -536,6 +538,194 @@ struct ToolInstallerTests {
         // Should throw: nil falls back to global false
         await #expect(throws: (any Error).self) {
             try await toolInstaller.install(tool: tool)
+        }
+    }
+
+    // MARK: - ignoreUnsafeArchiveEntries override tests
+
+    @Test
+    func test_install_globalIgnoreUnsafeArchiveEntries_true_skipsValidation() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolInstaller = makeToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            ignoreUnsafeArchiveEntries: true,
+            downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockSymlink", type: "zip")))
+        )
+
+        let tool = Tool(
+            name: "SomeTool",
+            version: "1.0.0",
+            url: URL(string: "https://example.com/tool")!,
+            binaryPath: nil,
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil,
+            ignoreArchCheck: nil,
+            ignoreUnsafeArchiveEntries: nil
+        )
+
+        var didThrowUnsafeEntryError = false
+        do {
+            try await toolInstaller.install(tool: tool)
+        } catch let e as Unarchiver.UnarchiverError {
+            if case .unsafeArchiveEntry = e { didThrowUnsafeEntryError = true }
+        } catch { }
+        #expect(!didThrowUnsafeEntryError)
+    }
+
+    @Test
+    func test_install_globalIgnoreUnsafeArchiveEntries_false_enforcesValidation() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolInstaller = makeToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            ignoreUnsafeArchiveEntries: false,
+            downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockSymlink", type: "zip")))
+        )
+
+        let tool = Tool(
+            name: "SomeTool",
+            version: "1.0.0",
+            url: URL(string: "https://example.com/tool")!,
+            binaryPath: nil,
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil,
+            ignoreArchCheck: nil,
+            ignoreUnsafeArchiveEntries: nil
+        )
+
+        await #expect {
+            try await toolInstaller.install(tool: tool)
+        } throws: { error in
+            guard let unarchiverError = error as? Unarchiver.UnarchiverError,
+                  case .unsafeArchiveEntry = unarchiverError else { return false }
+            return true
+        }
+    }
+
+    @Test
+    func test_install_perToolIgnoreUnsafeArchiveEntries_true_overridesGlobalFalse() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolInstaller = makeToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            ignoreUnsafeArchiveEntries: false,
+            downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockSymlink", type: "zip")))
+        )
+
+        let tool = Tool(
+            name: "SomeTool",
+            version: "1.0.0",
+            url: URL(string: "https://example.com/tool")!,
+            binaryPath: nil,
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil,
+            ignoreArchCheck: nil,
+            ignoreUnsafeArchiveEntries: true  // per-tool true overrides global false
+        )
+
+        var didThrowUnsafeEntryError = false
+        do {
+            try await toolInstaller.install(tool: tool)
+        } catch let e as Unarchiver.UnarchiverError {
+            if case .unsafeArchiveEntry = e { didThrowUnsafeEntryError = true }
+        } catch { }
+        #expect(!didThrowUnsafeEntryError)
+    }
+
+    @Test
+    func test_install_perToolIgnoreUnsafeArchiveEntries_false_overridesGlobalTrue() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolInstaller = makeToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            ignoreUnsafeArchiveEntries: true,
+            downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockSymlink", type: "zip")))
+        )
+
+        let tool = Tool(
+            name: "SomeTool",
+            version: "1.0.0",
+            url: URL(string: "https://example.com/tool")!,
+            binaryPath: nil,
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil,
+            ignoreArchCheck: nil,
+            ignoreUnsafeArchiveEntries: false  // per-tool false overrides global true
+        )
+
+        await #expect {
+            try await toolInstaller.install(tool: tool)
+        } throws: { error in
+            guard let unarchiverError = error as? Unarchiver.UnarchiverError,
+                  case .unsafeArchiveEntry = unarchiverError else { return false }
+            return true
+        }
+    }
+
+    @Test
+    func test_install_perToolIgnoreUnsafeArchiveEntries_nil_fallsBackToGlobal_true_skips() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolInstaller = makeToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            ignoreUnsafeArchiveEntries: true,
+            downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockSymlink", type: "zip")))
+        )
+
+        let tool = Tool(
+            name: "SomeTool",
+            version: "1.0.0",
+            url: URL(string: "https://example.com/tool")!,
+            binaryPath: nil,
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil,
+            ignoreArchCheck: nil,
+            ignoreUnsafeArchiveEntries: nil  // nil falls back to global true
+        )
+
+        var didThrowUnsafeEntryError = false
+        do {
+            try await toolInstaller.install(tool: tool)
+        } catch let e as Unarchiver.UnarchiverError {
+            if case .unsafeArchiveEntry = e { didThrowUnsafeEntryError = true }
+        } catch { }
+        #expect(!didThrowUnsafeEntryError)
+    }
+
+    @Test
+    func test_install_perToolIgnoreUnsafeArchiveEntries_nil_fallsBackToGlobal_false_enforces() async throws {
+        let fileManager = FileManagerWrapperMock()
+        let toolInstaller = makeToolInstaller(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            ignoreUnsafeArchiveEntries: false,
+            downloader: DownloaderMock(result: .fixture(Fixture(filename: "MockSymlink", type: "zip")))
+        )
+
+        let tool = Tool(
+            name: "SomeTool",
+            version: "1.0.0",
+            url: URL(string: "https://example.com/tool")!,
+            binaryPath: nil,
+            desiredBinaryName: nil,
+            checksum: nil,
+            algorithm: nil,
+            ignoreArchCheck: nil,
+            ignoreUnsafeArchiveEntries: nil  // nil falls back to global false
+        )
+
+        await #expect {
+            try await toolInstaller.install(tool: tool)
+        } throws: { error in
+            guard let unarchiverError = error as? Unarchiver.UnarchiverError,
+                  case .unsafeArchiveEntry = unarchiverError else { return false }
+            return true
         }
     }
 }

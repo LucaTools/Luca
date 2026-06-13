@@ -31,6 +31,7 @@ import Foundation
 /// - ``checksum``
 /// - ``algorithm``
 /// - ``ignoreArchCheck``
+/// - ``ignoreUnsafeArchiveEntries``
 ///
 /// ### Computed Properties
 /// - ``expectedBinaryName``
@@ -53,6 +54,9 @@ public struct Tool: Codable {
     /// Per-tool override for architecture validation.
     /// `true` always skips; `false` always validates; `nil` falls back to the CLI `--ignore-arch-check` flag.
     public let ignoreArchCheck: Bool?
+    /// Per-tool override for unsafe archive entry validation.
+    /// `true` always skips; `false` always validates; `nil` falls back to the CLI `--ignore-unsafe-entries` flag.
+    public let ignoreUnsafeArchiveEntries: Bool?
 
     public init(
         name: String,
@@ -62,7 +66,8 @@ public struct Tool: Codable {
         desiredBinaryName: String? = nil,
         checksum: String? = nil,
         algorithm: ChecksumAlgorithm? = nil,
-        ignoreArchCheck: Bool? = nil
+        ignoreArchCheck: Bool? = nil,
+        ignoreUnsafeArchiveEntries: Bool? = nil
     ) {
         self.name = name
         self.version = version
@@ -72,6 +77,7 @@ public struct Tool: Codable {
         self.checksum = checksum
         self.algorithm = algorithm
         self.ignoreArchCheck = ignoreArchCheck
+        self.ignoreUnsafeArchiveEntries = ignoreUnsafeArchiveEntries
     }
 }
 

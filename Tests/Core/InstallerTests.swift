@@ -753,6 +753,33 @@ struct InstallerTests {
         #expect(skillSymLinkerMock.lastAgents == AgentRegistry.all)
     }
 
+    @Test
+    func test_init_publicInit_ignoreUnsafeArchiveEntries_threadsThrough() async throws {
+        // Verify the public init correctly threads ignoreUnsafeArchiveEntries to the internal init.
+        // Uses a home-directory file manager so the install call throws early without any network I/O.
+        let homeDirFileManager = HomeDirFileManagerMock()
+        let installer = Installer(
+            fileManager: homeDirFileManager,
+            ignoreArchitectureCheck: true,
+            ignoreUnsafeArchiveEntries: true,
+            printer: PrinterMock(),
+            noora: NoorableMock()
+        )
+        await #expect(throws: Installer.InstallerError.runningFromHomeDirectory) {
+            try await installer.install(
+                installationType: .individualInline(
+                    name: "SomeTool",
+                    version: "1.0.0",
+                    url: URL(string: "https://example.com/tool")!,
+                    binaryPath: nil,
+                    desiredBinaryName: nil,
+                    checksum: nil,
+                    algorithm: nil
+                )
+            )
+        }
+    }
+
     private func spec(for fixture: Fixture) throws -> Spec {
         let bundle = Bundle.module
         let path = try #require(bundle.path(forResource: fixture.filename, ofType: fixture.type))

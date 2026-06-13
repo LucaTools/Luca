@@ -55,7 +55,8 @@ struct ToolFactory {
                 desiredBinaryName: desiredBinaryName,
                 checksum: checksum,
                 algorithm: algorithm,
-                ignoreArchCheck: nil
+                ignoreArchCheck: nil,
+                ignoreUnsafeArchiveEntries: nil
             )]
         }
     }
@@ -97,7 +98,8 @@ struct ToolFactory {
             desiredBinaryName: desiredBinaryName,
             checksum: checksum,
             algorithm: algorithm,
-            ignoreArchCheck: nil
+            ignoreArchCheck: nil,
+            ignoreUnsafeArchiveEntries: nil
         )
     }
 }

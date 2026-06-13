@@ -1,0 +1,9 @@
+---
+tools:
+  - name: MockTool
+    binaryPath: MockMachOTool
+    version: 1.0.0
+    url: https://example.com/mock/MockToolIgnoreUnsafeTrue
+    ignoreUnsafeArchiveEntries: true
+
+version: 0.0.1
