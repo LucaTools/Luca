@@ -80,7 +80,22 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
 
     func downloadSkill(repository: String, path: String, ref: String?) async throws -> Data {
         let cloneDir = try await clone(repository, ref: ref)
-        let fileURL = cloneDir.resolvingSymlinksInPath().appendingPathComponent(path)
+        let baseDir = cloneDir.resolvingSymlinksInPath()
+        let fileURL = baseDir.appendingPathComponent(path)
+
+        // A malicious skill repository must not be able to make Luca read files outside the clone
+        // (e.g. a symlink pointing at ~/.ssh/id_rsa). Reject the read if the final component is a
+        // symbolic link, or if resolving the path escapes the clone directory.
+        let resourceValues = try? fileURL.resourceValues(forKeys: [.isSymbolicLinkKey])
+        if resourceValues?.isSymbolicLink == true {
+            throw GitRepositorySkillFetcherError.fileReadFailed(path: path)
+        }
+        let resolvedPath = fileURL.resolvingSymlinksInPath().standardizedFileURL.path
+        let basePath = baseDir.standardizedFileURL.path
+        guard resolvedPath == basePath || resolvedPath.hasPrefix(basePath + "/") else {
+            throw GitRepositorySkillFetcherError.fileReadFailed(path: path)
+        }
+
         do {
             return try Data(contentsOf: fileURL)
         } catch {
@@ -184,14 +199,11 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
             let isDir = resourceValues?.isDirectory ?? false
             if isDir { continue }
             
-            // Skip symbolic links that point to directories, since they cannot be read as files
-            // and we rely on deduplication to find the original directory if it's within the skill scope.
+            // Skip all symbolic links. Following them risks reading files outside the cloned
+            // repository (e.g. a link pointing at ~/.ssh), and the GitHub tree client excludes
+            // symlinks too, so this keeps both fetchers consistent.
             let isSymlink = resourceValues?.isSymbolicLink ?? false
-            if isSymlink {
-                let resolved = fileURL.resolvingSymlinksInPath()
-                let isResolvedDir = (try? resolved.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
-                if isResolvedDir { continue }
-            }
+            if isSymlink { continue }
 
             let fileComponents = fileURL.resolvingSymlinksInPath().pathComponents
             let relativePath = fileComponents.dropFirst(baseComponents.count).joined(separator: "/")
