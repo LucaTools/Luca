@@ -49,6 +49,7 @@ public struct Installer {
     private let linkedToolsLister: LinkedToolsLister
     private let unlinker: Unlinker
     private let ignoreArchitectureCheck: Bool
+    private let ignoreUnsafeArchiveEntries: Bool
     private let quiet: Bool
     private let noora: Noorable
     private let toolInstaller: ToolInstalling
@@ -60,6 +61,7 @@ public struct Installer {
     public init(
         fileManager: FileManaging,
         ignoreArchitectureCheck: Bool,
+        ignoreUnsafeArchiveEntries: Bool = false,
         quiet: Bool = false,
         printer: Printing,
         noora: Noorable
@@ -67,6 +69,7 @@ public struct Installer {
         self.init(
             fileManager: fileManager,
             ignoreArchitectureCheck: ignoreArchitectureCheck,
+            ignoreUnsafeArchiveEntries: ignoreUnsafeArchiveEntries,
             quiet: quiet,
             printer: printer,
             noora: noora,
@@ -81,6 +84,7 @@ public struct Installer {
     init(
         fileManager: FileManaging,
         ignoreArchitectureCheck: Bool,
+        ignoreUnsafeArchiveEntries: Bool = false,
         quiet: Bool = false,
         printer: Printing,
         noora: Noorable = Noora(),
@@ -95,11 +99,13 @@ public struct Installer {
         self.linkedToolsLister = LinkedToolsLister(fileManager: fileManager)
         self.unlinker = Unlinker(fileManager: fileManager, printer: printer)
         self.ignoreArchitectureCheck = ignoreArchitectureCheck
+        self.ignoreUnsafeArchiveEntries = ignoreUnsafeArchiveEntries
         self.quiet = quiet
         self.noora = noora
         self.toolInstaller = toolInstaller ?? ToolInstaller(
             fileManager: fileManager,
             ignoreArchitectureCheck: ignoreArchitectureCheck,
+            ignoreUnsafeArchiveEntries: ignoreUnsafeArchiveEntries,
             printer: printer
         )
         self.skillInstaller = skillInstaller ?? SkillInstaller()

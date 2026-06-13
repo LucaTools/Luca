@@ -160,7 +160,18 @@ struct InstallCommand: AsyncParsableCommand {
         """
     ))
     var ignoreArchCheck: Bool = false
-    
+
+    @Flag(help: ArgumentHelp(
+        "Skip unsafe archive entry validation.",
+        discussion: """
+        Bypasses the Zip Slip / symlink-escape safety check. Use only when you trust the archive.
+        Example:
+          luca install some/tool@v1.0.0 \\
+            --ignore-unsafe-entries
+        """
+    ))
+    var ignoreUnsafeEntries: Bool = false
+
     @Flag(inversion: .prefixedNo, help: ArgumentHelp(
         "Install the post-checkout git hook.",
         discussion: """
@@ -271,6 +282,7 @@ struct InstallCommand: AsyncParsableCommand {
         let installer = Installer(
             fileManager: fileManager,
             ignoreArchitectureCheck: ignoreArchCheck,
+            ignoreUnsafeArchiveEntries: ignoreUnsafeEntries,
             quiet: quiet,
             printer: printer,
             noora: noora

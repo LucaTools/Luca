@@ -40,10 +40,12 @@ struct Unarchiver: Unarchiving {
     
     private let fileManager: UnarchiverFileManaging
     private let fileTypeDetector: FileTypeDetector
-    
-    init(fileManager: UnarchiverFileManaging, fileTypeDetector: FileTypeDetector) {
+    private let ignoreUnsafeArchiveEntries: Bool
+
+    init(fileManager: UnarchiverFileManaging, fileTypeDetector: FileTypeDetector, ignoreUnsafeArchiveEntries: Bool = false) {
         self.fileManager = fileManager
         self.fileTypeDetector = fileTypeDetector
+        self.ignoreUnsafeArchiveEntries = ignoreUnsafeArchiveEntries
     }
     
     /// Extracts an archive to the specified destination.
@@ -66,13 +68,15 @@ struct Unarchiver: Unarchiving {
             throw UnarchiverError.notAnArchive(filePath.path)
         }
 
-        // Reject archives whose contents could escape the installation directory before
-        // extracting anything. `unzip` (and, on some platforms, `tar`) will happily create a
-        // symbolic link and then write *through* it, letting a crafted archive drop files into
-        // arbitrary locations such as `~/.ssh` or shell start-up files (the "Zip Slip" / tar
-        // symlink-escape class of attacks). Validating up front means a malicious archive never
-        // reaches the extraction step.
-        try validateArchiveEntries(filePath: filePath, fileType: fileType)
+        if !ignoreUnsafeArchiveEntries {
+            // Reject archives whose contents could escape the installation directory before
+            // extracting anything. `unzip` (and, on some platforms, `tar`) will happily create a
+            // symbolic link and then write *through* it, letting a crafted archive drop files into
+            // arbitrary locations such as `~/.ssh` or shell start-up files (the "Zip Slip" / tar
+            // symlink-escape class of attacks). Validating up front means a malicious archive never
+            // reaches the extraction step.
+            try validateArchiveEntries(filePath: filePath, fileType: fileType)
+        }
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
