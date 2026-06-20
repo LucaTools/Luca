@@ -1,0 +1,20 @@
+parameters:
+  - name: configuration
+    description: Build configuration
+    default: debug
+  - name: upload
+    description: Upload the build artifact after building
+    default: "false"
+
+tasks:
+  - name: Build
+    command: swift build --configuration ${configuration}
+
+  - name: Test
+    command: swift test
+    when: ${configuration} == debug
+
+  - name: Upload artifact
+    command: ./scripts/upload.sh
+    when: ${upload} == true
+    continue-on-error: true

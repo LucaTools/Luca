@@ -23,4 +23,10 @@
 
         @TutorialReference(tutorial: "doc:InstallingSkills")
     }
+
+    @Chapter(name: "Running Pipelines") {
+        Define and run repeatable task pipelines with parameters and conditions.
+
+        @TutorialReference(tutorial: "doc:RunningPipelines")
+    }
 }

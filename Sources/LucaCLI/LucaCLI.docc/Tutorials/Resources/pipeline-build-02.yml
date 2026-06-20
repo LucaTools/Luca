@@ -1,0 +1,6 @@
+tasks:
+  - name: Build
+    command: swift build
+
+  - name: Test
+    command: swift test
