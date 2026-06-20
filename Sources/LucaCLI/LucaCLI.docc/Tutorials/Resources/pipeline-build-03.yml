@@ -1,0 +1,11 @@
+parameters:
+  - name: configuration
+    description: Build configuration
+    default: debug
+
+tasks:
+  - name: Build
+    command: swift build --configuration ${configuration}
+
+  - name: Test
+    command: swift test

@@ -1,0 +1,120 @@
+@Tutorial(time: 10) {
+    @Intro(title: "Running Pipelines") {
+        Learn how to define and run repeatable task pipelines using Luca's
+        built-in pipeline engine.
+
+        In this tutorial, you'll create a pipeline file, run it with
+        `luca run`, add parameters to make it reusable, and use conditions
+        to skip tasks at runtime.
+    }
+
+    @Section(title: "Create a Pipeline File") {
+        @ContentAndMedia {
+            A pipeline is a YAML file that lists an ordered set of tasks.
+            Each task has a name and a shell command to execute. Luca searches
+            for pipeline files by name in the current directory and in a
+            `pipelines/` subdirectory.
+        }
+
+        @Steps {
+            @Step {
+                Create a `pipelines/` directory in your project root and add
+                a new file named `build.yml`. Start with a single `Build`
+                task.
+
+                @Code(name: "pipelines/build.yml", file: "pipeline-build-01.yml")
+            }
+
+            @Step {
+                Add a second task to run your tests after the build. Tasks
+                execute in the order they are declared, and Luca stops at the
+                first failure.
+
+                @Code(name: "pipelines/build.yml", file: "pipeline-build-02.yml")
+            }
+        }
+    }
+
+    @Section(title: "Run the Pipeline") {
+        @ContentAndMedia {
+            Use `luca run` with the pipeline name to execute it. Luca resolves
+            the name to the YAML file automatically — you don't need to provide
+            the path or the extension.
+        }
+
+        @Steps {
+            @Step {
+                From your project root, run the pipeline by name. Luca prints
+                each task's name before executing it and exits non-zero if any
+                task fails.
+
+                @Code(name: "Terminal", file: "luca-run-build.sh")
+            }
+        }
+    }
+
+    @Section(title: "Add Parameters") {
+        @ContentAndMedia {
+            Parameters let you write a single pipeline that behaves differently
+            depending on values provided at runtime. Declare them in a
+            `parameters:` block and reference them with `${name}` inside any
+            task command.
+
+            Parameters with a `default:` are optional. Parameters without one
+            are required — Luca exits with an error if no value is supplied.
+        }
+
+        @Steps {
+            @Step {
+                Add a `parameters:` block and a `configuration` parameter with
+                a default of `debug`. Use it in the `Build` task command.
+
+                @Code(name: "pipelines/build.yml", file: "pipeline-build-03.yml")
+            }
+
+            @Step {
+                Add an `upload` parameter to control whether a build artifact
+                is uploaded. Then add a task that uses it as a condition and
+                mark it with `continue-on-error: true` so a failure there
+                doesn't abort the pipeline.
+
+                @Code(name: "pipelines/build.yml", file: "pipeline-build-04.yml")
+            }
+
+            @Step {
+                Pass values at runtime with `--param`. Multiple flags are
+                supported.
+
+                @Code(name: "Terminal", file: "luca-run-params.sh")
+            }
+        }
+    }
+
+    @Section(title: "Preview with Dry Run") {
+        @ContentAndMedia {
+            The `--dry-run` flag validates the pipeline and prints a full
+            execution preview without running any tasks. It shows each
+            parameter's resolved value, which tools are available, and whether
+            conditional tasks would run or be skipped.
+
+            Use dry run to verify your pipeline before committing it or before
+            running it in CI.
+        }
+
+        @Steps {
+            @Step {
+                Run the pipeline with `--dry-run` and supply a parameter
+                override to preview what would happen in a release build.
+
+                @Code(name: "Terminal", file: "luca-run-dry-run.sh")
+            }
+
+            @Step {
+                Luca prints the resolved parameter values, tool availability,
+                and the outcome of each condition. No tasks are executed.
+
+                @Code(name: "Output", file: "dry-run-output.txt")
+            }
+        }
+    }
+}

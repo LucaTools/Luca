@@ -1,0 +1,20 @@
+[DRY RUN] Pipeline: build
+
+Parameters:
+  configuration = release (override)
+  upload = false (default)
+
+Task 1: Build
+  Command: swift build --configuration ${configuration}
+  Tools:   swift ✓
+
+Task 2: Test
+  Command: swift test
+  When:    ${configuration} == debug → skip
+
+Task 3: Upload artifact
+  Command: ./scripts/upload.sh
+  When:    ${upload} == true → skip
+  Flags:   continue-on-error
+
+No tasks executed.
