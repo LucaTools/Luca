@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202-green.svg)](LICENSE)
 [![codecov](https://codecov.io/github/LucaTools/Luca/graph/badge.svg)](https://app.codecov.io/github/LucaTools/Luca)
 
-Luca is a lightweight tool and skills manager for macOS and Linux. It helps developers install, manage, and activate specific versions of development tools in their projects, and install agentic skills for AI coding agents (Claude Code, Cursor, GitHub Copilot, and more). It creates project-specific tool environments without polluting your global PATH.
+Luca is a lightweight and decentralised tool manager with support for agentic skills and building local pipelines. It supports both macOS and Linux. It helps developers install, manage, and activate specific versions of development tools in their projects, install agentic skills for AI coding agents (Claude Code, Cursor, GitHub Copilot, and more), and run ordered sequences of shell tasks via a built-in pipeline engine. It creates project-specific tool environments without polluting your global PATH.
 
 ## Features
 
@@ -16,6 +16,7 @@ Luca is a lightweight tool and skills manager for macOS and Linux. It helps deve
 - **No PATH pollution**: Tools are symlinked locally in your project directory
 - **Idempotent operations**: Safe to run multiple times
 - **Skill management**: Install and manage agentic skills for AI coding agents (Claude Code, Cursor, GitHub Copilot, and more)
+- **Pipeline runner**: Define and execute ordered sequences of shell tasks with parameters, conditions, and env-file support
 
 ## Installation
 
@@ -281,6 +282,125 @@ A Lucafile can define both `tools:` and `skills:` together. By default, `luca in
 luca install --only-tools   # Install binary tools, skip skills
 luca install --only-skills  # Install skills, skip binary tools
 ```
+
+### Running pipelines
+
+Pipelines let you define an ordered sequence of shell tasks in a YAML file and run them with a single command. Tasks execute sequentially; Luca stops at the first failure unless `continue-on-error` is set.
+
+1. Create a pipeline file — either in the current directory or in a `pipelines/` subdirectory:
+
+```yaml
+---
+parameters:
+  - name: configuration
+    description: Build configuration
+    default: debug
+  - name: upload
+    description: Upload the build artifact after building
+    default: "false"
+
+tasks:
+  - name: Build
+    command: swift build --configuration ${configuration}
+
+  - name: Test
+    command: swift test
+    when: ${configuration} == debug
+
+  - name: Upload artifact
+    command: ./scripts/upload.sh
+    when: ${upload} == true
+    continue-on-error: true
+```
+
+2. Run it by name (no path or extension needed):
+
+```bash
+luca run build
+```
+
+Or provide an explicit path:
+
+```bash
+luca run --file pipelines/release.yml
+```
+
+Pass parameter values at runtime with `--param`:
+
+```bash
+luca run build --param configuration=release --param upload=true
+```
+
+Preview what would happen without executing anything:
+
+```bash
+luca run build --dry-run --param configuration=release
+```
+
+#### Parameters
+
+Declare parameters in the `parameters:` block. Reference them in any task command with `${name}`. Parameters with a `default:` are optional; those without one are required — Luca exits with an error if no value is supplied via `--param`.
+
+#### Params file
+
+Store parameter values in a YAML file and pass it with `--params-file`:
+
+```yaml
+# build.params.yml
+params:
+  - key: configuration
+    value: release
+  - key: upload
+    value: "true"
+```
+
+```bash
+luca run build --params-file build.params.yml
+```
+
+Luca also looks for a params file automatically by convention (`<name>.params.yml`, `<name>.params`, `pipelines/<name>.params.yml`, `pipelines/<name>.params`). Values from `--param` override values from the params file.
+
+#### Env file
+
+Inject environment variables into every task from a dotenv file:
+
+```bash
+# .env
+CI=true
+DEVELOPER_DIR=/Applications/Xcode.app
+```
+
+```bash
+luca run build --env-file .env
+```
+
+Luca loads `.env` from the current directory automatically when it exists. Use `--env-file` to point to a different file.
+
+#### Conditions (`when`)
+
+Use `when:` on any task to skip it conditionally. Supported forms:
+
+| Expression | Behaviour |
+|---|---|
+| `${name} == value` | Run if the parameter equals `value` |
+| `${name} != value` | Run if the parameter does not equal `value` |
+| `${name}` | Run if the parameter is truthy (non-empty, not `false` or `0`) |
+
+#### Pipeline file format reference
+
+| Field | Level | Description |
+|---|---|---|
+| `tasks` | pipeline | Ordered list of tasks (required) |
+| `parameters` | pipeline | Declared input parameters |
+| `env` | pipeline | Environment variables applied to every task |
+| `working-directory` | pipeline | Default working directory for all tasks |
+| `name` | task | Human-readable label (required) |
+| `command` | task | Shell command to execute (required) |
+| `tools` | task | Explicit list of tools to validate before execution |
+| `env` | task | Per-task environment variables (merged on top of pipeline-level env) |
+| `working-directory` | task | Overrides the pipeline-level working directory |
+| `when` | task | Condition expression; task is skipped when it evaluates to false |
+| `continue-on-error` | task | When `true`, a non-zero exit is logged as a warning and execution continues |
 
 ## How It Works
 
