@@ -596,7 +596,7 @@ struct InstallerTests {
         #expect(skillSymLinkerMock.setSymLinkCalled == true)
         #expect(skillInstallerMock.calls.isEmpty)
 
-        let skillFile = fileManager.skillsCacheFolder.appending(components: "find-skills", "SKILL.md")
+        let skillFile = fileManager.skillsCacheFolder.appending(components: "find-skills", "v1.0.0", "SKILL.md")
         #expect(fileManager.fileExists(atPath: skillFile.path))
 
         let expectedAgentIds = ["claude-code", "github-copilot", "opencode"]
@@ -693,9 +693,9 @@ struct InstallerTests {
             useNpx: false
         )
 
-        let skillMd = fileManager.skillsCacheFolder.appending(components: "find-skills", "SKILL.md")
+        let skillMd = fileManager.skillsCacheFolder.appending(components: "find-skills", "v1.0.0", "SKILL.md")
         let template = fileManager.skillsCacheFolder
-            .appending(components: "find-skills", "resources", "template.md")
+            .appending(components: "find-skills", "v1.0.0", "resources", "template.md")
         #expect(fileManager.fileExists(atPath: skillMd.path))
         #expect(fileManager.fileExists(atPath: template.path))
     }
@@ -754,11 +754,11 @@ struct InstallerTests {
         #expect(skillSymLinkerMock.setSymLinkCalled == true)
         #expect(skillSymLinkerMock.lastIsGlobal == true)
 
-        let skillFile = fileManager.globalSkillsCacheFolder.appending(components: "global-skill", "SKILL.md")
+        let skillFile = fileManager.globalSkillsCacheFolder.appending(components: "global-skill", "v1.0.0", "SKILL.md")
         #expect(fileManager.fileExists(atPath: skillFile.path))
 
         // Must NOT write to the project-local cache
-        let localSkillFile = fileManager.skillsCacheFolder.appending(components: "global-skill", "SKILL.md")
+        let localSkillFile = fileManager.skillsCacheFolder.appending(components: "global-skill", "v1.0.0", "SKILL.md")
         #expect(!fileManager.fileExists(atPath: localSkillFile.path))
     }
 
@@ -785,6 +785,72 @@ struct InstallerTests {
         )
 
         #expect(skillSymLinkerMock.lastAgents == AgentRegistry.all)
+    }
+
+    @Test
+    func test_installSkills_whenVersionedFolderAlreadyExists_skipsDownload() async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        skillDownloaderMock.downloadResult = .success([])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            printer: PrinterMock(),
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock
+        )
+
+        let skillName = "find-skills"
+        let version = "v1.0.0"
+        let skillFolder = fileManager.skillsCacheFolder.appending(components: skillName, version)
+        try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
+
+        try await installer.install(
+            installationType: .individual(repository: "owner/repo", skillNames: [skillName], agents: nil, ref: version),
+            useNpx: false
+        )
+
+        #expect(skillDownloaderMock.downloadCalled == false)
+        #expect(skillSymLinkerMock.setSymLinkCalled == true)
+        #expect(skillSymLinkerMock.lastVersion == version)
+    }
+
+    @Test
+    func test_installSkills_migratesOldFlatLayout() async throws {
+        let skillDownloaderMock = SkillDownloaderMock()
+        skillDownloaderMock.downloadResult = .success([
+            ("find-skills", [SkillFile(relativePath: "SKILL.md", content: Data("# Skill".utf8))])
+        ])
+        let skillSymLinkerMock = SkillSymLinkerMock()
+
+        let installer = Installer(
+            fileManager: fileManager,
+            ignoreArchitectureCheck: true,
+            printer: PrinterMock(),
+            skillDownloader: skillDownloaderMock,
+            skillSymLinker: skillSymLinkerMock
+        )
+
+        let skillName = "find-skills"
+        let version = "v1.0.0"
+        // Simulate old flat layout: SKILL.md directly inside .luca/skills/find-skills/
+        let nameFolder = fileManager.skillsCacheFolder.appending(component: skillName)
+        try fileManager.createDirectory(at: nameFolder, withIntermediateDirectories: true)
+        _ = fileManager.createFile(atPath: nameFolder.appending(component: "SKILL.md").path, contents: Data())
+
+        #expect(fileManager.fileExists(atPath: nameFolder.appending(component: "SKILL.md").path))
+
+        try await installer.install(
+            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: version),
+            useNpx: false
+        )
+
+        // Old SKILL.md at the name-level must be gone
+        #expect(!fileManager.fileExists(atPath: nameFolder.appending(component: "SKILL.md").path))
+        // New versioned content should exist
+        let versionedFile = fileManager.skillsCacheFolder.appending(components: skillName, version, "SKILL.md")
+        #expect(fileManager.fileExists(atPath: versionedFile.path))
     }
 
     @Test

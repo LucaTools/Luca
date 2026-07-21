@@ -281,11 +281,49 @@ public struct Installer {
         if useNpx {
             try await skillInstaller.install(skillSet: skillSet, agents: agents)
         } else {
-            let skills = try await skillDownloader.download(skillSet: skillSet)
-            for (name, files) in skills {
-                let skillFolder = isGlobal
+            // For named skills, skip downloading if every versioned folder already exists.
+            // "Install all" (empty array) cannot pre-check names, so it always downloads.
+            if !skillSet.skills.isEmpty {
+                let allInstalled = skillSet.skills.allSatisfy { isSkillInstalled($0, version: skillSet.version, isGlobal: isGlobal) }
+                if allInstalled {
+                    for name in skillSet.skills {
+                        try skillSymLinker.setSymLink(skillName: name, version: skillSet.version, agents: resolvedAgents, isGlobal: isGlobal)
+                    }
+                    let scope = isGlobal ? "globally" : "for the current project"
+                    printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) already up to date \(scope)."))")
+                    return
+                }
+            }
+
+            // Auto-migrate: if a skill file exists directly in the name folder (old flat layout),
+            // remove the name folder so the versioned subfolder can be written cleanly.
+            for name in skillSet.skills.isEmpty ? [] : skillSet.skills {
+                let nameFolder = isGlobal
                     ? fileManager.globalSkillsCacheFolder.appending(component: name)
                     : fileManager.skillsCacheFolder.appending(component: name)
+                let legacySkillMd = nameFolder.appending(component: "SKILL.md")
+                if fileManager.fileExists(atPath: legacySkillMd.path) {
+                    try? fileManager.removeItem(at: nameFolder)
+                }
+            }
+
+            let skills = try await skillDownloader.download(skillSet: skillSet)
+
+            // Auto-migrate flat layout for "install all" (names unknown before download).
+            for (name, _) in skills {
+                let nameFolder = isGlobal
+                    ? fileManager.globalSkillsCacheFolder.appending(component: name)
+                    : fileManager.skillsCacheFolder.appending(component: name)
+                let legacySkillMd = nameFolder.appending(component: "SKILL.md")
+                if fileManager.fileExists(atPath: legacySkillMd.path) {
+                    try? fileManager.removeItem(at: nameFolder)
+                }
+            }
+
+            for (name, files) in skills {
+                let skillFolder = isGlobal
+                    ? fileManager.globalSkillsCacheFolder.appending(components: name, skillSet.version)
+                    : fileManager.skillsCacheFolder.appending(components: name, skillSet.version)
                 try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
                 for skillFile in files {
                     let filePath = skillFolder.appendingPathComponent(skillFile.relativePath)
@@ -304,6 +342,13 @@ public struct Installer {
         }
         let scope = isGlobal ? "globally" : "for the current project"
         printer.printFormatted("\(.primary("🙌 Skills from \(skillSet.repository) installed \(scope)."))")
+    }
+
+    private func isSkillInstalled(_ name: String, version: String, isGlobal: Bool) -> Bool {
+        let folder = isGlobal
+            ? fileManager.globalSkillsCacheFolder.appending(components: name, version)
+            : fileManager.skillsCacheFolder.appending(components: name, version)
+        return fileManager.fileExists(atPath: folder.path)
     }
 
     /// Returns whether `url` lexically resolves to a location inside `base`.
