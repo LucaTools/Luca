@@ -299,7 +299,7 @@ public struct Installer {
                     try fileManager.createDirectory(at: parentDir, withIntermediateDirectories: true)
                     _ = fileManager.createFile(atPath: filePath.path, contents: skillFile.content)
                 }
-                try skillSymLinker.setSymLink(skillName: name, agents: resolvedAgents, isGlobal: isGlobal)
+                try skillSymLinker.setSymLink(skillName: name, version: skillSet.version, agents: resolvedAgents, isGlobal: isGlobal)
             }
         }
         let scope = isGlobal ? "globally" : "for the current project"

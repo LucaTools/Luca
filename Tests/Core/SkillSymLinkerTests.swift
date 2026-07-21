@@ -20,7 +20,7 @@ struct SkillSymLinkerTests {
         let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
-        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
+        try sut.setSymLink(skillName: skillName, version: "v1.0.0", agents: agents, isGlobal: false)
 
         for agentInfo in agents {
             let expectedSymLink = URL(fileURLWithPath: symLinkerFileManager.currentDirectoryPath)
@@ -41,7 +41,7 @@ struct SkillSymLinkerTests {
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
         // Create symlink the first time
-        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
+        try sut.setSymLink(skillName: skillName, version: "v1.0.0", agents: agents, isGlobal: false)
 
         let expectedSymLink = URL(fileURLWithPath: symLinkerFileManager.currentDirectoryPath)
             .appending(path: agents[0].projectSkillsPath)
@@ -49,7 +49,7 @@ struct SkillSymLinkerTests {
         #expect(symLinkExists(atPath: expectedSymLink.path))
 
         // Create symlink a second time (idempotent — should remove and recreate)
-        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
+        try sut.setSymLink(skillName: skillName, version: "v1.0.0", agents: agents, isGlobal: false)
 
         #expect(symLinkExists(atPath: expectedSymLink.path))
     }
@@ -71,7 +71,7 @@ struct SkillSymLinkerTests {
         var isDirectory: ObjCBool = false
         #expect(!fileManager.fileExists(atPath: agentSkillsDir.path, isDirectory: &isDirectory))
 
-        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
+        try sut.setSymLink(skillName: skillName, version: "v1.0.0", agents: agents, isGlobal: false)
 
         #expect(fileManager.fileExists(atPath: agentSkillsDir.path, isDirectory: &isDirectory))
         #expect(isDirectory.boolValue)
@@ -88,7 +88,7 @@ struct SkillSymLinkerTests {
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
         do {
-            try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
+            try sut.setSymLink(skillName: skillName, version: "v1.0.0", agents: agents, isGlobal: false)
             Issue.record("Expected error to be thrown")
         } catch let error as SkillSymLinker.SkillSymLinkerError {
             if case .agentDirectoryCreationFailed = error {
@@ -110,7 +110,7 @@ struct SkillSymLinkerTests {
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
         do {
-            try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
+            try sut.setSymLink(skillName: skillName, version: "v1.0.0", agents: agents, isGlobal: false)
             Issue.record("Expected error to be thrown")
         } catch let error as SkillSymLinker.SkillSymLinkerError {
             if case .symLinkCreationFailed = error {
@@ -142,7 +142,7 @@ struct SkillSymLinkerTests {
         #expect(isDirectory.boolValue)
 
         // Native install should replace the real directory with a symlink
-        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
+        try sut.setSymLink(skillName: skillName, version: "v1.0.0", agents: agents, isGlobal: false)
 
         #expect(symLinkExists(atPath: expectedSymLink.path))
     }
@@ -157,9 +157,9 @@ struct SkillSymLinkerTests {
         let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
-        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: true)
+        try sut.setSymLink(skillName: skillName, version: "v1.0.0", agents: agents, isGlobal: true)
 
-        let expectedSource = symLinkerFileManager.globalSkillsCacheFolder.appending(component: skillName)
+        let expectedSource = symLinkerFileManager.globalSkillsCacheFolder.appending(components: skillName, "v1.0.0")
         let agentGlobalDir = agents[0].resolvedGlobalSkillsPath(homeDirectory: symLinkerFileManager.homeDirectoryForCurrentUser)
         let symLinkDestination = agentGlobalDir.appending(component: skillName)
 
@@ -178,7 +178,7 @@ struct SkillSymLinkerTests {
         let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
-        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: true)
+        try sut.setSymLink(skillName: skillName, version: "v1.0.0", agents: agents, isGlobal: true)
 
         let agentGlobalDir = agents[0].resolvedGlobalSkillsPath(homeDirectory: symLinkerFileManager.homeDirectoryForCurrentUser)
         let expectedSymLink = agentGlobalDir.appending(component: skillName)
@@ -196,7 +196,7 @@ struct SkillSymLinkerTests {
         let symLinkerFileManager = SkillSymLinkerFileManagerMock(fileManager: fileManager)
         let sut = SkillSymLinker(fileManager: symLinkerFileManager)
 
-        try sut.setSymLink(skillName: skillName, agents: agents, isGlobal: false)
+        try sut.setSymLink(skillName: skillName, version: "v1.0.0", agents: agents, isGlobal: false)
 
         // Symlink should be at CWD/.claude/skills/<skillName>
         let expectedSymLink = URL(fileURLWithPath: symLinkerFileManager.currentDirectoryPath)
