@@ -198,20 +198,21 @@ struct SkillsInfoFactoryTests {
     }
 
     @Test
-    func test_skillsInfoForInstallationType_conflictingVersionsSameRepo_throwsVersionConflict() async throws {
+    func test_skillsInfoForInstallationType_sameRepoAtDifferentVersions_producesSeperateSkillSets() async throws {
+        // Two aliases pointing to the same URL at different SHAs must produce two independent SkillSets.
         let spec = Spec(tools: nil, skills: [
-            Skill(name: "skill-a", repository: "vercel-labs/agent-skills", version: "v1.0.0"),
-            Skill(name: "skill-b", repository: "vercel-labs/agent-skills", version: "v2.0.0")
+            Skill(name: "skill-a", repository: "vercel-labs/agent-skills", version: "947ad594"),
+            Skill(name: "skill-b", repository: "vercel-labs/agent-skills", version: "3445c638")
         ], agents: nil)
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
 
-        await #expect(throws: SkillsInfoFactory.SkillsInfoFactoryError.versionConflict(
-            repository: "vercel-labs/agent-skills",
-            existing: "v1.0.0",
-            conflicting: "v2.0.0"
-        )) {
-            try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
-        }
+        let info = try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
+
+        #expect(info.skillSets.count == 2)
+        let setA = try #require(info.skillSets.first(where: { $0.version == "947ad594" }))
+        #expect(setA.skills == ["skill-a"])
+        let setB = try #require(info.skillSets.first(where: { $0.version == "3445c638" }))
+        #expect(setB.skills == ["skill-b"])
     }
 
     @Test

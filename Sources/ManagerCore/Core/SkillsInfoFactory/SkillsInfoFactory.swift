@@ -10,17 +10,20 @@ struct SkillsInfoFactory {
     enum SkillsInfoFactoryError: Error, LocalizedError, Equatable {
         /// A version ref is required for individual installs but was not provided.
         case missingVersion(repository: String)
-        /// Two skills from the same repository declare different versions.
-        case versionConflict(repository: String, existing: String, conflicting: String)
 
         var errorDescription: String? {
             switch self {
             case .missingVersion(let repository):
                 return "No version specified for '\(repository)'. Use --ref to pin to a git tag or commit SHA (e.g. --ref v1.2.0)."
-            case .versionConflict(let repository, let existing, let conflicting):
-                return "Version conflict for '\(repository)': '\(existing)' and '\(conflicting)' cannot be installed together. Pin all skills from this repository to the same version."
             }
         }
+    }
+
+    /// Groups skills by their (repository URL, version) pair so that the same URL at different
+    /// SHAs produces separate ``SkillSet``s — each checked out independently.
+    private struct SkillGroupKey: Hashable {
+        let repository: String
+        let version: String
     }
 
     private let specLoader: SpecLoading
@@ -39,42 +42,32 @@ struct SkillsInfoFactory {
             let spec = try specLoader.loadSpec(at: specPath)
             let skills = spec.skills ?? []
 
-            // Phase 1: separate repos that want all skills (nil name) from repos with named skills.
-            // Track the first non-nil version encountered per repo.
-            var allSkillsRepos = Set<String>()
-            var namedSkillsByRepo = [String: [String]]()
-            var versionByRepo = [String: String]()
+            // Phase 1: separate groups that want all skills (nil name) from those with named skills.
+            // Skills are grouped by (repository, version) so the same URL at different SHAs
+            // produces independent SkillSets — each checked out separately.
+            var allSkillsGroups = Set<SkillGroupKey>()
+            var namedSkillsByGroup = [SkillGroupKey: [String]]()
             for skill in skills {
-                if let existing = versionByRepo[skill.repository] {
-                    guard existing == skill.version else {
-                        throw SkillsInfoFactoryError.versionConflict(
-                            repository: skill.repository,
-                            existing: existing,
-                            conflicting: skill.version
-                        )
-                    }
-                } else {
-                    versionByRepo[skill.repository] = skill.version
-                }
+                let key = SkillGroupKey(repository: skill.repository, version: skill.version)
                 if let name = skill.name {
-                    namedSkillsByRepo[skill.repository, default: []].append(name)
+                    namedSkillsByGroup[key, default: []].append(name)
                 } else {
-                    allSkillsRepos.insert(skill.repository)
+                    allSkillsGroups.insert(key)
                 }
             }
 
-            // Phase 2: merge — "all skills" repos always win over named entries for the same repo.
+            // Phase 2: merge — "all skills" groups always win over named entries for the same key.
             // An empty `skills` array in `SkillSet` signals "install all skills from this repo".
-            var skillSetsByRepo = [String: [String]]()
-            for repo in allSkillsRepos {
-                skillSetsByRepo[repo] = []
+            var skillSetsByGroup = [SkillGroupKey: [String]]()
+            for key in allSkillsGroups {
+                skillSetsByGroup[key] = []
             }
-            for (repo, names) in namedSkillsByRepo where !allSkillsRepos.contains(repo) {
-                skillSetsByRepo[repo] = names
+            for (key, names) in namedSkillsByGroup where !allSkillsGroups.contains(key) {
+                skillSetsByGroup[key] = names
             }
 
-            let skillSets: [SkillSet] = skillSetsByRepo.compactMap { repo, names in
-                versionByRepo[repo].map { SkillSet(repository: repo, skills: names, version: $0) }
+            let skillSets = skillSetsByGroup.map { key, names in
+                SkillSet(repository: key.repository, skills: names, version: key.version)
             }
             return SkillsInfo(agents: spec.agents, skillSets: skillSets)
 

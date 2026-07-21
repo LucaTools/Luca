@@ -167,7 +167,6 @@ struct ErrorDescriptionTests {
     @Test
     func skillsInfoFactoryError_errorDescription() {
         #expect(SkillsInfoFactory.SkillsInfoFactoryError.missingVersion(repository: "owner/repo").errorDescription != nil)
-        #expect(SkillsInfoFactory.SkillsInfoFactoryError.versionConflict(repository: "owner/repo", existing: "v1.0.0", conflicting: "v2.0.0").errorDescription != nil)
     }
 
     @Test
