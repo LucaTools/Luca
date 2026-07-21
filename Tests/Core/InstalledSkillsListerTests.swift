@@ -8,29 +8,41 @@ import Testing
 struct InstalledSkillsListerTests {
 
     @Test
-    func test_installedSkills_emptyFolder() throws {
+    func test_installedSkills_emptyFolder_returnsEmptyDict() throws {
         let fileManager = FileManagerWrapperMock()
         let lister = InstalledSkillsLister(fileManager: fileManager)
-
-        // skillsCacheFolder does not exist (mock uses temp dir which is empty initially)
 
         let skills = try lister.installedSkills()
         #expect(skills.isEmpty)
     }
 
     @Test
-    func test_installedSkills_multipleSkills() throws {
+    func test_installedSkills_multipleSkillsWithVersions() throws {
         let fileManager = FileManagerWrapperMock()
         let lister = InstalledSkillsLister(fileManager: fileManager)
 
-        let skillNames = ["release-prep", "find-skills"]
-        for name in skillNames {
-            let skillFolder = fileManager.skillsCacheFolder.appending(component: name)
-            try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
-        }
+        let findSkillsV1 = fileManager.skillsCacheFolder.appending(components: "find-skills", "v1.0.0")
+        let releasePrepV2 = fileManager.skillsCacheFolder.appending(components: "release-prep", "v2.0.0")
+        try fileManager.createDirectory(at: findSkillsV1, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: releasePrepV2, withIntermediateDirectories: true)
 
         let skills = try lister.installedSkills()
-        #expect(skills == ["find-skills", "release-prep"])
+        #expect(skills["find-skills"] == ["v1.0.0"])
+        #expect(skills["release-prep"] == ["v2.0.0"])
+    }
+
+    @Test
+    func test_installedSkills_multipleVersionsSameSkill_returnsSorted() throws {
+        let fileManager = FileManagerWrapperMock()
+        let lister = InstalledSkillsLister(fileManager: fileManager)
+
+        let v1 = fileManager.skillsCacheFolder.appending(components: "find-skills", "v1.0.0")
+        let v2 = fileManager.skillsCacheFolder.appending(components: "find-skills", "v2.0.0")
+        try fileManager.createDirectory(at: v1, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: v2, withIntermediateDirectories: true)
+
+        let skills = try lister.installedSkills()
+        #expect(skills["find-skills"] == ["v1.0.0", "v2.0.0"])
     }
 
     @Test
@@ -39,17 +51,15 @@ struct InstalledSkillsListerTests {
         let lister = InstalledSkillsLister(fileManager: fileManager)
 
         try fileManager.createDirectory(at: fileManager.skillsCacheFolder, withIntermediateDirectories: true)
-
-        // Place a regular file inside the skills cache folder (should be silently skipped)
         let filePath = fileManager.skillsCacheFolder.appending(component: "not-a-skill.txt").path
         _ = fileManager.createFile(atPath: filePath, contents: Data("content".utf8))
 
-        // Create a valid skill directory alongside the file
-        let skillFolder = fileManager.skillsCacheFolder.appending(component: "valid-skill")
+        let skillFolder = fileManager.skillsCacheFolder.appending(components: "valid-skill", "v1.0.0")
         try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
 
         let skills = try lister.installedSkills()
-        #expect(skills == ["valid-skill"])
+        #expect(skills.keys.contains("valid-skill"))
+        #expect(!skills.keys.contains("not-a-skill.txt"))
     }
 
     @Test
@@ -57,20 +67,18 @@ struct InstalledSkillsListerTests {
         let fileManager = FileManagerWrapperMock()
         let lister = InstalledSkillsLister(fileManager: fileManager)
 
-        let skillName = "global-skill"
-        let skillFolder = fileManager.globalSkillsCacheFolder.appending(component: skillName)
+        let skillFolder = fileManager.globalSkillsCacheFolder.appending(components: "global-skill", "v1.0.0")
         try fileManager.createDirectory(at: skillFolder, withIntermediateDirectories: true)
 
         let skills = try lister.installedSkills(isGlobal: true)
-        #expect(skills == [skillName])
+        #expect(skills["global-skill"] == ["v1.0.0"])
     }
 
     @Test
-    func test_installedSkills_whenGlobal_andNoGlobalFolder_returnsEmptyArray() throws {
+    func test_installedSkills_whenGlobal_andNoGlobalFolder_returnsEmptyDict() throws {
         let fileManager = FileManagerWrapperMock()
         let lister = InstalledSkillsLister(fileManager: fileManager)
 
-        // globalSkillsCacheFolder does not exist — no directories created
         let skills = try lister.installedSkills(isGlobal: true)
         #expect(skills.isEmpty)
     }

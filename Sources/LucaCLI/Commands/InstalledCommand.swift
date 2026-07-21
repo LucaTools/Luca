@@ -38,12 +38,15 @@ struct InstalledCommand: AsyncParsableCommand {
 
         if skills {
             let lister = InstalledSkillsLister(fileManager: fileManager)
-            let skills = try lister.installedSkills(isGlobal: global)
-            if skills.isEmpty {
+            let installedSkills = try lister.installedSkills(isGlobal: global)
+            if installedSkills.isEmpty {
                 printer.printFormatted("\(.info("No skills installed."))")
             } else {
-                for skill in skills {
-                    printer.printFormatted("\(.primary(skill))")
+                for name in installedSkills.keys.sorted() {
+                    printer.printFormatted("\(.primary("\(name):"))")
+                    for version in installedSkills[name] ?? [] {
+                        printer.printFormatted("\(.raw("  - \(version)"))")
+                    }
                 }
             }
             return
