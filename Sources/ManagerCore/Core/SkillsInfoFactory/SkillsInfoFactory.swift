@@ -10,11 +10,15 @@ struct SkillsInfoFactory {
     enum SkillsInfoFactoryError: Error, LocalizedError, Equatable {
         /// A version ref is required for individual installs but was not provided.
         case missingVersion(repository: String)
+        /// Two skills from the same repository declare different versions.
+        case versionConflict(repository: String, existing: String, conflicting: String)
 
         var errorDescription: String? {
             switch self {
             case .missingVersion(let repository):
                 return "No version specified for '\(repository)'. Use --ref to pin to a git tag or commit SHA (e.g. --ref v1.2.0)."
+            case .versionConflict(let repository, let existing, let conflicting):
+                return "Version conflict for '\(repository)': '\(existing)' and '\(conflicting)' cannot be installed together. Pin all skills from this repository to the same version."
             }
         }
     }
@@ -41,7 +45,15 @@ struct SkillsInfoFactory {
             var namedSkillsByRepo = [String: [String]]()
             var versionByRepo = [String: String]()
             for skill in skills {
-                if versionByRepo[skill.repository] == nil {
+                if let existing = versionByRepo[skill.repository] {
+                    guard existing == skill.version else {
+                        throw SkillsInfoFactoryError.versionConflict(
+                            repository: skill.repository,
+                            existing: existing,
+                            conflicting: skill.version
+                        )
+                    }
+                } else {
                     versionByRepo[skill.repository] = skill.version
                 }
                 if let name = skill.name {

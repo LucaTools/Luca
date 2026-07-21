@@ -1,0 +1,7 @@
+---
+repos:
+  vercel: vercel-labs/agent-skills
+
+skills:
+  - name: frontend-design
+    repository: vercel

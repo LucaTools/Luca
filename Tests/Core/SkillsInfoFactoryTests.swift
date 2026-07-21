@@ -170,17 +170,19 @@ struct SkillsInfoFactoryTests {
     }
 
     @Test
-    func test_skillsInfoForInstallationType_multipleSkillsSameRepoFirstVersionWins() async throws {
+    func test_skillsInfoForInstallationType_multipleSkillsSameRepoSameVersion_mergesIntoOneSkillSet() async throws {
         let spec = Spec(tools: nil, skills: [
             Skill(name: "skill-a", repository: "vercel-labs/agent-skills", version: "v1.0.0"),
-            Skill(name: "skill-b", repository: "vercel-labs/agent-skills", version: "v2.0.0")
+            Skill(name: "skill-b", repository: "vercel-labs/agent-skills", version: "v1.0.0")
         ], agents: nil)
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
 
         let info = try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
 
+        #expect(info.skillSets.count == 1)
         let skillSet = try #require(info.skillSets.first)
         #expect(skillSet.version == "v1.0.0")
+        #expect(Set(skillSet.skills) == Set(["skill-a", "skill-b"]))
     }
 
     @Test
@@ -193,6 +195,23 @@ struct SkillsInfoFactoryTests {
 
         let skillSet = try #require(info.skillSets.first)
         #expect(skillSet.version == "abc1234")
+    }
+
+    @Test
+    func test_skillsInfoForInstallationType_conflictingVersionsSameRepo_throwsVersionConflict() async throws {
+        let spec = Spec(tools: nil, skills: [
+            Skill(name: "skill-a", repository: "vercel-labs/agent-skills", version: "v1.0.0"),
+            Skill(name: "skill-b", repository: "vercel-labs/agent-skills", version: "v2.0.0")
+        ], agents: nil)
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
+
+        await #expect(throws: SkillsInfoFactory.SkillsInfoFactoryError.versionConflict(
+            repository: "vercel-labs/agent-skills",
+            existing: "v1.0.0",
+            conflicting: "v2.0.0"
+        )) {
+            try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
+        }
     }
 
     @Test

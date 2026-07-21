@@ -106,6 +106,41 @@ struct SpecLoaderTests {
     }
 
     @Test
+    func test_loadSpec_repoWithVersion_skillInheritsRepoVersion() throws {
+        let sut = SpecLoader(fileManager: .default)
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_mock_with_repo_version", withExtension: "yml"))
+
+        let spec = try sut.loadSpec(at: path)
+        let skills = try #require(spec.skills)
+
+        // Both skills referencing the "vercel" alias (object form with version: v2.0.0) should inherit that version.
+        let frontendDesign = try #require(skills.first(where: { $0.name == "frontend-design" }))
+        #expect(frontendDesign.version == "v2.0.0")
+        let skillCreator = try #require(skills.first(where: { $0.name == "skill-creator" }))
+        #expect(skillCreator.version == "v2.0.0")
+
+        // The skill with its own version overrides the repo default.
+        let swiftTesting = try #require(skills.first(where: { $0.name == "swift-testing-expert" }))
+        #expect(swiftTesting.version == "v1.5.0")
+    }
+
+    @Test
+    func test_loadSpec_repoAliasWithoutVersion_skillMissingVersion_throwsInvalidSpec() throws {
+        let sut = SpecLoader(fileManager: .default)
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_mock_repo_alias_missing_version", withExtension: "yml"))
+
+        #expect {
+            try sut.loadSpec(at: path)
+        } throws: { error in
+            guard let specError = error as? SpecLoader.SpecLoaderError,
+                  case SpecLoader.SpecLoaderError.invalidSpec = specError else { return false }
+            return true
+        }
+    }
+
+    @Test
     func test_loadSpec_invalidYAML_errorDescriptionIsReadable() throws {
         let sut = SpecLoader(fileManager: .default)
 

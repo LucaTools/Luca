@@ -14,7 +14,9 @@ public typealias Agent = String
 /// ```yaml
 /// ---
 /// repos:
-///   vercel: vercel-labs/agent-skills
+///   vercel:
+///     url: vercel-labs/agent-skills
+///     version: v1.2.0
 ///   vanderlee: git@github.com:AvdLee/Swift-Testing-Agent-Skill.git
 ///
 /// tools:
@@ -27,15 +29,15 @@ public typealias Agent = String
 ///
 /// skills:
 ///   - name: frontend-design
-///     repository: vercel
-///     version: v1.2.0
+///     repository: vercel       # inherits v1.2.0 from repo entry
 ///   - name: skill-creator
-///     repository: vercel
+///     repository: vercel       # inherits v1.2.0 from repo entry
 ///   - name: swift-testing-expert
 ///     repository: vanderlee
-///     version: abc1234
+///     version: abc1234         # explicit version overrides repo default
 ///   - name: swift-concurrency
 ///     repository: https://github.com/AvdLee/Swift-Concurrency-Agent-Skill.git
+///     version: v2.0.0          # required when repo has no default version
 /// ```
 ///
 /// ## Topics
@@ -66,15 +68,23 @@ public struct Spec: Codable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        let repos = try container.decodeIfPresent([String: String].self, forKey: .repos)
+        let repos = try container.decodeIfPresent([String: RepoEntry].self, forKey: .repos)
         tools = try container.decodeIfPresent([Tool].self, forKey: .tools)
-        let rawSkills = try container.decodeIfPresent([Skill].self, forKey: .skills)
-        if let rawSkills, let repos {
-            skills = rawSkills.map { skill in
-                Skill(name: skill.name, repository: repos[skill.repository] ?? skill.repository, version: skill.version)
+        let drafts = try container.decodeIfPresent([SkillDraft].self, forKey: .skills)
+        if let drafts {
+            skills = try drafts.map { draft in
+                // Resolve repo alias to entry (if present), otherwise treat the value as a URL.
+                let entry = repos?[draft.repository]
+                let resolvedURL = entry?.url ?? draft.repository
+                // Skill-level version takes precedence over repo-level version.
+                let resolvedVersion = draft.version ?? entry?.version
+                guard let version = resolvedVersion else {
+                    throw Skill.SkillDecodingError.missingVersion(repository: resolvedURL)
+                }
+                return Skill(name: draft.name, repository: resolvedURL, version: version)
             }
         } else {
-            skills = rawSkills
+            skills = nil
         }
         agents = try container.decodeIfPresent([Agent].self, forKey: .agents)
     }
@@ -89,4 +99,11 @@ public struct Spec: Codable {
     private enum CodingKeys: String, CodingKey {
         case repos, tools, skills, agents
     }
+}
+
+/// Raw skill entry decoded directly from YAML before repo alias and version resolution.
+private struct SkillDraft: Decodable {
+    let name: String?
+    let repository: String
+    let version: String?
 }

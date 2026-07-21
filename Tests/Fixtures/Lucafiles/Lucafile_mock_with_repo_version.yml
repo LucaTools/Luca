@@ -1,0 +1,15 @@
+---
+repos:
+  vercel:
+    url: vercel-labs/agent-skills
+    version: v2.0.0
+  vanderlee: git@github.com:AvdLee/Swift-Testing-Agent-Skill.git
+
+skills:
+  - name: frontend-design
+    repository: vercel
+  - name: skill-creator
+    repository: vercel
+  - name: swift-testing-expert
+    repository: vanderlee
+    version: v1.5.0
