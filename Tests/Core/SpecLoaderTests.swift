@@ -91,6 +91,21 @@ struct SpecLoaderTests {
     }
 
     @Test
+    func test_loadSpec_skillMissingVersion_throwsInvalidSpec() throws {
+        let sut = SpecLoader(fileManager: .default)
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_mock_skills_missing_version", withExtension: "yml"))
+
+        #expect {
+            try sut.loadSpec(at: path)
+        } throws: { error in
+            guard let specError = error as? SpecLoader.SpecLoaderError,
+                  case SpecLoader.SpecLoaderError.invalidSpec = specError else { return false }
+            return true
+        }
+    }
+
+    @Test
     func test_loadSpec_invalidYAML_errorDescriptionIsReadable() throws {
         let sut = SpecLoader(fileManager: .default)
 

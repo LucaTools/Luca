@@ -12,7 +12,7 @@ struct SkillsInfoFactoryTests {
     @Test
     func test_skillsInfoForInstallationType_namedSkillSingleRepo_returnsOneSkillSet() async throws {
         let spec = Spec(tools: nil, skills: [
-            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills")
+            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills", version: "v1.0.0")
         ], agents: nil)
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
 
@@ -28,8 +28,8 @@ struct SkillsInfoFactoryTests {
     @Test
     func test_skillsInfoForInstallationType_multipleNamedSkillsSameRepo_mergesIntoOneSkillSet() async throws {
         let spec = Spec(tools: nil, skills: [
-            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills"),
-            Skill(name: "skill-creator", repository: "vercel-labs/agent-skills")
+            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills", version: "v1.0.0"),
+            Skill(name: "skill-creator", repository: "vercel-labs/agent-skills", version: "v1.0.0")
         ], agents: nil)
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
 
@@ -44,8 +44,8 @@ struct SkillsInfoFactoryTests {
     @Test
     func test_skillsInfoForInstallationType_namedSkillsDifferentRepos_returnsMultipleSkillSets() async throws {
         let spec = Spec(tools: nil, skills: [
-            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills"),
-            Skill(name: "swift-testing-expert", repository: "https://github.com/AvdLee/Swift-Testing-Agent-Skill")
+            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills", version: "v1.0.0"),
+            Skill(name: "swift-testing-expert", repository: "https://github.com/AvdLee/Swift-Testing-Agent-Skill", version: "v1.0.0")
         ], agents: nil)
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
 
@@ -62,7 +62,7 @@ struct SkillsInfoFactoryTests {
     @Test
     func test_skillsInfoForInstallationType_allSkillsEntryAlone_returnsEmptySkillsArray() async throws {
         let spec = Spec(tools: nil, skills: [
-            Skill(name: nil, repository: "vercel-labs/agent-skills")
+            Skill(name: nil, repository: "vercel-labs/agent-skills", version: "v1.0.0")
         ], agents: nil)
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
 
@@ -78,8 +78,8 @@ struct SkillsInfoFactoryTests {
     func test_skillsInfoForInstallationType_allSkillsOverridesNamedEntryForSameRepo() async throws {
         // nil-name entry wins; the named entry is discarded
         let spec = Spec(tools: nil, skills: [
-            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills"),
-            Skill(name: nil, repository: "vercel-labs/agent-skills")
+            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills", version: "v1.0.0"),
+            Skill(name: nil, repository: "vercel-labs/agent-skills", version: "v1.0.0")
         ], agents: nil)
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
 
@@ -94,8 +94,8 @@ struct SkillsInfoFactoryTests {
     @Test
     func test_skillsInfoForInstallationType_mixedRepos_allSkillsOnlyAffectsItsRepo() async throws {
         let spec = Spec(tools: nil, skills: [
-            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills"),
-            Skill(name: nil, repository: "other-org/other-skills")
+            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills", version: "v1.0.0"),
+            Skill(name: nil, repository: "other-org/other-skills", version: "v1.0.0")
         ], agents: nil)
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
 
@@ -113,7 +113,7 @@ struct SkillsInfoFactoryTests {
     @Test
     func test_skillsInfoForInstallationType_agentsPropagated() async throws {
         let spec = Spec(tools: nil, skills: [
-            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills")
+            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills", version: "v1.0.0")
         ], agents: ["claude-code", "github-copilot"])
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
 
@@ -167,19 +167,6 @@ struct SkillsInfoFactoryTests {
 
         let skillSet = try #require(info.skillSets.first)
         #expect(skillSet.version == "v1.2.0")
-    }
-
-    @Test
-    func test_skillsInfoForInstallationType_skillWithNoVersion_versionIsNil() async throws {
-        let spec = Spec(tools: nil, skills: [
-            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills")
-        ], agents: nil)
-        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec))
-
-        let info = try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
-
-        let skillSet = try #require(info.skillSets.first)
-        #expect(skillSet.version == nil)
     }
 
     @Test

@@ -28,8 +28,8 @@ struct SkillsInfoFactory {
             var namedSkillsByRepo = [String: [String]]()
             var versionByRepo = [String: String]()
             for skill in skills {
-                if versionByRepo[skill.repository] == nil, let version = skill.version {
-                    versionByRepo[skill.repository] = version
+                if versionByRepo[skill.repository] == nil {
+                    versionByRepo[skill.repository] = skill.version
                 }
                 if let name = skill.name {
                     namedSkillsByRepo[skill.repository, default: []].append(name)

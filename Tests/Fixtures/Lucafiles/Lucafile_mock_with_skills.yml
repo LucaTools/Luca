@@ -8,10 +8,13 @@ tools:
 skills:
   - name: frontend-design
     repository: vercel-labs/agent-skills
+    version: v1.0.0
   - name: skill-creator
     repository: vercel-labs/agent-skills
+    version: v1.0.0
   - name: swift-testing-expert
     repository: https://github.com/AvdLee/Swift-Testing-Agent-Skill
+    version: v1.0.0
 
 agents:
   - claude-code

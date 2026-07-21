@@ -6,12 +6,16 @@ repos:
 skills:
   - name: frontend-design
     repository: vercel
+    version: v1.0.0
   - name: skill-creator
     repository: vercel
+    version: v1.0.0
   - name: swift-testing-expert
     repository: vanderlee
+    version: v1.0.0
   - name: swift-concurrency
     repository: https://github.com/AvdLee/Swift-Concurrency-Agent-Skill.git
+    version: v1.0.0
 
 agents:
   - claude-code
