@@ -129,7 +129,7 @@ struct SkillsInfoFactoryTests {
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: Spec(tools: nil, skills: nil, agents: nil)))
 
         let info = try await sut.skillsInfoForInstallationType(
-            .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: nil)
+            .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: "v1.0.0")
         )
 
         #expect(info.skillSets.count == 1)
@@ -144,7 +144,7 @@ struct SkillsInfoFactoryTests {
         let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: Spec(tools: nil, skills: nil, agents: nil)))
 
         let info = try await sut.skillsInfoForInstallationType(
-            .individual(repository: "owner/repo", skillNames: ["skill-a"], agents: ["claude-code"], ref: nil)
+            .individual(repository: "owner/repo", skillNames: ["skill-a"], agents: ["claude-code"], ref: "v1.0.0")
         )
 
         #expect(info.skillSets.count == 1)
@@ -193,6 +193,17 @@ struct SkillsInfoFactoryTests {
 
         let skillSet = try #require(info.skillSets.first)
         #expect(skillSet.version == "abc1234")
+    }
+
+    @Test
+    func test_skillsInfoForInstallationType_individual_withoutRef_throwsMissingVersion() async throws {
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: Spec(tools: nil, skills: nil, agents: nil)))
+
+        await #expect(throws: SkillsInfoFactory.SkillsInfoFactoryError.missingVersion(repository: "owner/repo")) {
+            try await sut.skillsInfoForInstallationType(
+                .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: nil)
+            )
+        }
     }
 
     // MARK: - Empty skills

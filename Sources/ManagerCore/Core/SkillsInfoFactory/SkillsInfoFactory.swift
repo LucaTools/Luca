@@ -6,8 +6,21 @@ import LucaFoundation
 /// Creates ``SkillsInfo`` instances from various installation type descriptions.
 struct SkillsInfoFactory {
 
+    /// Errors thrown by ``SkillsInfoFactory``.
+    enum SkillsInfoFactoryError: Error, LocalizedError, Equatable {
+        /// A version ref is required for individual installs but was not provided.
+        case missingVersion(repository: String)
+
+        var errorDescription: String? {
+            switch self {
+            case .missingVersion(let repository):
+                return "No version specified for '\(repository)'. Use --ref to pin to a git tag or commit SHA (e.g. --ref v1.2.0)."
+            }
+        }
+    }
+
     private let specLoader: SpecLoading
-    
+
     init(specLoader: SpecLoading) {
         self.specLoader = specLoader
     }
@@ -48,12 +61,15 @@ struct SkillsInfoFactory {
                 skillSetsByRepo[repo] = names
             }
 
-            let skillSets = skillSetsByRepo.map { SkillSet(repository: $0.key, skills: $0.value, version: versionByRepo[$0.key]) }
-            return SkillsInfo(
-                agents: spec.agents,
-                skillSets: skillSets
-            )
+            let skillSets: [SkillSet] = skillSetsByRepo.compactMap { repo, names in
+                versionByRepo[repo].map { SkillSet(repository: repo, skills: names, version: $0) }
+            }
+            return SkillsInfo(agents: spec.agents, skillSets: skillSets)
+
         case .individual(let repository, let skillNames, let agents, let ref):
+            guard let ref else {
+                throw SkillsInfoFactoryError.missingVersion(repository: repository)
+            }
             let skillSet = SkillSet(repository: repository, skills: skillNames, version: ref)
             return SkillsInfo(agents: agents, skillSets: [skillSet])
         }

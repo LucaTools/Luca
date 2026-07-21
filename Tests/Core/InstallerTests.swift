@@ -651,7 +651,7 @@ struct InstallerTests {
         )
 
         try await installer.install(
-            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: nil),
+            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: "v1.0.0"),
             useNpx: false
         )
 
@@ -745,7 +745,7 @@ struct InstallerTests {
         )
 
         try await installer.install(
-            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: nil),
+            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: "v1.0.0"),
             useNpx: false,
             isGlobal: true
         )
@@ -780,7 +780,7 @@ struct InstallerTests {
         )
 
         try await installer.install(
-            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: nil),
+            installationType: .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: "v1.0.0"),
             useNpx: false
         )
 
