@@ -161,6 +161,34 @@ The optional `skills:` key installs agentic skills from Git repositories.
 |-------|----------|-------------|
 | `name` | Yes | Name of the skill to install; omit to install all |
 | `repository` | Yes | `owner/repo` shorthand, full HTTPS/GIT URL, or a `repos` alias key |
+| `version` | Yes, unless inherited from a `repos` alias | Git tag, commit SHA, or `latest` |
+
+### Versioning
+
+The `version` field accepts:
+
+- a git tag (e.g. `v1.2.0`)
+- a commit SHA (e.g. `abc1234`)
+- the literal value `latest`, which always resolves to the repository's current default-branch HEAD commit
+
+```yaml
+skills:
+  - name: skill-creator
+    repository: vercel-labs/agent-skills
+    version: latest
+```
+
+When `version: latest` is used, Luca runs `git ls-remote` against the repository on every install to
+determine the current HEAD commit SHA. That resolved SHA — never the literal string `latest` — is
+what's used for the on-disk cache path (`~/.luca/skills/{name}/{sha}/`) and the `git checkout`. This
+has two consequences:
+
+- Every install with `version: latest` requires a network round-trip to check the remote, even if
+  the resolved commit turns out to be one already cached locally (in which case the download itself
+  is still skipped).
+- Two installs at different times can resolve to different commits — and therefore install different
+  content — if the upstream repository gained new commits in between. Pin to a tag or SHA instead if
+  you need fully reproducible installs across your team.
 
 ### Repository Aliases
 

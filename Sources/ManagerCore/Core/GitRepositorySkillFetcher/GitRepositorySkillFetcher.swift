@@ -117,7 +117,7 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
 
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
-        let gitURL = cloneURL(for: repository)
+        let gitURL = GitRepositoryURLNormalizer.cloneURL(for: repository)
 
         if let ref, isCommitSHA(ref) {
             let cloneExitCode = try await subprocessRunner.run(
@@ -160,19 +160,6 @@ actor GitRepositorySkillFetcher: SkillRepositoryFetching {
     /// Returns `true` when `ref` looks like a commit SHA (7–40 hexadecimal characters).
     private func isCommitSHA(_ ref: String) -> Bool {
         ref.count >= 7 && ref.count <= 40 && ref.allSatisfy(\.isHexDigit)
-    }
-
-    /// Returns a git-clonable URL for the given repository reference.
-    ///
-    /// SSH and HTTPS/HTTP URLs are passed through unchanged; `owner/repo` shorthand is
-    /// expanded to `https://github.com/owner/repo`.
-    private func cloneURL(for repository: String) -> String {
-        if repository.hasPrefix("git@")
-            || repository.hasPrefix("https://")
-            || repository.hasPrefix("http://") {
-            return repository
-        }
-        return "https://github.com/\(repository)"
     }
 
     /// Walks the cloned directory and returns paths of all skill-related files.
