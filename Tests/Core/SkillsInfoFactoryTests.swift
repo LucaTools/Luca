@@ -226,6 +226,91 @@ struct SkillsInfoFactoryTests {
         }
     }
 
+    // MARK: - "latest" version resolution
+
+    @Test
+    func test_skillsInfoForInstallationType_versionLatest_resolvesToConcreteSha() async throws {
+        let spec = Spec(tools: nil, skills: [
+            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills", version: Skill.latestVersionKeyword)
+        ], agents: nil)
+        let resolver = SkillLatestVersionResolverMock()
+        resolver.resultsByRepository = ["vercel-labs/agent-skills": .success("947ad5941cddb8bd7d998129a642f43f0deb5c5f")]
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec), skillVersionResolver: resolver)
+
+        let info = try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
+
+        let skillSet = try #require(info.skillSets.first)
+        #expect(skillSet.version == "947ad5941cddb8bd7d998129a642f43f0deb5c5f")
+        #expect(resolver.recordedRepositories == ["vercel-labs/agent-skills"])
+    }
+
+    @Test
+    func test_skillsInfoForInstallationType_multipleSkillsSameRepoVersionLatest_resolvesOnceAndMergesIntoOneSkillSet() async throws {
+        let spec = Spec(tools: nil, skills: [
+            Skill(name: "skill-a", repository: "vercel-labs/agent-skills", version: Skill.latestVersionKeyword),
+            Skill(name: "skill-b", repository: "vercel-labs/agent-skills", version: Skill.latestVersionKeyword)
+        ], agents: nil)
+        let resolver = SkillLatestVersionResolverMock()
+        resolver.resultsByRepository = ["vercel-labs/agent-skills": .success("947ad5941cddb8bd7d998129a642f43f0deb5c5f")]
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec), skillVersionResolver: resolver)
+
+        let info = try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
+
+        #expect(info.skillSets.count == 1)
+        let skillSet = try #require(info.skillSets.first)
+        #expect(skillSet.version == "947ad5941cddb8bd7d998129a642f43f0deb5c5f")
+        #expect(Set(skillSet.skills) == Set(["skill-a", "skill-b"]))
+        #expect(resolver.recordedRepositories.count == 1, "the same repository must only be resolved once per call")
+    }
+
+    @Test
+    func test_skillsInfoForInstallationType_pinnedAndLatestSameRepo_produceSeparateSkillSets() async throws {
+        let spec = Spec(tools: nil, skills: [
+            Skill(name: "skill-a", repository: "vercel-labs/agent-skills", version: "v1.0.0"),
+            Skill(name: "skill-b", repository: "vercel-labs/agent-skills", version: Skill.latestVersionKeyword)
+        ], agents: nil)
+        let resolver = SkillLatestVersionResolverMock()
+        resolver.resultsByRepository = ["vercel-labs/agent-skills": .success("947ad5941cddb8bd7d998129a642f43f0deb5c5f")]
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec), skillVersionResolver: resolver)
+
+        let info = try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
+
+        #expect(info.skillSets.count == 2)
+        let pinnedSet = try #require(info.skillSets.first(where: { $0.version == "v1.0.0" }))
+        #expect(pinnedSet.skills == ["skill-a"])
+        let latestSet = try #require(info.skillSets.first(where: { $0.version == "947ad5941cddb8bd7d998129a642f43f0deb5c5f" }))
+        #expect(latestSet.skills == ["skill-b"])
+    }
+
+    @Test
+    func test_skillsInfoForInstallationType_resolverThrows_propagatesError() async throws {
+        struct ResolverError: Error, Equatable {}
+        let spec = Spec(tools: nil, skills: [
+            Skill(name: "frontend-design", repository: "vercel-labs/agent-skills", version: Skill.latestVersionKeyword)
+        ], agents: nil)
+        let resolver = SkillLatestVersionResolverMock()
+        resolver.resultsByRepository = ["vercel-labs/agent-skills": .failure(ResolverError())]
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: spec), skillVersionResolver: resolver)
+
+        await #expect(throws: ResolverError.self) {
+            try await sut.skillsInfoForInstallationType(.spec(specPath: URL(fileURLWithPath: "/Lucafile")))
+        }
+    }
+
+    @Test
+    func test_skillsInfoForInstallationType_individual_refLatest_resolvesToConcreteSha() async throws {
+        let resolver = SkillLatestVersionResolverMock()
+        resolver.resultsByRepository = ["owner/repo": .success("947ad5941cddb8bd7d998129a642f43f0deb5c5f")]
+        let sut = SkillsInfoFactory(specLoader: SpecLoaderMock(spec: Spec(tools: nil, skills: nil, agents: nil)), skillVersionResolver: resolver)
+
+        let info = try await sut.skillsInfoForInstallationType(
+            .individual(repository: "owner/repo", skillNames: [], agents: nil, ref: Skill.latestVersionKeyword)
+        )
+
+        let skillSet = try #require(info.skillSets.first)
+        #expect(skillSet.version == "947ad5941cddb8bd7d998129a642f43f0deb5c5f")
+    }
+
     // MARK: - Empty skills
 
     @Test

@@ -27,9 +27,11 @@ struct SkillsInfoFactory {
     }
 
     private let specLoader: SpecLoading
+    private let skillVersionResolver: SkillLatestVersionResolving
 
-    init(specLoader: SpecLoading) {
+    init(specLoader: SpecLoading, skillVersionResolver: SkillLatestVersionResolving = SkillLatestVersionResolver()) {
         self.specLoader = specLoader
+        self.skillVersionResolver = skillVersionResolver
     }
     
     // MARK: - Internal
@@ -40,7 +42,7 @@ struct SkillsInfoFactory {
         switch installationType {
         case .spec(let specPath):
             let spec = try specLoader.loadSpec(at: specPath)
-            let skills = spec.skills ?? []
+            let skills = try await resolveLatestVersions(in: spec.skills ?? [])
 
             // Phase 1: separate groups that want all skills (nil name) from those with named skills.
             // Skills are grouped by (repository, version) so the same URL at different SHAs
@@ -75,8 +77,38 @@ struct SkillsInfoFactory {
             guard let ref else {
                 throw SkillsInfoFactoryError.missingVersion(repository: repository)
             }
-            let skillSet = SkillSet(repository: repository, skills: skillNames, version: ref)
+            let resolvedRef = ref == Skill.latestVersionKeyword
+                ? try await skillVersionResolver.resolveLatestVersion(repository: repository)
+                : ref
+            let skillSet = SkillSet(repository: repository, skills: skillNames, version: resolvedRef)
             return SkillsInfo(agents: agents, skillSets: [skillSet])
         }
+    }
+
+    // MARK: - Private
+
+    /// Replaces every `Skill.latestVersionKeyword` version with a concrete commit SHA.
+    ///
+    /// Resolves at most once per distinct repository — multiple skill entries requesting
+    /// `latest` for the same repository must land on the same resolved SHA so they merge
+    /// into a single ``SkillSet`` in the grouping phase.
+    private func resolveLatestVersions(in skills: [Skill]) async throws -> [Skill] {
+        var resolvedByRepository: [String: String] = [:]
+        var result: [Skill] = []
+        for skill in skills {
+            guard skill.version == Skill.latestVersionKeyword else {
+                result.append(skill)
+                continue
+            }
+            let resolved: String
+            if let cached = resolvedByRepository[skill.repository] {
+                resolved = cached
+            } else {
+                resolved = try await skillVersionResolver.resolveLatestVersion(repository: skill.repository)
+                resolvedByRepository[skill.repository] = resolved
+            }
+            result.append(Skill(name: skill.name, repository: skill.repository, version: resolved))
+        }
+        return result
     }
 }
