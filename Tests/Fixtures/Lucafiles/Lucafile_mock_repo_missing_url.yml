@@ -1,0 +1,8 @@
+---
+repos:
+  vercel:
+    version: v1.0.0
+
+skills:
+  - name: frontend-design
+    repository: vercel
