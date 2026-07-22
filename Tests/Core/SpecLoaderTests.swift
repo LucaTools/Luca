@@ -91,7 +91,7 @@ struct SpecLoaderTests {
     }
 
     @Test
-    func test_loadSpec_skillMissingVersion_throwsInvalidSpec() throws {
+    func test_loadSpec_skillMissingVersion_errorMentionsFieldAndRepository() throws {
         let sut = SpecLoader(fileManager: .default)
         let bundle = Bundle.module
         let path = try #require(bundle.url(forResource: "Lucafile_mock_skills_missing_version", withExtension: "yml"))
@@ -100,8 +100,8 @@ struct SpecLoaderTests {
             try sut.loadSpec(at: path)
         } throws: { error in
             guard let specError = error as? SpecLoader.SpecLoaderError,
-                  case SpecLoader.SpecLoaderError.invalidSpec = specError else { return false }
-            return true
+                  let description = specError.errorDescription else { return false }
+            return description.contains("version") && description.contains("vercel-labs/agent-skills")
         }
     }
 
@@ -126,7 +126,7 @@ struct SpecLoaderTests {
     }
 
     @Test
-    func test_loadSpec_repoAliasWithoutVersion_skillMissingVersion_throwsInvalidSpec() throws {
+    func test_loadSpec_repoAliasWithoutVersion_skillMissingVersion_errorMentionsFieldAndRepository() throws {
         let sut = SpecLoader(fileManager: .default)
         let bundle = Bundle.module
         let path = try #require(bundle.url(forResource: "Lucafile_mock_repo_alias_missing_version", withExtension: "yml"))
@@ -135,8 +135,83 @@ struct SpecLoaderTests {
             try sut.loadSpec(at: path)
         } throws: { error in
             guard let specError = error as? SpecLoader.SpecLoaderError,
-                  case SpecLoader.SpecLoaderError.invalidSpec = specError else { return false }
-            return true
+                  let description = specError.errorDescription else { return false }
+            return description.contains("version") && description.contains("vercel-labs/agent-skills")
+        }
+    }
+
+    @Test
+    func test_loadSpec_skillMissingRepository_errorMentionsFieldAndLocation() throws {
+        let sut = SpecLoader(fileManager: .default)
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_mock_skill_missing_repository", withExtension: "yml"))
+
+        #expect {
+            try sut.loadSpec(at: path)
+        } throws: { error in
+            guard let specError = error as? SpecLoader.SpecLoaderError,
+                  let description = specError.errorDescription else { return false }
+            return description.contains("repository") && description.contains("skills[0]")
+        }
+    }
+
+    @Test
+    func test_loadSpec_repoMissingURL_errorMentionsFieldAndLocation() throws {
+        let sut = SpecLoader(fileManager: .default)
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_mock_repo_missing_url", withExtension: "yml"))
+
+        #expect {
+            try sut.loadSpec(at: path)
+        } throws: { error in
+            guard let specError = error as? SpecLoader.SpecLoaderError,
+                  let description = specError.errorDescription else { return false }
+            return description.contains("url") && description.contains("repos.vercel")
+        }
+    }
+
+    @Test
+    func test_loadSpec_reposWrongType_errorIsHumanReadable() throws {
+        let sut = SpecLoader(fileManager: .default)
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_mock_repos_wrong_type", withExtension: "yml"))
+
+        #expect {
+            try sut.loadSpec(at: path)
+        } throws: { error in
+            guard let specError = error as? SpecLoader.SpecLoaderError,
+                  let description = specError.errorDescription else { return false }
+            return description.contains("repos") && description.contains("a mapping") && !description.contains("Mapping.")
+        }
+    }
+
+    @Test
+    func test_loadSpec_skillsWrongType_errorIsHumanReadable() throws {
+        let sut = SpecLoader(fileManager: .default)
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_mock_skills_wrong_type", withExtension: "yml"))
+
+        #expect {
+            try sut.loadSpec(at: path)
+        } throws: { error in
+            guard let specError = error as? SpecLoader.SpecLoaderError,
+                  let description = specError.errorDescription else { return false }
+            return description.contains("skills") && description.contains("a list") && !description.contains("Sequence.")
+        }
+    }
+
+    @Test
+    func test_loadSpec_agentsItemWrongType_errorIsHumanReadable() throws {
+        let sut = SpecLoader(fileManager: .default)
+        let bundle = Bundle.module
+        let path = try #require(bundle.url(forResource: "Lucafile_mock_agents_item_wrong_type", withExtension: "yml"))
+
+        #expect {
+            try sut.loadSpec(at: path)
+        } throws: { error in
+            guard let specError = error as? SpecLoader.SpecLoaderError,
+                  let description = specError.errorDescription else { return false }
+            return description.contains("agents[0]") && description.contains("a single value") && !description.contains("Scalar.")
         }
     }
 

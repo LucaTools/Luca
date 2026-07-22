@@ -37,22 +37,51 @@ private func formattedParseError(_ error: Error) -> String {
         return error.localizedDescription
     }
     switch decodingError {
-    case .typeMismatch(_, let context):
-        return formattedContext(context, prefix: "Type mismatch")
-    case .valueNotFound(_, let context):
-        return formattedContext(context, prefix: "Value not found")
+    case .typeMismatch(let type, let context):
+        let path = codingPath(from: context.codingPath)
+        let location = path.isEmpty ? "" : " at '\(path)'"
+        return "Type mismatch\(location): expected \(humanReadableType(type))."
+    case .valueNotFound(let type, let context):
+        let path = codingPath(from: context.codingPath)
+        let location = path.isEmpty ? "" : " at '\(path)'"
+        return "Missing value\(location): expected \(humanReadableType(type))."
     case .keyNotFound(let key, let context):
-        return formattedContext(context, prefix: "Missing required key '\(key.stringValue)'")
+        let path = codingPath(from: context.codingPath)
+        let location = path.isEmpty ? "" : " in '\(path)'"
+        return "Missing required field '\(key.stringValue)'\(location)."
     case .dataCorrupted(let context):
-        return formattedContext(context, prefix: "Data corrupted")
+        // Yams wraps both nested DecodingErrors (e.g. a keyNotFound surfaced deeper in
+        // decoding) and custom errors thrown from within init(from:) (e.g.
+        // Skill.SkillDecodingError.missingVersion) as dataCorrupted; unwrap either first.
+        if let underlying = context.underlyingError {
+            return formattedParseError(underlying)
+        }
+        let path = codingPath(from: context.codingPath)
+        if path.isEmpty {
+            return "The Lucafile structure is invalid. Ensure all required fields are present and correctly formatted. Refer to the documentation to see how to define a spec file."
+        }
+        return "Invalid value at '\(path)'."
     @unknown default:
         return decodingError.localizedDescription
     }
 }
 
-private func formattedContext(_ context: DecodingError.Context, prefix: String) -> String {
-    let path = codingPath(from: context.codingPath)
-    return path.isEmpty ? "\(prefix): \(context.debugDescription)" : "\(prefix) at '\(path)': \(context.debugDescription)"
+/// Translates a decoding target type into user-facing wording.
+///
+/// Yams reports container-shape mismatches using its internal node types
+/// (`Node.Mapping`, `Node.Sequence`, `Node.Scalar`) rather than the Swift type
+/// being decoded, so those need remapping to plain YAML terminology.
+private func humanReadableType(_ type: Any.Type) -> String {
+    switch String(describing: type) {
+    case "Mapping":
+        return "a mapping (key: value pairs)"
+    case "Sequence":
+        return "a list"
+    case "Scalar":
+        return "a single value (text, number, or boolean)"
+    default:
+        return "\(type)"
+    }
 }
 
 private func codingPath(from keys: [CodingKey]) -> String {
