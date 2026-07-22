@@ -12,59 +12,39 @@ public struct SubprocessOutputRunner: SubprocessOutputRunning {
 
     public func run(executableURL: URL, arguments: [String], environment: [String: String]) async throws -> (exitCode: Int32, output: String) {
         try await withCheckedThrowingContinuation { continuation in
-            let process = Process()
-            process.executableURL = executableURL
-            process.arguments = arguments
-            process.standardInput = FileHandle.nullDevice
-            process.standardError = FileHandle.nullDevice
+            DispatchQueue.global(qos: .utility).async {
+                let process = Process()
+                process.executableURL = executableURL
+                process.arguments = arguments
+                process.standardInput = FileHandle.nullDevice
+                process.standardError = FileHandle.nullDevice
 
-            if !environment.isEmpty {
-                var env = ProcessInfo.processInfo.environment
-                env.merge(environment) { _, new in new }
-                process.environment = env
-            }
+                if !environment.isEmpty {
+                    var env = ProcessInfo.processInfo.environment
+                    env.merge(environment) { _, new in new }
+                    process.environment = env
+                }
 
-            let stdoutPipe = Pipe()
-            process.standardOutput = stdoutPipe
+                let stdoutPipe = Pipe()
+                process.standardOutput = stdoutPipe
 
-            // Accumulate via a readability handler (rather than reading once at the end)
-            // to avoid deadlocking if output exceeds the pipe's kernel buffer size.
-            let accumulator = OutputAccumulator()
-            stdoutPipe.fileHandleForReading.readabilityHandler = { handle in
-                accumulator.append(handle.availableData)
-            }
+                do {
+                    try process.run()
+                } catch {
+                    continuation.resume(throwing: error)
+                    return
+                }
 
-            process.terminationHandler = { finishedProcess in
-                stdoutPipe.fileHandleForReading.readabilityHandler = nil
-                let output = String(data: accumulator.value, encoding: .utf8) ?? ""
-                continuation.resume(returning: (finishedProcess.terminationStatus, output))
-            }
+                // `readDataToEndOfFile()` drains the pipe continuously as the child writes to it,
+                // so — unlike a single read after the process exits — it can never deadlock on a
+                // full kernel pipe buffer. It returns once the write end closes, which happens
+                // when the child exits, so `waitUntilExit()` below only reaps the exit status.
+                let data = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+                process.waitUntilExit()
 
-            do {
-                try process.run()
-            } catch {
-                stdoutPipe.fileHandleForReading.readabilityHandler = nil
-                continuation.resume(throwing: error)
+                let output = String(data: data, encoding: .utf8) ?? ""
+                continuation.resume(returning: (process.terminationStatus, output))
             }
         }
-    }
-}
-
-/// Thread-safe accumulator for data read incrementally off a pipe's readability handler,
-/// which fires on a background queue concurrently with the continuation's closure.
-private final class OutputAccumulator: @unchecked Sendable {
-    private let lock = NSLock()
-    private var data = Data()
-
-    func append(_ chunk: Data) {
-        lock.lock()
-        data.append(chunk)
-        lock.unlock()
-    }
-
-    var value: Data {
-        lock.lock()
-        defer { lock.unlock() }
-        return data
     }
 }
