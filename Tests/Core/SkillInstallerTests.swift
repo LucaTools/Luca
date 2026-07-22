@@ -13,7 +13,7 @@ struct SkillInstallerTests {
     func test_install_noSkillsNoAgents_invokesNpxWithoutFlags() async throws {
         let runner = SubprocessRunnerMock()
         let installer = SkillInstaller(subprocessRunner: runner)
-        let skillSet = SkillSet(repository: "some-org/ai-skills", skills: [])
+        let skillSet = SkillSet(repository: "some-org/ai-skills", skills: [], version: "v1.0.0")
 
         try await installer.install(skillSet: skillSet, agents: nil)
 
@@ -27,7 +27,7 @@ struct SkillInstallerTests {
     func test_install_withSkillsList_appendsSkillFlags() async throws {
         let runner = SubprocessRunnerMock()
         let installer = SkillInstaller(subprocessRunner: runner)
-        let skillSet = SkillSet(repository: "vercel-labs/agent-skills", skills: ["frontend-design", "skill-creator"])
+        let skillSet = SkillSet(repository: "vercel-labs/agent-skills", skills: ["frontend-design", "skill-creator"], version: "v1.0.0")
 
         try await installer.install(skillSet: skillSet, agents: nil)
 
@@ -39,7 +39,7 @@ struct SkillInstallerTests {
     func test_install_withAgents_appendsAgentFlags() async throws {
         let runner = SubprocessRunnerMock()
         let installer = SkillInstaller(subprocessRunner: runner)
-        let skillSet = SkillSet(repository: "some-org/ai-skills", skills: [])
+        let skillSet = SkillSet(repository: "some-org/ai-skills", skills: [], version: "v1.0.0")
 
         try await installer.install(skillSet: skillSet, agents: ["claude-code", "github-copilot"])
 
@@ -51,7 +51,7 @@ struct SkillInstallerTests {
     func test_install_withSkillsAndAgents_appendsBothFlags() async throws {
         let runner = SubprocessRunnerMock()
         let installer = SkillInstaller(subprocessRunner: runner)
-        let skillSet = SkillSet(repository: "vercel-labs/agent-skills", skills: ["deploy-to-vercel"])
+        let skillSet = SkillSet(repository: "vercel-labs/agent-skills", skills: ["deploy-to-vercel"], version: "v1.0.0")
 
         try await installer.install(skillSet: skillSet, agents: ["claude-code", "opencode"])
 
@@ -63,7 +63,7 @@ struct SkillInstallerTests {
     func test_install_httpsUrl_passesRepositoryAsIs() async throws {
         let runner = SubprocessRunnerMock()
         let installer = SkillInstaller(subprocessRunner: runner)
-        let skillSet = SkillSet(repository: "https://github.com/AvdLee/Swift-Testing-Agent-Skill", skills: [])
+        let skillSet = SkillSet(repository: "https://github.com/AvdLee/Swift-Testing-Agent-Skill", skills: [], version: "v1.0.0")
 
         try await installer.install(skillSet: skillSet, agents: nil)
 
@@ -78,7 +78,7 @@ struct SkillInstallerTests {
         let runner = SubprocessRunnerMock()
         runner.exitCodes = [1] // which npx fails
         let installer = SkillInstaller(subprocessRunner: runner)
-        let skillSet = SkillSet(repository: "some-org/ai-skills", skills: [])
+        let skillSet = SkillSet(repository: "some-org/ai-skills", skills: [], version: "v1.0.0")
 
         await #expect(throws: SkillInstaller.SkillInstallerError.npxNotAvailable) {
             try await installer.install(skillSet: skillSet, agents: nil)
@@ -92,7 +92,7 @@ struct SkillInstallerTests {
         let runner = SubprocessRunnerMock()
         runner.exitCodes = [0, 1] // which npx succeeds, npx skills add fails
         let installer = SkillInstaller(subprocessRunner: runner)
-        let skillSet = SkillSet(repository: "some-org/ai-skills", skills: [])
+        let skillSet = SkillSet(repository: "some-org/ai-skills", skills: [], version: "v1.0.0")
 
         await #expect(throws: SkillInstaller.SkillInstallerError.installationFailed("some-org/ai-skills", 1)) {
             try await installer.install(skillSet: skillSet, agents: nil)

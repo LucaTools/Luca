@@ -377,6 +377,10 @@ struct InstallCommand: AsyncParsableCommand {
                 algorithm: algorithm
             ))
         }
+        // Skill individual installs (identifier without '@') require --ref to pin the version.
+        if let id = identifier, !id.contains("@"), ref == nil {
+            throw ValidationError("Installing a skill requires a version. Use --ref to specify a git tag or commit SHA (e.g. --ref v1.2.0).")
+        }
     }
     
     // MARK: - Private

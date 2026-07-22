@@ -15,7 +15,7 @@ import LucaFoundation
 /// ## Topics
 ///
 /// ### Creating Symlinks
-/// - ``setSymLink(skillName:agents:)``
+/// - ``setSymLink(skillName:version:agents:)``
 struct SkillSymLinker: SkillSymLinking {
 
     enum SkillSymLinkerError: Error, LocalizedError, Equatable {
@@ -44,15 +44,16 @@ struct SkillSymLinker: SkillSymLinking {
     ///
     /// - Parameters:
     ///   - skillName: The name of the skill to symlink.
+    ///   - version: The installed version, used to resolve the versioned cache folder.
     ///   - agents: The agents for which to create symlinks.
     ///   - isGlobal: When `true`, links from `~/.luca/skills/` to each agent's global skills path.
-    func setSymLink(skillName: String, agents: [AgentInfo], isGlobal: Bool = false) throws {
+    func setSymLink(skillName: String, version: String, agents: [AgentInfo], isGlobal: Bool = false) throws {
         let skillSource: URL
         if isGlobal {
-            skillSource = fileManager.globalSkillsCacheFolder.appending(component: skillName)
+            skillSource = fileManager.globalSkillsCacheFolder.appending(components: skillName, version)
         } else {
             let cwd = URL(fileURLWithPath: fileManager.currentDirectoryPath)
-            skillSource = cwd.appending(components: Constants.toolFolder, Constants.skillsFolder, skillName)
+            skillSource = cwd.appending(components: Constants.toolFolder, Constants.skillsFolder, skillName, version)
         }
 
         for agentInfo in agents {

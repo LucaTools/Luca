@@ -160,6 +160,16 @@ struct ErrorDescriptionTests {
     }
 
     @Test
+    func skillDecodingError_errorDescription() {
+        #expect(Skill.SkillDecodingError.missingVersion(repository: "owner/repo").errorDescription != nil)
+    }
+
+    @Test
+    func skillsInfoFactoryError_errorDescription() {
+        #expect(SkillsInfoFactory.SkillsInfoFactoryError.missingVersion(repository: "owner/repo").errorDescription != nil)
+    }
+
+    @Test
     func gitRepositorySkillFetcherError_errorDescription() {
         #expect(GitRepositorySkillFetcherError.gitNotFound.errorDescription != nil)
         #expect(GitRepositorySkillFetcherError.cloneFailed(repository: "owner/repo", exitCode: 128).errorDescription != nil)
