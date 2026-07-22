@@ -38,6 +38,9 @@ public typealias Agent = String
 ///   - name: swift-concurrency
 ///     repository: https://github.com/AvdLee/Swift-Concurrency-Agent-Skill.git
 ///     version: v2.0.0          # required when repo has no default version
+///   - name: skill-creator
+///     repository: vercel
+///     version: latest          # always resolves to the repo's current default-branch HEAD
 /// ```
 ///
 /// ## Topics

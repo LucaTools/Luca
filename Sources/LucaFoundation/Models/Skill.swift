@@ -29,8 +29,13 @@ public struct Skill: Codable {
     public let name: String?
     /// The repository reference — either `owner/repo` (GitHub shorthand) or a full HTTPS/GIT URL.
     public let repository: String
-    /// A git ref pinning the skill. Accepts a tag (e.g. `v1.2.0`) or a commit SHA (e.g. `abc1234`).
+    /// A git ref pinning the skill. Accepts a tag (e.g. `v1.2.0`), a commit SHA (e.g. `abc1234`),
+    /// or ``latestVersionKeyword`` (`"latest"`) to always resolve to the current default-branch HEAD.
     public let version: String
+
+    /// The sentinel value that requests resolution to the repository's current default-branch
+    /// HEAD commit, instead of pinning to a fixed tag or SHA.
+    public static let latestVersionKeyword = "latest"
 
     public init(name: String?, repository: String, version: String) {
         self.name = name

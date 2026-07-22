@@ -22,7 +22,8 @@ struct RepoEntry: Decodable {
     /// The repository URL or `owner/repo` shorthand.
     let url: String
     /// An optional default git ref applied to all skills that reference this entry
-    /// and do not specify their own `version:` field.
+    /// and do not specify their own `version:` field. May be `"latest"` to always resolve
+    /// to the repository's current default-branch HEAD.
     let version: String?
 
     init(url: String, version: String? = nil) {
