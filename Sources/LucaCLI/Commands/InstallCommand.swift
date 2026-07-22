@@ -261,13 +261,16 @@ struct InstallCommand: AsyncParsableCommand {
     var agents: [String] = []
 
     @Option(name: .customLong("ref"), help: ArgumentHelp(
-        "Git tag or commit SHA to pin the skill repository to.",
+        "Git tag, commit SHA, or 'latest' to pin the skill repository to.",
         discussion: """
-        Pins skill installation to a specific git tag or commit SHA1.
-        When omitted, the default branch HEAD is used.
+        Pins skill installation to a specific git tag or commit SHA1, or pass 'latest' to always
+        resolve to the current default-branch HEAD commit. Unlike a pinned tag/SHA, 'latest'
+        re-checks the remote repository on every install, so the resolved commit — and therefore
+        what gets installed — can change between runs as the upstream repository advances.
         Examples:
           luca install vercel-labs/agent-skills --ref v1.2.0
           luca install owner/repo --ref abc1234
+          luca install owner/repo --ref latest
         """,
         valueName: "ref"
     ))
