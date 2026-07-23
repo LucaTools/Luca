@@ -107,6 +107,29 @@ tuist --help
 swiftlint --help
 ```
 
+### Authenticating with private repositories & GitHub Enterprise Server
+
+If a tool's `url` points at a private repository — on `github.com` or a GitHub Enterprise
+Server instance — set an environment variable holding a personal access token before running
+`luca install`:
+
+- `github.com` reads `LUCA_GITHUB_TOKEN`.
+- Any other host reads `LUCA_GITHUB_TOKEN_<HOST>`, where `<HOST>` is the hostname uppercased
+  with every non-alphanumeric character replaced by `_`. For example, a Lucafile entry
+  pointing at `https://ghe.my-company.com/iOS/ModuleCreator/releases/download/2.5.0/ModuleCreator-macOS.zip`
+  is authenticated by setting `LUCA_GITHUB_TOKEN_GHE_MY_COMPANY_COM`.
+
+```bash
+export LUCA_GITHUB_TOKEN_GHE_MY_COMPANY_COM=ghp_xxxxxxxxxxxx
+luca install
+```
+
+The token is only ever sent to the host it was configured for. Note that `github.com` asset
+downloads never carry this header, even if `LUCA_GITHUB_TOKEN` is set — GitHub redirects those
+downloads to a separate signed-URL storage host, so the token is unused there today; it is
+still read and applied to the `api.github.com` release-metadata lookup used by
+`luca install org/repo@version`.
+
 ### Uninstalling tools
 
 Uninstall a specific tool version:
