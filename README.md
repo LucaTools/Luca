@@ -130,6 +130,34 @@ downloads to a separate signed-URL storage host, so the token is unused there to
 still read and applied to the `api.github.com` release-metadata lookup used by
 `luca install org/repo@version`.
 
+#### GitHub Enterprise Server behind an SSO gateway (e.g. Okta)
+
+If your GHE instance sits behind a browser-SSO gateway, the plain release-download URL
+(`.../releases/download/{version}/{asset}`) may be intercepted before it reaches GHE and served
+back as an HTML login page — even with `LUCA_GITHUB_TOKEN_<HOST>` set — because that URL is
+treated as web traffic requiring an interactive session, not a token. The `/api/v3/...` paths are
+typically exempt from that gate, since they're designed for token-based access. Point `url` at the
+release's **API asset URL** instead of the browser download URL:
+
+```bash
+curl -H "Authorization: Bearer $LUCA_GITHUB_TOKEN_GHE_MY_COMPANY_COM" \
+  https://ghe.my-company.com/api/v3/repos/iOS/ModuleCreator/releases/tags/2.5.0
+```
+
+Find the matching asset's `url` field in the response (not `browser_download_url`) — it looks like
+`https://ghe.my-company.com/api/v3/repos/iOS/ModuleCreator/releases/assets/12345` — and use that in
+your Lucafile:
+
+```yaml
+tools:
+  - name: ModuleCreator
+    version: 2.5.0
+    url: https://ghe.my-company.com/api/v3/repos/iOS/ModuleCreator/releases/assets/12345
+```
+
+Luca always sends `Accept: application/octet-stream` on the download request, which the API asset
+endpoint requires to return the raw binary instead of JSON metadata.
+
 ### Uninstalling tools
 
 Uninstall a specific tool version:

@@ -122,4 +122,16 @@ struct DownloaderTests {
 
         #expect(fileDownloader.lastRequest?.value(forHTTPHeaderField: "Authorization") == nil)
     }
+
+    @Test
+    func test_downloadRelease_setsOctetStreamAcceptHeader() async throws {
+        let tempURL = FileManager.default.temporaryDirectory.appending(component: "tool.zip")
+        let fileDownloader = FileDownloadingMock(result: .success(tempURL))
+        let sut = Downloader(fileDownloader: fileDownloader, tokenResolver: GitHubTokenResolvingMock(tokensByHost: [:]))
+
+        let url = try #require(URL(string: "https://ghe.my-company.com/api/v3/repos/iOS/ModuleCreator/releases/assets/12345"))
+        _ = try await sut.downloadRelease(at: url)
+
+        #expect(fileDownloader.lastRequest?.value(forHTTPHeaderField: "Accept") == "application/octet-stream")
+    }
 }

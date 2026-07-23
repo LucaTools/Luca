@@ -32,6 +32,10 @@ struct Downloader: Downloading {
     /// - Returns: A URL to the downloaded file in a temporary location.
     func downloadRelease(at url: URL) async throws -> URL {
         var request = URLRequest(url: url)
+        // Requesting the raw asset bytes explicitly is required by GitHub's release-asset API
+        // endpoint (".../releases/assets/{id}"), which otherwise returns JSON metadata. Harmless
+        // for plain download URLs, which ignore Accept and return the file regardless.
+        request.setValue("application/octet-stream", forHTTPHeaderField: "Accept")
         if let host = url.host, host != "github.com", let token = tokenResolver.token(forHost: host) {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
