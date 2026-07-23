@@ -19,8 +19,10 @@ struct DataDownloaderMock: DataDownloading {
     }
 
     var result: Result
+    var onRequest: (@Sendable (URLRequest) -> Void)? = nil
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        onRequest?(request)
         switch result {
         case .fixture(let fixture):
             let bundle = Bundle.module

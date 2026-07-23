@@ -16,15 +16,17 @@ class FileDownloadingMock: FileDownloading {
     }
 
     var result: Result
+    private(set) var lastRequest: URLRequest?
 
     init(result: Result) {
         self.result = result
     }
 
-    func download(from url: URL) async throws -> (URL, URLResponse) {
+    func download(for request: URLRequest) async throws -> (URL, URLResponse) {
+        lastRequest = request
         switch result {
         case .success(let tempURL):
-            let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
             return (tempURL, response)
         case .error(let error):
             throw error

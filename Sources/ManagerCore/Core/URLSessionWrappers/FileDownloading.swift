@@ -5,10 +5,10 @@ import Foundation
 import FoundationNetworking
 #endif
 
-/// Downloads a file from a URL and writes it to a temporary location on disk.
+/// Downloads a file and writes it to a temporary location on disk.
 protocol FileDownloading {
-    /// Downloads the resource at `url` and saves it to a temporary file.
-    /// - Parameter url: The remote URL of the file to download.
+    /// Performs `request` and saves the response body to a temporary file.
+    /// - Parameter request: The request to perform, with any headers (e.g. `Authorization`) already set.
     /// - Returns: A tuple of the temporary file URL and the URL response.
-    func download(from url: URL) async throws -> (URL, URLResponse)
+    func download(for request: URLRequest) async throws -> (URL, URLResponse)
 }

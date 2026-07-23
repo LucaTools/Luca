@@ -198,7 +198,7 @@ public struct SelfUpdater: SelfUpdating {
 
         printer.printFormatted("\(.raw("🔄 Updating Luca \(currentVersion) → \(targetVersion)..."))")
 
-        let (tempZipURL, _) = try await fileDownloader.download(from: downloadURL(for: targetVersion))
+        let (tempZipURL, _) = try await fileDownloader.download(for: URLRequest(url: downloadURL(for: targetVersion)))
 
         let tempExtractDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("luca-update-\(UUID().uuidString)")

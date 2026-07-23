@@ -36,28 +36,35 @@ struct ReleaseInfoProvider: ReleaseInfoProviding {
     }
             
     private var dataDownloader: DataDownloading
-    
-    init(dataDownloader: DataDownloading) {
+    private var tokenResolver: GitHubTokenResolving
+
+    init(dataDownloader: DataDownloading, tokenResolver: GitHubTokenResolving = GitHubTokenResolver()) {
         self.dataDownloader = dataDownloader
+        self.tokenResolver = tokenResolver
     }
-    
+
     // MARK: - Internal
-    
+
     /// Returns the release asset whose name best matches the current platform keywords.
     func platformAsset(for release: Release) async throws -> ReleaseAsset {
         let releaseInfo = try await fetchReleaseInfo(release: release)
         return try findPlatformAsset(in: releaseInfo.assets)
     }
-    
+
     // MARK: - Private
-    
+
     private func fetchReleaseInfo(release: Release) async throws -> ReleaseInfo {
         let releaseUrl = try GitHubReleaseURLFactory().makeApiReleaseURL(release: release)
-        
+
         var request = URLRequest(url: releaseUrl)
         request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
         request.setValue("luca.tools.cli", forHTTPHeaderField: "User-Agent")
-        
+        // GitHubReleaseURLFactory only ever builds github.com API URLs today, so the token
+        // to attach is always the one configured for "github.com".
+        if let token = tokenResolver.token(forHost: "github.com") {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
         let (data, response) = try await dataDownloader.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {

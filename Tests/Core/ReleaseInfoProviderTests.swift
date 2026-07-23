@@ -1,5 +1,9 @@
 //  ReleaseInfoProviderTests.swift
 
+import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import Testing
 @testable import LucaFoundation
 @testable import ManagerCore
@@ -115,4 +119,42 @@ struct ReleaseInfoProviderTests {
             try await sut.platformAsset(for: release)
         }
     }
+
+    @Test
+    func fetchReleaseInfo_attachesAuthorizationHeaderWhenTokenConfigured() async throws {
+        let capture = RequestCapture()
+        let dataDownloader = DataDownloaderMock(
+            result: .fixture(Fixture(filename: "ReleaseInfo", type: "json")),
+            onRequest: { capture.request = $0 }
+        )
+        let tokenResolver = GitHubTokenResolvingMock(tokensByHost: ["github.com": "dotcom-token"])
+        let sut = ReleaseInfoProvider(dataDownloader: dataDownloader, tokenResolver: tokenResolver)
+        let release = Release(organization: "organization", repository: "repository", version: "1.0.0")
+
+        _ = try await sut.platformAsset(for: release)
+
+        #expect(capture.request?.value(forHTTPHeaderField: "Authorization") == "Bearer dotcom-token")
+    }
+
+    @Test
+    func fetchReleaseInfo_omitsAuthorizationHeaderWhenNoTokenConfigured() async throws {
+        let capture = RequestCapture()
+        let dataDownloader = DataDownloaderMock(
+            result: .fixture(Fixture(filename: "ReleaseInfo", type: "json")),
+            onRequest: { capture.request = $0 }
+        )
+        let tokenResolver = GitHubTokenResolvingMock(tokensByHost: [:])
+        let sut = ReleaseInfoProvider(dataDownloader: dataDownloader, tokenResolver: tokenResolver)
+        let release = Release(organization: "organization", repository: "repository", version: "1.0.0")
+
+        _ = try await sut.platformAsset(for: release)
+
+        #expect(capture.request?.value(forHTTPHeaderField: "Authorization") == nil)
+    }
+}
+
+// MARK: - Private Mocks
+
+private final class RequestCapture: @unchecked Sendable {
+    var request: URLRequest?
 }

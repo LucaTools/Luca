@@ -14,7 +14,7 @@ struct FileDownloader: FileDownloading {
         self.session = session
     }
     
-    func download(from url: URL) async throws -> (URL, URLResponse) {
-        try await session.download(from: url)
+    func download(for request: URLRequest) async throws -> (URL, URLResponse) {
+        try await session.download(for: request)
     }
 }
