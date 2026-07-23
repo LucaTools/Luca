@@ -6,6 +6,11 @@ import Foundation
 ///
 /// The `Downloader` handles fetching tool releases from remote servers,
 /// supporting archive formats (zip, tar.gz) and standalone executables.
+/// When the target host is a GitHub Enterprise Server instance (any host other than
+/// `github.com`) and a token is configured for it, the request carries an
+/// `Authorization: Bearer` header so private-repository release assets can be downloaded.
+/// `github.com` never receives this header: its release-asset downloads redirect to a
+/// separate presigned-URL storage host, and forwarding a token there would leak it.
 ///
 /// ## Topics
 ///
@@ -14,9 +19,11 @@ import Foundation
 struct Downloader: Downloading {
 
     private var fileDownloader: FileDownloading
+    private var tokenResolver: GitHubTokenResolving
 
-    init(fileDownloader: FileDownloading) {
+    init(fileDownloader: FileDownloading, tokenResolver: GitHubTokenResolving = GitHubTokenResolver()) {
         self.fileDownloader = fileDownloader
+        self.tokenResolver = tokenResolver
     }
 
     /// Downloads a release from the specified URL.
@@ -24,7 +31,11 @@ struct Downloader: Downloading {
     /// - Parameter url: The URL to download from.
     /// - Returns: A URL to the downloaded file in a temporary location.
     func downloadRelease(at url: URL) async throws -> URL {
-        let (tempDownloadURL, _) = try await fileDownloader.download(from: url)
+        var request = URLRequest(url: url)
+        if let host = url.host, host != "github.com", let token = tokenResolver.token(forHost: host) {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (tempDownloadURL, _) = try await fileDownloader.download(for: request)
         return tempDownloadURL
     }
 }

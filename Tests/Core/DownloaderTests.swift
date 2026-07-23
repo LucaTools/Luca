@@ -79,4 +79,47 @@ struct DownloaderTests {
             _ = try await sut.downloadRelease(at: url)
         }
     }
+
+    @Test
+    func test_downloadRelease_attachesTokenForEnterpriseHost() async throws {
+        let tempURL = FileManager.default.temporaryDirectory.appending(component: "tool.zip")
+        let fileDownloader = FileDownloadingMock(result: .success(tempURL))
+        let tokenResolver = GitHubTokenResolvingMock(tokensByHost: ["ghe.my-company.com": "ghe-token"])
+        let sut = Downloader(fileDownloader: fileDownloader, tokenResolver: tokenResolver)
+
+        let url = try #require(URL(string: "https://ghe.my-company.com/iOS/ModuleCreator/releases/download/2.5.0/ModuleCreator-macOS.zip"))
+        _ = try await sut.downloadRelease(at: url)
+
+        #expect(fileDownloader.lastRequest?.value(forHTTPHeaderField: "Authorization") == "Bearer ghe-token")
+    }
+
+    @Test
+    func test_downloadRelease_omitsAuthorizationForGitHubDotCom() async throws {
+        let tempURL = FileManager.default.temporaryDirectory.appending(component: "tool.zip")
+        let fileDownloader = FileDownloadingMock(result: .success(tempURL))
+        // Even if a token happens to be configured for github.com, it must never be attached
+        // to the asset-download request: github.com redirects release-asset downloads to
+        // objects.githubusercontent.com with a presigned URL, and forwarding our token there
+        // would leak it to a third-party host.
+        let tokenResolver = GitHubTokenResolvingMock(tokensByHost: ["github.com": "dotcom-token"])
+        let sut = Downloader(fileDownloader: fileDownloader, tokenResolver: tokenResolver)
+
+        let url = try #require(URL(string: "https://github.com/realm/SwiftLint/releases/download/0.61.0/SwiftLintBinary.artifactbundle.zip"))
+        _ = try await sut.downloadRelease(at: url)
+
+        #expect(fileDownloader.lastRequest?.value(forHTTPHeaderField: "Authorization") == nil)
+    }
+
+    @Test
+    func test_downloadRelease_omitsAuthorizationWhenNoTokenConfigured() async throws {
+        let tempURL = FileManager.default.temporaryDirectory.appending(component: "tool.zip")
+        let fileDownloader = FileDownloadingMock(result: .success(tempURL))
+        let tokenResolver = GitHubTokenResolvingMock(tokensByHost: [:])
+        let sut = Downloader(fileDownloader: fileDownloader, tokenResolver: tokenResolver)
+
+        let url = try #require(URL(string: "https://ghe.my-company.com/iOS/ModuleCreator/releases/download/2.5.0/ModuleCreator-macOS.zip"))
+        _ = try await sut.downloadRelease(at: url)
+
+        #expect(fileDownloader.lastRequest?.value(forHTTPHeaderField: "Authorization") == nil)
+    }
 }
