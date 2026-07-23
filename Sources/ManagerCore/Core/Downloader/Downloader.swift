@@ -1,6 +1,9 @@
 //  Downloader.swift
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// Downloads release archives and executables from remote URLs.
 ///
