@@ -13,8 +13,8 @@ public struct GitIgnoreManager {
     private let fileManager: GitIgnoreFileManaging
     private let printer: Printing
 
-    /// Content of a nested `.gitignore` that ignores everything in its folder except itself.
-    private static let nestedGitIgnoreContent = "*\n!.gitignore\n"
+    /// Content of a nested `.gitignore` that ignores everything in its folder, including itself.
+    private static let nestedGitIgnoreContent = "*\n"
 
     public init(fileManager: GitIgnoreFileManaging, printer: Printing) {
         self.fileManager = fileManager
@@ -77,7 +77,7 @@ public struct GitIgnoreManager {
 
     // MARK: - Private
 
-    /// Writes a `.gitignore` inside `folder` that ignores everything but itself, unless already present.
+    /// Writes a `.gitignore` inside `folder` that ignores everything in it, including itself, unless already present.
     private func writeNestedGitIgnore(in folder: URL, label: String) throws {
         try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
 

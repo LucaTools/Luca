@@ -48,7 +48,7 @@ final class GitIgnoreManagerTests: XCTestCase {
         let nestedGitIgnore = fileManager.symlinksFolder.appending(component: ".gitignore")
         XCTAssertTrue(fileManager.fileExists(atPath: nestedGitIgnore.path))
         let content = try fileManager.readString(at: nestedGitIgnore)
-        XCTAssertEqual(content, "*\n!.gitignore\n")
+        XCTAssertEqual(content, "*\n")
     }
 
     func test_ensureGitIgnoreIncludesSymlinksFolder_whenGitRepo_doesNotTouchRootGitIgnore() throws {
@@ -92,13 +92,13 @@ final class GitIgnoreManagerTests: XCTestCase {
         try fileManager.createDirectory(at: gitDirectory, withIntermediateDirectories: true)
         try fileManager.createDirectory(at: fileManager.symlinksFolder, withIntermediateDirectories: true)
         let nestedGitIgnore = fileManager.symlinksFolder.appending(component: ".gitignore")
-        try fileManager.writeString("*\n!.gitignore\n", to: nestedGitIgnore)
+        try fileManager.writeString("*\n", to: nestedGitIgnore)
 
         // When
         try sut.ensureGitIgnoreIncludesSymlinksFolder()
 
         // Then
         let content = try fileManager.readString(at: nestedGitIgnore)
-        XCTAssertEqual(content, "*\n!.gitignore\n")
+        XCTAssertEqual(content, "*\n")
     }
 }

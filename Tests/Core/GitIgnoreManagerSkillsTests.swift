@@ -47,7 +47,7 @@ struct GitIgnoreManagerSkillsTests {
         let nestedGitIgnore = fileManager.skillsCacheFolder.appending(component: ".gitignore")
         #expect(fileManager.fileExists(atPath: nestedGitIgnore.path))
         let content = try fileManager.readString(at: nestedGitIgnore)
-        #expect(content == "*\n!.gitignore\n")
+        #expect(content == "*\n")
     }
 
     @Test
