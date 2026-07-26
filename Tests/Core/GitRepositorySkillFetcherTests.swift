@@ -12,7 +12,7 @@ struct GitRepositorySkillFetcherTests {
     @Test
     func test_skillPaths_gitNotFound() async throws {
         let runner = SubprocessRunnerMock()
-        let sut = GitRepositorySkillFetcher(subprocessRunner: runner)
+        _ = GitRepositorySkillFetcher(subprocessRunner: runner)
 
         // git executable doesn't exist at /usr/bin/git on Linux in CI — skip if present
         // This test exercises the code path when the executable is absent.
