@@ -3,18 +3,28 @@
 import Foundation
 import LucaFoundation
 
-/// Ensures the project's `.gitignore` contains entries for the tools and skills folders.
+/// Ensures Luca's tools and skills folders stay untracked by git.
+///
+/// `.luca/tools/` and `.luca/skills/` get their own nested `.gitignore` rather than an entry in
+/// the project's root `.gitignore`. Each agent's project skill directory (e.g. `.claude/skills/`)
+/// still gets an entry appended to the root `.gitignore`, since those live outside `.luca/`.
 public struct GitIgnoreManager {
 
     private let fileManager: GitIgnoreFileManaging
     private let printer: Printing
+
+    /// Content of a nested `.gitignore` that ignores everything in its folder, including itself.
+    private static let nestedGitIgnoreContent = "*\n"
 
     public init(fileManager: GitIgnoreFileManaging, printer: Printing) {
         self.fileManager = fileManager
         self.printer = printer
     }
 
-    /// Appends or creates a `.gitignore` entry for the tools folder in the current project.
+    /// Ensures the project's tools symlinks folder ignores its own contents.
+    ///
+    /// Writes a nested `.gitignore` inside `.luca/tools/` rather than editing the project's
+    /// root `.gitignore`, so Luca never has to read or merge into a file it doesn't own.
     public func ensureGitIgnoreIncludesSymlinksFolder() throws {
         let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath)
         let gitDirectory = currentDirectory.appending(component: ".git")
@@ -23,24 +33,11 @@ public struct GitIgnoreManager {
             return
         }
 
-        let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
-        let entryToAdd = "\(Constants.toolFolder)/\(Constants.symlinksFolder)"
-
-        if fileManager.fileExists(atPath: gitIgnoreFile.path) {
-            let content = try fileManager.readString(at: gitIgnoreFile)
-            if !content.contains(entryToAdd) {
-                let newContent = content.hasSuffix("\n") ? content + entryToAdd + "\n" : content + "\n" + entryToAdd + "\n"
-                try fileManager.writeString(newContent, to: gitIgnoreFile)
-                printer.printFormatted("\(.info("🙈 Added \(entryToAdd) to .gitignore"))")
-            }
-        } else {
-            let content = entryToAdd + "\n"
-            try fileManager.writeString(content, to: gitIgnoreFile)
-            printer.printFormatted("\(.info("🙈 Created .gitignore with \(entryToAdd)"))")
-        }
+        try writeNestedGitIgnore(in: fileManager.symlinksFolder, label: "\(Constants.toolFolder)/\(Constants.symlinksFolder)")
     }
 
-    /// Appends or creates `.gitignore` entries for the skills cache folder and each agent's skill directory.
+    /// Ensures the project's skills cache folder ignores its own contents, and appends each
+    /// agent's skill directory to the root `.gitignore`.
     ///
     /// - Parameter agents: The agents whose skill directories should be added to `.gitignore`.
     public func ensureGitIgnoreIncludesSkillFolders(agents: [AgentInfo]) throws {
@@ -51,9 +48,12 @@ public struct GitIgnoreManager {
             return
         }
 
+        try writeNestedGitIgnore(in: fileManager.skillsCacheFolder, label: "\(Constants.toolFolder)/\(Constants.skillsFolder)")
+
+        let entriesToAdd = agents.map(\.projectSkillsPath)
+        guard !entriesToAdd.isEmpty else { return }
+
         let gitIgnoreFile = currentDirectory.appending(component: ".gitignore")
-        var entriesToAdd = ["\(Constants.toolFolder)/\(Constants.skillsFolder)"]
-        entriesToAdd += agents.map(\.projectSkillsPath)
 
         if fileManager.fileExists(atPath: gitIgnoreFile.path) {
             var content = try fileManager.readString(at: gitIgnoreFile)
@@ -73,5 +73,23 @@ public struct GitIgnoreManager {
             try fileManager.writeString(content, to: gitIgnoreFile)
             printer.printFormatted("\(.info("🙈 Created .gitignore with skills entries"))")
         }
+    }
+
+    // MARK: - Private
+
+    /// Writes a `.gitignore` inside `folder` that ignores everything in it, including itself, unless already present.
+    private func writeNestedGitIgnore(in folder: URL, label: String) throws {
+        try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+
+        let nestedGitIgnoreFile = folder.appending(component: ".gitignore")
+        if fileManager.fileExists(atPath: nestedGitIgnoreFile.path) {
+            let content = try fileManager.readString(at: nestedGitIgnoreFile)
+            if content == Self.nestedGitIgnoreContent {
+                return
+            }
+        }
+
+        try fileManager.writeString(Self.nestedGitIgnoreContent, to: nestedGitIgnoreFile)
+        printer.printFormatted("\(.info("🙈 Added .gitignore to \(label)"))")
     }
 }

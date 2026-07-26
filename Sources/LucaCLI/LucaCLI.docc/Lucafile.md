@@ -149,7 +149,7 @@ Use checksums for critical tools to verify integrity and protect against tamperi
 
 ### Git Integration
 
-Add `.luca/tools/` to your `.gitignore` file. Luca can manage this automatically with the `--install-git-hook` flag.
+Luca automatically ignores `.luca/tools/` and `.luca/skills/` by writing a nested `.gitignore` inside each folder — your project's own `.gitignore` is never modified for these. Each agent's project skill directory (e.g. `.claude/skills/`) is still added to your root `.gitignore`, since those live outside `.luca/`.
 
 ## Authenticating with Private Repositories & GitHub Enterprise Server
 
