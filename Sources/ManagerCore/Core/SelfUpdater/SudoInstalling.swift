@@ -15,7 +15,8 @@ protocol SudoInstalling {
     ///
     /// - Parameters:
     ///   - source: Path of the file to install.
-    ///   - destination: Target path (typically a privileged location such as `/usr/local/bin/luca`).
+    ///   - destination: Target path. Only used as a fallback when the install directory isn't
+    ///     user-writable, e.g. a privileged location such as `/usr/local/bin/luca`.
     /// - Returns: The `sudo` process termination status.
     func install(from source: URL, to destination: URL) async throws -> Int32
 }

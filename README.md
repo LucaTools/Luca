@@ -40,7 +40,8 @@ echo "0.15.0" > .luca-version
 git clone https://github.com/LucaTools/Luca.git
 cd Luca
 swift build -c release
-cp -f .build/release/luca /usr/local/bin/luca
+mkdir -p ~/.local/bin
+cp -f .build/release/luca ~/.local/bin/luca
 ```
 
 On Linux, you can build a portable binary that doesn't require the Swift runtime:
