@@ -377,10 +377,11 @@ Or provide an explicit path:
 luca run --file pipelines/release.yml
 ```
 
-Pass parameter values at runtime with `--param`:
+Pass parameter values at runtime with `--param` (or its short form `-p`):
 
 ```bash
 luca run build --param configuration=release --param upload=true
+luca run build -p configuration=release -p upload=true
 ```
 
 Preview what would happen without executing anything:

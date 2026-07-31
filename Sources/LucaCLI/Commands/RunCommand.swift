@@ -44,13 +44,14 @@ struct RunCommand: AsyncParsableCommand {
           4. ./pipelines/<name>.params
 
         Use --params-file to specify an explicit params file path.
-        Values from --param override values from the params file.
+        Values from --param/-p override values from the params file.
 
         Examples:
           luca run ci
           luca run deploy --dry-run
           luca run --file pipelines/release.yml
           luca run ci --params-file ./ci.params.yml
+          luca run build -p flavor=release -p upload=true
         """
     )
 
@@ -79,12 +80,12 @@ struct RunCommand: AsyncParsableCommand {
     ))
     var dryRun: Bool = false
 
-    @Option(name: .customLong("param"), help: ArgumentHelp(
+    @Option(name: [.customLong("param"), .customShort("p")], help: ArgumentHelp(
         "Set a pipeline parameter value.",
         discussion: """
         Provide KEY=VALUE pairs to satisfy parameters declared in the pipeline's `parameters:` block.
         May be repeated for multiple parameters.
-        Example: --param flavor=release --param upload=true
+        Example: --param flavor=release -p upload=true
         """,
         valueName: "KEY=VALUE"
     ))
